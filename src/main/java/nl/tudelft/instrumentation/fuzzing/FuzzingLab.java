@@ -37,15 +37,15 @@ public class FuzzingLab {
           switch (condition.operator) {
             case "==":
               if(!value) {
-                if (condition.right.type == TypeEnum.INT && condition.left.type == TypeEnum.INT) {
-                  return Math.abs(condition.right.int_value - condition.left.int_value);
-                } else if(condition.right.type == TypeEnum.STRING && condition.left.type == TypeEnum.STRING){
+                if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                  return Math.abs(condition.left.int_value - condition.right.int_value);
+                } else if(condition.left.type == TypeEnum.STRING && condition.right.type == TypeEnum.STRING){
                   return stringDifference(condition.left.str_value, condition.right.str_value);
                 }
               } else {
-                if (condition.right.type == TypeEnum.INT && condition.left.type == TypeEnum.INT) {
-                  return condition.right.int_value == condition.left.int_value? 1 : 0;
-                } else if(condition.right.type == TypeEnum.STRING && condition.left.type == TypeEnum.STRING){
+                if (condition.left.type == TypeEnum.INT && condition.left.type == TypeEnum.INT) {
+                  return condition.left.int_value == condition.right.int_value? 1 : 0;
+                } else if(condition.left.type == TypeEnum.STRING && condition.right.type == TypeEnum.STRING){
                   return condition.left.str_value.equals(condition.right.str_value)? 1 : 0;
                 }
               }
@@ -56,15 +56,19 @@ public class FuzzingLab {
                 return branchDistance(condition.left, value) + branchDistance(condition.right, value);
               }
           }
-          System.out.println("not implemented yet, binaryOperatorDistance: " + condition.operator);
-          return 0;
+          throw new AssertionError("not implemented yet, binaryOperatorDistance: " + condition.operator);
         }
 
         static int unaryOperatorDistance(MyVar condition, boolean value) {
           switch (condition.operator) {
             case "!":
+              // TODO
               if (condition.left.type == TypeEnum.BOOL) {
-                return value == condition.left.value? 1 : 0;
+                if (value) {
+                  return condition.left.value? 0 : 1;
+                } else {
+                  return condition.left.value? 1 : 0;
+                }
               } else {
                 return 1 - branchDistance(condition.left, value);
               }
@@ -113,23 +117,21 @@ public class FuzzingLab {
               return binaryOperatorDistance(condition, value);
             case BOOL:
               if(!value) {
-                return condition.value == value? 1 : 0;
+                return condition.value? 0 : 1;
               } else {
-                return condition.value == value? 0 : 1;
+                return condition.value? 1 : 0;
               }
             default:
               break;
           }
-          System.out.println("not implemented yet, branchDistance: " + condition.toString());
-          return 0;
+          throw new AssertionError("not implemented yet, branchDistance: " + condition.toString());
         }
 
         /**
          * Write your solution that specifies what should happen when a new branch has been found.
          */
         static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-                // do something useful
-                System.out.println(condition.toString() +"\t now "+ value + ".\t Distance: " +branchDistance(condition, value));
+                System.out.printf("line %5d, now: %b,\tdist: %2d, %s\n", line_nr, value, branchDistance(condition, value), condition.toString());
         }
 
         /**
