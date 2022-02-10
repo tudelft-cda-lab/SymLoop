@@ -393,15 +393,10 @@ public class FuzzingLab {
 
                 Pair<Integer, List<String>> current = Pair.of(sum, currentTrace);
                 topTraces.add(current);
-                for(int i = topTraces.size()-2; i >= 0; i--){
-                    // If the current item is lower then the item at index i
-                    if(topTraces.get(i).getLeft() > current.getLeft()) {
-                        // Move the current item one place forward in the list.
-                        topTraces.set(i+1, topTraces.get(i));
-                        topTraces.set(i, current);
-                    } else {
-                        break;
-                    }
+                // While the current item is lower then the item at index i
+                for(int i = topTraces.size()-2; i >= 0 && topTraces.get(i).getLeft() > current.getLeft(); i--){
+                    topTraces.set(i+1, topTraces.get(i));
+                    topTraces.set(i, current);
                 }
                 // Keep the list at a maximum size
                 if(topTraces.size() > NUM_TOP_TRACES) {
