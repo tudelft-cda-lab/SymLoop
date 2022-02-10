@@ -175,7 +175,7 @@ public class FuzzingLab {
         /**
          * Making a if-statement true: (value = false) (target = true)
          a : d = {0 if a is true, 1 otherwise}
-         !a : d = {1 if a is true, 0 otherwise}
+         !a : d = {1 if a is true, 0 otherwise} CHECK
          a == b : d = abs(a-b)  CHECK
          a != b : d = {0 if a !=b, 1 otherwise} CHECK
          a < b : d = {0 if a < b; a-b + K otherwise} CHECK
@@ -185,13 +185,13 @@ public class FuzzingLab {
          and for combinations of predicates:
 
          p1 && p2 : d = d(p1) + d(p2) CHECK
-         p1 | p2 : d = min(d(p1), d(p2))
-         p1 XOR p2 : d = min(d(p1) + d(!p2), d(!p1) + d(p2))
+         p1 | p2 : d = min(d(p1), d(p2)) CHECK
+         p1 XOR p2 : d = min(d(p1) + d(!p2), d(!p1) + d(p2)) CHECK
          !p1 : d = 1 - d(p1)
 
          * Making a if-statement false: (value = true) (target = false)
          a : d = {1 if a is true, 0 otherwise}
-         !a : d = {0 if a is true, 1 otherwise}
+         !a : d = {0 if a is true, 1 otherwise} CHECK
          a == b : d = {0 if a != b, 1 otherwise} CHECK
          a != b : d = abs(a-b) CHECK
          a < b : d = {b-a if a < b; 0 otherwise} CHECK
@@ -209,6 +209,8 @@ public class FuzzingLab {
           switch(condition.type) {
             case BINARY:
               return binaryOperatorDistance(condition, value);
+            case UNARY:
+              return unaryOperatorDistance(condition, value);
             case BOOL:
               if(value) {
                 return condition.value? 1 : 0;
