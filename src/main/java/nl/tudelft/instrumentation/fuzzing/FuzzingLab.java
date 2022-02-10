@@ -40,6 +40,20 @@ public class FuzzingLab {
 
           private VisitedEnum() {
           }
+
+          public int amount() {
+            switch (this) {
+                case NONE:
+                  return 0;
+                case TRUE:
+                case FALSE:
+                  return 1;
+                case BOTH:
+                  return 2;
+                default:
+                  throw new AssertionError("unreachable");
+            }
+          }
         }
         static Random r = new Random();
         static List<String> currentTrace;
@@ -47,6 +61,8 @@ public class FuzzingLab {
         static boolean isFinished = false;
 
         static Map<Integer, VisitedEnum> branches = new HashMap<Integer, VisitedEnum>();
+        static List<String> bestTrace;
+        static int bestTraceScore = 0;
 
         static void initialize(String[] inputSymbols){
                 // Initialise a random trace from the input symbols of the problem.
@@ -264,7 +280,7 @@ public class FuzzingLab {
          */
         static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
             int bd = branchDistance(condition, value);
-            System.out.printf("line %5d, now: %b,\tdist: %2d, %s\n", line_nr, value, bd, condition.toString());
+            // System.out.printf("line %5d, now: %b,\tdist: %2d, %s\n", line_nr, value, bd, condition.toString());
             branches.put(line_nr, branches.getOrDefault(line_nr, VisitedEnum.NONE).andVisit(value));
         }
 
@@ -296,22 +312,42 @@ public class FuzzingLab {
                 return trace;
         }
 
+        static int totalBranches() {
+          return branches.size() * 2;
+        }
+        static int numVisited() {
+          int visited = 0;
+          for (Integer lineNumber : branches.keySet()) {
+            visited += branches.get(lineNumber).amount();
+          }
+          return visited;
+        }
         static void run() {
                 initialize(DistanceTracker.inputSymbols);
                 DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
 
+                System.out.println(branches.toString());
                 // Place here your code to guide your fuzzer with its search.
                 while(!isFinished) {
                         // Do things!
                         try {
-                                System.out.println("Woohoo, looping!");
-                                System.out.println(branches.toString());
-                                Thread.sleep(1000);
+                          branches.clear();
+                          initialize(DistanceTracker.inputSymbols);
+                          DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+                          int score = numVisited();
+                          System.out.printf("Visited %d out of %d: %d%%\n", score, totalBranches(), numVisited() * 100 / totalBranches());
+                          if(score > bestTraceScore) {
+                            bestTraceScore = score;
+                            bestTrace = new ArrayList<>(currentTrace);
+                            System.out.printf("New best: %d, with trace: %s\n", score, currentTrace.toString());
+                          }
+                          Thread.sleep(1000);
                         } catch (InterruptedException e) {
                                 e.printStackTrace();
                         }
                 }
         }
+
 
         /**
          * Method that is used for catching the output from standard out.
