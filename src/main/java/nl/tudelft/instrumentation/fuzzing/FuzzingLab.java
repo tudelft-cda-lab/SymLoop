@@ -157,17 +157,17 @@ public class FuzzingLab {
           switch (condition.operator) {
             case "!":
               // TODO
-              throw new AssertionError("not implemented yet, binaryOperatorDistance: " + condition.operator);
-              // if (condition.left.type == TypeEnum.BOOL) {
-              //   if (value) {
-              //     return condition.left.value? 0 : 1;
-              //   } else {
-              //     return condition.left.value? 1 : 0;
-              //   }
-              // } else {
-              //   // TODO what should happen here
-              //   return 1 - branchDistance(condition.left, value);
-              // }
+               if (condition.left.type == TypeEnum.BOOL) {
+                 if (value) {
+                   return condition.left.value? 1 : 0;
+                 } else {
+                   return condition.left.value? 0 : 1;
+                 }
+               } else {
+                 // TODO what should happen here
+//                 return 1 - branchDistance(condition.left, value);
+                   throw new AssertionError("not implemented yet, unaryOperatorDistance: " + condition.operator);
+               }
           }
           return 0;
         }
