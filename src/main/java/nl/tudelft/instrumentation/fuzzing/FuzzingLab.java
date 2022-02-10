@@ -1,7 +1,8 @@
 package nl.tudelft.instrumentation.fuzzing;
 
 import java.util.*;
-import java.util.Random;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * You should write your own solution using this class.
@@ -65,11 +66,9 @@ public class FuzzingLab {
     static List<String> bestTrace;
     static int bestTraceScore = 0;
 
-    static int top5LowestBranchDistanceSum[] = {Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE};
-    static List<List<String>> top5Traces = new ArrayList<>(5);
-    static String[] list = {"s"};
-    static List<String> temp = generateRandomTrace(list);
     static int sum = 0;
+    static List<Pair<Integer, List<String>>> topTraces = new ArrayList<>(5);
+    static final int NUM_TOP_TRACES = 5;
 
 
     static void initialize(String[] inputSymbols) {
@@ -392,23 +391,27 @@ public class FuzzingLab {
                             currentTrace.toString());
                 }
 
-                for(int i = 0; i < 5; i++){
-                    top5Traces.add(temp);
-                }
-
-                for(int i = 0; i < top5LowestBranchDistanceSum.length; i++) {
-                    if(sum < top5LowestBranchDistanceSum[i]){
-                        top5LowestBranchDistanceSum[i] = sum;
-                        top5Traces.set(i, currentTrace);
-                        System.out.printf("New lowest score: %d, on place: %d, with trace: %s\n", sum, i,
-                                currentTrace.toString());
+                Pair<Integer, List<String>> current = Pair.of(sum, currentTrace);
+                topTraces.add(current);
+                for(int i = topTraces.size()-2; i >= 0; i--){
+                    // If the current item is lower then the item at index i
+                    if(topTraces.get(i).getLeft() > current.getLeft()) {
+                        // Move the current item one place forward in the list.
+                        topTraces.set(i+1, topTraces.get(i));
+                        topTraces.set(i, current);
+                    } else {
                         break;
                     }
                 }
+                // Keep the list at a maximum size
+                if(topTraces.size() > NUM_TOP_TRACES) {
+                    topTraces.remove(NUM_TOP_TRACES);
+                }
 
                 System.out.println("Current top 5:");
-                for(int i = 0; i < top5LowestBranchDistanceSum.length; i++) {
-                    System.out.printf("Number %d: %s, with score %d\n", i+1, top5Traces.get(i).toString(), sum);
+                for(int i = 0; i < topTraces.size(); i++) {
+                    Pair<Integer, List<String>> pair = topTraces.get(i);
+                    System.out.printf("Number %d: %s, with score %d\n", i+1, pair.getRight().toString(), pair.getLeft());
                 }
 
 
