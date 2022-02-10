@@ -79,8 +79,76 @@ public class FuzzingLab {
                         return condition.left.value == condition.right.value ? 1 : 0;
                     }
                 }
-
-
+              case "<":
+                  if(value) {
+                      if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                          int a = condition.left.int_value;
+                          int b = condition.right.int_value;
+                          return a < b ? (b-a) : 0;
+                      }
+                  } else {
+                      if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                          int a = condition.left.int_value;
+                          int b = condition.right.int_value;
+                          return a < b ? 0 : (a-b+1);
+                      }
+                  }
+              case "<=":
+                  if(value) {
+                      if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                          int a = condition.left.int_value;
+                          int b = condition.right.int_value;
+                          return a <= b ? (b-a+1) : 0;
+                      }
+                  } else {
+                      if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                          int a = condition.left.int_value;
+                          int b = condition.right.int_value;
+                          return a <= b ? 0 : (a-b);
+                      }
+                  }
+              case ">":
+                  if(value) {
+                      if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                          int a = condition.left.int_value;
+                          int b = condition.right.int_value;
+                          return a > b ? (a-b) : 0;
+                      }
+                  } else {
+                      if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                          int a = condition.left.int_value;
+                          int b = condition.right.int_value;
+                          return a > b ? 0 : (b-a+1);
+                      }
+                  }
+              case ">=":
+                  if(value) {
+                      if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                          int a = condition.left.int_value;
+                          int b = condition.right.int_value;
+                          return a >= b ? (a-b+1) : 0;
+                      }
+                  } else {
+                      if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                          int a = condition.left.int_value;
+                          int b = condition.right.int_value;
+                          return a >= b ? 0 : (b-a);
+                      }
+                  }
+              case "||":
+                  if(value){
+                      return branchDistance(condition.left, value) + branchDistance(condition.right, value);
+                  } else {
+                      return Math.min(branchDistance(condition.left, value), branchDistance(condition.right, value));
+                  }
+              case "^":
+                  if(value){
+                      return Math.min(branchDistance(condition.left, value) + branchDistance(condition.right, !value),
+                              branchDistance(condition.left, !value) + branchDistance(condition.right, value));
+                  } else {
+                      return Math.min(branchDistance(condition.left, value) + branchDistance(condition.right, value),
+                              branchDistance(condition.left, !value) + branchDistance(condition.right, !value));
+                  }
           }
           throw new AssertionError("not implemented yet, binaryOperatorDistance: " + condition.operator);
         }
@@ -108,15 +176,15 @@ public class FuzzingLab {
          * Making a if-statement true: (value = false) (target = true)
          a : d = {0 if a is true, 1 otherwise}
          !a : d = {1 if a is true, 0 otherwise}
-         a == b : d = abs(a-b)
-         a != b : d = {0 if a !=b, 1 otherwise}
-         a < b : d = {0 if a < b; a-b + K otherwise}
-         a <= b : d = {0 if a <= b; a-b otherwise}
-         a > b : d = {0 if a > b; b-a + K otherwise}
-         a >= b : d = {0 if a >= b; b - a otherwise}
+         a == b : d = abs(a-b)  CHECK
+         a != b : d = {0 if a !=b, 1 otherwise} CHECK
+         a < b : d = {0 if a < b; a-b + K otherwise} CHECK
+         a <= b : d = {0 if a <= b; a-b otherwise} CHECK
+         a > b : d = {0 if a > b; b-a + K otherwise} CHECK
+         a >= b : d = {0 if a >= b; b - a otherwise} CHECK
          and for combinations of predicates:
 
-         p1 & p2 : d = d(p1) + d(p2)
+         p1 && p2 : d = d(p1) + d(p2) CHECK
          p1 | p2 : d = min(d(p1), d(p2))
          p1 XOR p2 : d = min(d(p1) + d(!p2), d(!p1) + d(p2))
          !p1 : d = 1 - d(p1)
@@ -124,17 +192,17 @@ public class FuzzingLab {
          * Making a if-statement false: (value = true) (target = false)
          a : d = {1 if a is true, 0 otherwise}
          !a : d = {0 if a is true, 1 otherwise}
-         a == b : d = {0 if a != b, 1 otherwise}
-         a != b : d = abs(a-b)
-         a < b : d = {b-a if a < b; 0 otherwise}
-         a <= b : d = {b-a+1 if a <= b; 0 otherwise}
-         a > b : d = {a-b if a > b; 0 otherwise}
-         a >= b : b = {a-+1 if a >= b; 0 otherwise}
+         a == b : d = {0 if a != b, 1 otherwise} CHECK
+         a != b : d = abs(a-b) CHECK
+         a < b : d = {b-a if a < b; 0 otherwise} CHECK
+         a <= b : d = {b-a+1 if a <= b; 0 otherwise} CHECK
+         a > b : d = {a-b if a > b; 0 otherwise} CHECK
+         a >= b : b = {a-+1 if a >= b; 0 otherwise} CHECK
 
          and for combinations of predicates:
-         p1 & p2 : d = min(d(p1), d(p2))
-         p1 | p2 : d = d(p1) + d(p2)
-         p1 XOR p2 : d = min(d(p1) + d(p2), d(!p1) + d(!p2))
+         p1 & p2 : d = min(d(p1), d(p2)) CHECK
+         p1 | p2 : d = d(p1) + d(p2) CHECK
+         p1 XOR p2 : d = min(d(p1) + d(p2), d(!p1) + d(!p2)) CHECK
          !p1 : d = 1 - d(p1)
          */
         static int branchDistance(MyVar condition, boolean value) {
