@@ -36,25 +36,51 @@ public class FuzzingLab {
         static int binaryOperatorDistance(MyVar condition, boolean value) {
           switch (condition.operator) {
             case "==":
-              if(!value) {
-                if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
-                  return Math.abs(condition.left.int_value - condition.right.int_value);
-                } else if(condition.left.type == TypeEnum.STRING && condition.right.type == TypeEnum.STRING){
-                  return stringDifference(condition.left.str_value, condition.right.str_value);
-                }
+              if(value) {
+                  if (condition.left.type == TypeEnum.INT && condition.left.type == TypeEnum.INT) {
+                      return condition.left.int_value == condition.right.int_value? 1 : 0;
+                  } else if(condition.left.type == TypeEnum.STRING && condition.right.type == TypeEnum.STRING){
+                      return condition.left.str_value.equals(condition.right.str_value)? 1 : 0;
+                  } else if(condition.left.type == TypeEnum.BOOL && condition.right.type == TypeEnum.BOOL){
+                      return condition.left.value == condition.right.value ? 1 : 0;
+                  }
               } else {
-                if (condition.left.type == TypeEnum.INT && condition.left.type == TypeEnum.INT) {
-                  return condition.left.int_value == condition.right.int_value? 1 : 0;
-                } else if(condition.left.type == TypeEnum.STRING && condition.right.type == TypeEnum.STRING){
-                  return condition.left.str_value.equals(condition.right.str_value)? 1 : 0;
-                }
+                  if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                      return Math.abs(condition.left.int_value - condition.right.int_value);
+                  } else if(condition.left.type == TypeEnum.STRING && condition.right.type == TypeEnum.STRING){
+                      return stringDifference(condition.left.str_value, condition.right.str_value);
+                  } else if(condition.left.type == TypeEnum.BOOL && condition.right.type == TypeEnum.BOOL){
+                      return condition.left.value == condition.right.value ? 0 : 1;
+                  }
               }
+
             case "&&":
               if (value) {
                 return Math.min(branchDistance(condition.left, value), branchDistance(condition.right, value));
               } else {
                 return branchDistance(condition.left, value) + branchDistance(condition.right, value);
               }
+            case "!=":
+                if(value) {
+                    if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                        return Math.abs(condition.left.int_value - condition.right.int_value);
+                    } else if (condition.left.type == TypeEnum.STRING && condition.right.type == TypeEnum.STRING) {
+                        return stringDifference(condition.left.str_value, condition.right.str_value);
+                    } else if (condition.left.type == TypeEnum.BOOL && condition.right.type == TypeEnum.BOOL) {
+                        return condition.left.value == condition.right.value ? 0 : 1;
+                    }
+
+                } else {
+                    if (condition.left.type == TypeEnum.INT && condition.right.type == TypeEnum.INT) {
+                        return condition.left.int_value == condition.right.int_value ? 1 : 0;
+                    } else if (condition.left.type == TypeEnum.STRING && condition.right.type == TypeEnum.STRING) {
+                        return condition.left.str_value.equals(condition.right.str_value) ? 1 : 0;
+                    } else if (condition.left.type == TypeEnum.BOOL && condition.right.type == TypeEnum.BOOL) {
+                        return condition.left.value == condition.right.value ? 1 : 0;
+                    }
+                }
+
+
           }
           throw new AssertionError("not implemented yet, binaryOperatorDistance: " + condition.operator);
         }
