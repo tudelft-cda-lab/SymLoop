@@ -65,6 +65,13 @@ public class FuzzingLab {
     static List<String> bestTrace;
     static int bestTraceScore = 0;
 
+    static int top5LowestBranchDistanceSum[] = {Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE};
+    static List<List<String>> top5Traces = new ArrayList<>(5);
+    static String[] list = {"s"};
+    static List<String> temp = generateRandomTrace(list);
+    static int sum = 0;
+
+
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         currentTrace = generateRandomTrace(inputSymbols);
@@ -372,6 +379,7 @@ public class FuzzingLab {
             // Do things!
             try {
                 branches.clear();
+                sum = 0;
                 initialize(DistanceTracker.inputSymbols);
                 DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
                 int score = numVisited();
@@ -383,6 +391,27 @@ public class FuzzingLab {
                     System.out.printf("New best: %d, with trace: %s\n", score,
                             currentTrace.toString());
                 }
+
+                for(int i = 0; i < 5; i++){
+                    top5Traces.add(temp);
+                }
+
+                for(int i = 0; i < top5LowestBranchDistanceSum.length; i++) {
+                    if(sum < top5LowestBranchDistanceSum[i]){
+                        top5LowestBranchDistanceSum[i] = sum;
+                        top5Traces.set(i, currentTrace);
+                        System.out.printf("New lowest score: %d, on place: %d, with trace: %s\n", sum, i,
+                                currentTrace.toString());
+                        break;
+                    }
+                }
+
+                System.out.println("Current top 5:");
+                for(int i = 0; i < top5LowestBranchDistanceSum.length; i++) {
+                    System.out.printf("Number %d: %s, with score %d\n", i+1, top5Traces.get(i).toString(), sum);
+                }
+
+
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
