@@ -63,29 +63,31 @@ public class FuzzingLab {
           switch (condition.operator) {
             case "!":
               // TODO
-              if (condition.left.type == TypeEnum.BOOL) {
-                if (value) {
-                  return condition.left.value? 0 : 1;
-                } else {
-                  return condition.left.value? 1 : 0;
-                }
-              } else {
-                return 1 - branchDistance(condition.left, value);
-              }
+              throw new AssertionError("not implemented yet, binaryOperatorDistance: " + condition.operator);
+              // if (condition.left.type == TypeEnum.BOOL) {
+              //   if (value) {
+              //     return condition.left.value? 0 : 1;
+              //   } else {
+              //     return condition.left.value? 1 : 0;
+              //   }
+              // } else {
+              //   // TODO what should happen here
+              //   return 1 - branchDistance(condition.left, value);
+              // }
           }
           return 0;
         }
 
         /**
-         * Making a if-statement true: (value = false)
+         * Making a if-statement true: (value = false) (target = true)
          a : d = {0 if a is true, 1 otherwise}
          !a : d = {1 if a is true, 0 otherwise}
          a == b : d = abs(a-b)
          a != b : d = {0 if a !=b, 1 otherwise}
          a < b : d = {0 if a < b; a-b + K otherwise}
          a <= b : d = {0 if a <= b; a-b otherwise}
-         a > b : d = {0 if a > b; b-a+K otherwise}
-         a >= b : b = {0 if a >= b; b - a otherwise}
+         a > b : d = {0 if a > b; b-a + K otherwise}
+         a >= b : d = {0 if a >= b; b - a otherwise}
          and for combinations of predicates:
 
          p1 & p2 : d = d(p1) + d(p2)
@@ -93,9 +95,7 @@ public class FuzzingLab {
          p1 XOR p2 : d = min(d(p1) + d(!p2), d(!p1) + d(p2))
          !p1 : d = 1 - d(p1)
 
-
-         * Making a if-statement false: (value = true)
-
+         * Making a if-statement false: (value = true) (target = false)
          a : d = {1 if a is true, 0 otherwise}
          !a : d = {0 if a is true, 1 otherwise}
          a == b : d = {0 if a != b, 1 otherwise}
@@ -103,7 +103,7 @@ public class FuzzingLab {
          a < b : d = {b-a if a < b; 0 otherwise}
          a <= b : d = {b-a+1 if a <= b; 0 otherwise}
          a > b : d = {a-b if a > b; 0 otherwise}
-         a >= b : b = {a-b+1 if a >= b; 0 otherwise}
+         a >= b : b = {a-+1 if a >= b; 0 otherwise}
 
          and for combinations of predicates:
          p1 & p2 : d = min(d(p1), d(p2))
@@ -116,10 +116,10 @@ public class FuzzingLab {
             case BINARY:
               return binaryOperatorDistance(condition, value);
             case BOOL:
-              if(!value) {
-                return condition.value? 0 : 1;
-              } else {
+              if(value) {
                 return condition.value? 1 : 0;
+              } else {
+                return condition.value? 0 : 1;
               }
             default:
               break;
@@ -131,7 +131,8 @@ public class FuzzingLab {
          * Write your solution that specifies what should happen when a new branch has been found.
          */
         static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-                System.out.printf("line %5d, now: %b,\tdist: %2d, %s\n", line_nr, value, branchDistance(condition, value), condition.toString());
+            int bd = branchDistance(condition, value);
+            System.out.printf("line %5d, now: %b,\tdist: %2d, %s\n", line_nr, value, bd, condition.toString());
         }
 
         /**
