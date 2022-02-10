@@ -7,10 +7,46 @@ import java.util.Random;
  * You should write your own solution using this class.
  */
 public class FuzzingLab {
+        public enum VisitedEnum {
+          NONE,
+          TRUE,
+          FALSE,
+          BOTH;
+
+          public static VisitedEnum from(boolean value) {
+            if(value) {
+              return TRUE;
+            } else {
+              return FALSE;
+            }
+          }
+
+          VisitedEnum andVisit(boolean value) {
+            if(this == NONE) {
+              return VisitedEnum.from(value);
+            } else if (this == TRUE && value) {
+              return TRUE;
+            } else if (this == TRUE && !value) {
+              return BOTH;
+            } else if (this == FALSE && !value) {
+              return FALSE;
+            } else if (this == FALSE && value) {
+              return BOTH;
+            } else if (this == BOTH) {
+              return BOTH;
+            }
+            throw new AssertionError("unreachable");
+          }
+
+          private VisitedEnum() {
+          }
+        }
         static Random r = new Random();
         static List<String> currentTrace;
         static int traceLength = 10;
         static boolean isFinished = false;
+
+        static Map<Integer, VisitedEnum> branches = new HashMap<Integer, VisitedEnum>();
 
         static void initialize(String[] inputSymbols){
                 // Initialise a random trace from the input symbols of the problem.
@@ -227,6 +263,7 @@ public class FuzzingLab {
         static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
             int bd = branchDistance(condition, value);
             System.out.printf("line %5d, now: %b,\tdist: %2d, %s\n", line_nr, value, bd, condition.toString());
+            branches.put(line_nr, branches.getOrDefault(line_nr, VisitedEnum.NONE).andVisit(value));
         }
 
         /**
@@ -266,6 +303,7 @@ public class FuzzingLab {
                         // Do things!
                         try {
                                 System.out.println("Woohoo, looping!");
+                                System.out.println(branches.toString());
                                 Thread.sleep(1000);
                         } catch (InterruptedException e) {
                                 e.printStackTrace();
