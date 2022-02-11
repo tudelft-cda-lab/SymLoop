@@ -126,8 +126,7 @@ public class FuzzingLab {
             return a.int_value == b.int_value ? 1 : 0;
         } else if (a.type == TypeEnum.STRING
                 && b.type == TypeEnum.STRING) {
-            return a.str_value.equals(b.str_value) ? 1
-                    : 0;
+            return a.str_value.equals(b.str_value) ? 1 : 0;
         } else if (a.type == TypeEnum.BOOL
                 && b.type == TypeEnum.BOOL) {
             return a.value == b.value ? 1 : 0;
@@ -142,15 +141,6 @@ public class FuzzingLab {
                     return notEqualDistance(condition.left, condition.right);
                 } else {
                     return varAbs(condition.left, condition.right);
-                }
-
-            case "&&":
-                if (value) {
-                    return Math.min(branchDistance(condition.left, value),
-                            branchDistance(condition.right, value));
-                } else {
-                    return branchDistance(condition.left, value)
-                            + branchDistance(condition.right, value);
                 }
             case "!=":
                 if (value) {
@@ -209,6 +199,14 @@ public class FuzzingLab {
                 } else {
                     return Math.min(branchDistance(condition.left, value),
                             branchDistance(condition.right, value));
+                }
+            case "&&":
+                if (value) {
+                    return Math.min(branchDistance(condition.left, value),
+                            branchDistance(condition.right, value));
+                } else {
+                    return branchDistance(condition.left, value)
+                            + branchDistance(condition.right, value);
                 }
             case "^":
                 if (value) {
