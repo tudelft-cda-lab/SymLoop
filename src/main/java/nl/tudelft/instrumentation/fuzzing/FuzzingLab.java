@@ -242,7 +242,7 @@ public class FuzzingLab {
                             + condition.operator);
                 }
         }
-        return 0;
+        throw new AssertionError("not implemented yet, unaryOperatorDistance: " + condition.operator);
     }
 
     /**
