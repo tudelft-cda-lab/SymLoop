@@ -159,66 +159,46 @@ public class FuzzingLab {
                     return notEqualDistance(condition.left, condition.right);
                 }
             case "<":
-                if (value) {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        int a = condition.left.int_value;
-                        int b = condition.right.int_value;
+                if (condition.left.type == TypeEnum.INT
+                        && condition.right.type == TypeEnum.INT) {
+                    int a = condition.left.int_value;
+                    int b = condition.right.int_value;
+                    if (value) {
                         return a < b ? (b - a) : 0;
-                    }
-                } else {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        int a = condition.left.int_value;
-                        int b = condition.right.int_value;
+                    } else {
                         return a < b ? 0 : (a - b + 1);
                     }
                 }
             case "<=":
-                if (value) {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        int a = condition.left.int_value;
-                        int b = condition.right.int_value;
+                if (condition.left.type == TypeEnum.INT
+                        && condition.right.type == TypeEnum.INT) {
+                    int a = condition.left.int_value;
+                    int b = condition.right.int_value;
+                    if (value) {
                         return a <= b ? (b - a + 1) : 0;
-                    }
-                } else {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        int a = condition.left.int_value;
-                        int b = condition.right.int_value;
+                    } else {
                         return a <= b ? 0 : (a - b);
                     }
                 }
             case ">":
-                if (value) {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        int a = condition.left.int_value;
-                        int b = condition.right.int_value;
+                if (condition.left.type == TypeEnum.INT
+                        && condition.right.type == TypeEnum.INT) {
+                    int a = condition.left.int_value;
+                    int b = condition.right.int_value;
+                    if (value) {
                         return a > b ? (a - b) : 0;
-                    }
-                } else {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        int a = condition.left.int_value;
-                        int b = condition.right.int_value;
+                    } else {
                         return a > b ? 0 : (b - a + 1);
                     }
                 }
             case ">=":
-                if (value) {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        int a = condition.left.int_value;
-                        int b = condition.right.int_value;
+                if (condition.left.type == TypeEnum.INT
+                        && condition.right.type == TypeEnum.INT) {
+                    int a = condition.left.int_value;
+                    int b = condition.right.int_value;
+                    if (value) {
                         return a >= b ? (a - b + 1) : 0;
-                    }
-                } else {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        int a = condition.left.int_value;
-                        int b = condition.right.int_value;
+                    } else {
                         return a >= b ? 0 : (b - a);
                     }
                 }
@@ -244,6 +224,7 @@ public class FuzzingLab {
                 }
         }
         throw new AssertionError("not implemented yet, binaryOperatorDistance: " + condition.operator);
+
     }
 
     static int unaryOperatorDistance(MyVar condition, boolean value) {
