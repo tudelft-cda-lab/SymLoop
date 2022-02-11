@@ -74,7 +74,7 @@ public class FuzzingLab {
     static boolean isFinished = false;
 
     static Map<Integer, VisitedEnum> branches = new HashMap<Integer, VisitedEnum>();
-    static Map<Integer, Pair<Integer, List<String>>> minimumBranchDistances = new HashMap<>();
+    static Map<Integer, Pair<Double, List<String>>> minimumBranchDistances = new HashMap<>();
     static List<String> bestTrace;
     static int bestTraceScore = 0;
 
@@ -105,37 +105,35 @@ public class FuzzingLab {
         return difference;
     }
 
-    static int varAbs(MyVar a, MyVar b) {
+    static Double varAbs(MyVar a, MyVar b) {
         if (a.type == TypeEnum.INT
                 && b.type == TypeEnum.INT) {
-            return Math.abs(a.int_value - b.int_value);
+            return normalise(Math.abs(a.int_value - b.int_value));
         } else if (a.type == TypeEnum.STRING
                 && b.type == TypeEnum.STRING) {
-            return stringDifference(a.str_value,
-                    b.str_value);
+            return normalise(stringDifference(a.str_value, b.str_value));
         } else if (a.type == TypeEnum.BOOL
                 && b.type == TypeEnum.BOOL) {
-            return a.value == b.value ? 0 : 1;
+            return normalise(a.value == b.value ? 0 : 1);
         }
         throw new AssertionError("Both types should be equal");
     }
 
-    static int notEqualDistance(MyVar a, MyVar b) {
+    static Double notEqualDistance(MyVar a, MyVar b) {
         if (a.type == TypeEnum.INT
                 && a.type == TypeEnum.INT) {
-            return a.int_value == b.int_value ? 1 : 0;
+            return normalise(a.int_value == b.int_value ? 1 : 0);
         } else if (a.type == TypeEnum.STRING
                 && b.type == TypeEnum.STRING) {
-            return a.str_value.equals(b.str_value) ? 1
-                    : 0;
+            return normalise(a.str_value.equals(b.str_value) ? 1 : 0);
         } else if (a.type == TypeEnum.BOOL
                 && b.type == TypeEnum.BOOL) {
-            return a.value == b.value ? 1 : 0;
+            return normalise(a.value == b.value ? 1 : 0);
         }
         throw new AssertionError("Both types should be equal");
     }
 
-    static int binaryOperatorDistance(MyVar condition, boolean value) {
+    static Double binaryOperatorDistance(MyVar condition, boolean value) {
         switch (condition.operator) {
             case "==":
                 if (value) {
@@ -164,9 +162,9 @@ public class FuzzingLab {
                     int a = condition.left.int_value;
                     int b = condition.right.int_value;
                     if (value) {
-                        return a < b ? (b - a) : 0;
+                        return normalise(a < b ? (b - a) : 0);
                     } else {
-                        return a < b ? 0 : (a - b + 1);
+                        return normalise(a < b ? 0 : (a - b + 1));
                     }
                 }
             case "<=":
@@ -175,9 +173,9 @@ public class FuzzingLab {
                     int a = condition.left.int_value;
                     int b = condition.right.int_value;
                     if (value) {
-                        return a <= b ? (b - a + 1) : 0;
+                        return normalise(a <= b ? (b - a + 1) : 0);
                     } else {
-                        return a <= b ? 0 : (a - b);
+                        return normalise(a <= b ? 0 : (a - b));
                     }
                 }
             case ">":
@@ -186,9 +184,9 @@ public class FuzzingLab {
                     int a = condition.left.int_value;
                     int b = condition.right.int_value;
                     if (value) {
-                        return a > b ? (a - b) : 0;
+                        return normalise(a > b ? (a - b) : 0);
                     } else {
-                        return a > b ? 0 : (b - a + 1);
+                        return normalise(a > b ? 0 : (b - a + 1));
                     }
                 }
             case ">=":
@@ -197,9 +195,9 @@ public class FuzzingLab {
                     int a = condition.left.int_value;
                     int b = condition.right.int_value;
                     if (value) {
-                        return a >= b ? (a - b + 1) : 0;
+                        return normalise(a >= b ? (a - b + 1) : 0);
                     } else {
-                        return a >= b ? 0 : (b - a);
+                        return normalise(a >= b ? 0 : (b - a));
                     }
                 }
             case "||":
@@ -227,24 +225,26 @@ public class FuzzingLab {
 
     }
 
-    static int unaryOperatorDistance(MyVar condition, boolean value) {
+    static Double unaryOperatorDistance(MyVar condition, boolean value) {
         switch (condition.operator) {
             case "!":
-                // TODO
                 if (condition.left.type == TypeEnum.BOOL) {
                     if (value) {
-                        return condition.left.value ? 1 : 0;
+                        return normalise(condition.left.value ? 1 : 0);
                     } else {
-                        return condition.left.value ? 0 : 1;
+                        return normalise(condition.left.value ? 0 : 1);
                     }
                 } else {
-                    // TODO what should happen here
-                    // return 1 - branchDistance(condition.left, value);
-                    throw new AssertionError("not implemented yet, unaryOperatorDistance: "
-                            + condition.operator);
+                    return 1 - branchDistance(condition.left, value);
+//                    throw new AssertionError("not implemented yet, unaryOperatorDistance: + condition.operator);
                 }
         }
-        return 0;
+        return normalise(0);
+    }
+
+    static Double normalise(int dist){
+        Double d = Double.valueOf(dist);
+        return d/(d+1);
     }
 
     /**
@@ -262,7 +262,7 @@ public class FuzzingLab {
      * p1 && p2 : d = d(p1) + d(p2) CHECK
      * p1 | p2 : d = min(d(p1), d(p2)) CHECK
      * p1 XOR p2 : d = min(d(p1) + d(!p2), d(!p1) + d(p2)) CHECK
-     * !p1 : d = 1 - d(p1)
+     * !p1 : d = 1 - d(p1) CHECK
      * 
      * Making a if-statement false: (value = true) (target = false)
      * a : d = {1 if a is true, 0 otherwise}
@@ -278,9 +278,9 @@ public class FuzzingLab {
      * p1 & p2 : d = min(d(p1), d(p2)) CHECK
      * p1 | p2 : d = d(p1) + d(p2) CHECK
      * p1 XOR p2 : d = min(d(p1) + d(p2), d(!p1) + d(!p2)) CHECK
-     * !p1 : d = 1 - d(p1)
+     * !p1 : d = 1 - d(p1) CHECK
      */
-    static int branchDistance(MyVar condition, boolean value) {
+    static Double branchDistance(MyVar condition, boolean value) {
         // System.out.println(condition);
         switch (condition.type) {
             case BINARY:
@@ -289,9 +289,9 @@ public class FuzzingLab {
                 return unaryOperatorDistance(condition, value);
             case BOOL:
                 if (value) {
-                    return condition.value ? 1 : 0;
+                    return normalise(condition.value ? 1 : 0);
                 } else {
-                    return condition.value ? 0 : 1;
+                    return normalise(condition.value ? 0 : 1);
                 }
             default:
                 break;
@@ -304,7 +304,7 @@ public class FuzzingLab {
      * been found.
      */
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-        int bd = branchDistance(condition, value);
+        Double bd = branchDistance(condition, value);
         // System.out.printf("line %5d, now: %b,\tdist: %2d, %s\n", line_nr, value, bd,
         // condition.toString());
         branches.put(line_nr, branches.getOrDefault(line_nr, VisitedEnum.NONE).andVisit(value));
@@ -360,8 +360,8 @@ public class FuzzingLab {
             // }
             Optional<Entry<Integer, VisitedEnum>> first = toVisit.findAny();
             if (first.isPresent()) {
-                Pair<Integer, List<String>> minimum = minimumBranchDistances.get(first.get().getKey());
-                System.out.printf("Trying to get to line: %d, current distance: %d\n", first.get().getKey(),
+                Pair<Double, List<String>> minimum = minimumBranchDistances.get(first.get().getKey());
+                System.out.printf("Trying to get to line: %d, current distance: %f\n", first.get().getKey(),
                         minimum.getKey());
                 return mutate(minimum.getValue(), inputSymbols);
             } else {
