@@ -57,6 +57,7 @@ public class FuzzingLab {
                 case NONE:
                     return 0;
                 case TRUE:
+                    return 1;
                 case FALSE:
                     return 1;
                 case BOTH:
@@ -104,33 +105,43 @@ public class FuzzingLab {
         return difference;
     }
 
+    static int varAbs(MyVar a, MyVar b) {
+        if (a.type == TypeEnum.INT
+                && b.type == TypeEnum.INT) {
+            return Math.abs(a.int_value - b.int_value);
+        } else if (a.type == TypeEnum.STRING
+                && b.type == TypeEnum.STRING) {
+            return stringDifference(a.str_value,
+                    b.str_value);
+        } else if (a.type == TypeEnum.BOOL
+                && b.type == TypeEnum.BOOL) {
+            return a.value == b.value ? 0 : 1;
+        }
+        throw new AssertionError("Both types should be equal");
+    }
+
+    static int notEqualDistance(MyVar a, MyVar b) {
+        if (a.type == TypeEnum.INT
+                && a.type == TypeEnum.INT) {
+            return a.int_value == b.int_value ? 1 : 0;
+        } else if (a.type == TypeEnum.STRING
+                && b.type == TypeEnum.STRING) {
+            return a.str_value.equals(b.str_value) ? 1
+                    : 0;
+        } else if (a.type == TypeEnum.BOOL
+                && b.type == TypeEnum.BOOL) {
+            return a.value == b.value ? 1 : 0;
+        }
+        throw new AssertionError("Both types should be equal");
+    }
+
     static int binaryOperatorDistance(MyVar condition, boolean value) {
         switch (condition.operator) {
             case "==":
                 if (value) {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.left.type == TypeEnum.INT) {
-                        return condition.left.int_value == condition.right.int_value ? 1 : 0;
-                    } else if (condition.left.type == TypeEnum.STRING
-                            && condition.right.type == TypeEnum.STRING) {
-                        return condition.left.str_value.equals(condition.right.str_value) ? 1
-                                : 0;
-                    } else if (condition.left.type == TypeEnum.BOOL
-                            && condition.right.type == TypeEnum.BOOL) {
-                        return condition.left.value == condition.right.value ? 1 : 0;
-                    }
+                    return notEqualDistance(condition.left, condition.right);
                 } else {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        return Math.abs(condition.left.int_value - condition.right.int_value);
-                    } else if (condition.left.type == TypeEnum.STRING
-                            && condition.right.type == TypeEnum.STRING) {
-                        return stringDifference(condition.left.str_value,
-                                condition.right.str_value);
-                    } else if (condition.left.type == TypeEnum.BOOL
-                            && condition.right.type == TypeEnum.BOOL) {
-                        return condition.left.value == condition.right.value ? 0 : 1;
-                    }
+                    return varAbs(condition.left, condition.right);
                 }
 
             case "&&":
@@ -143,30 +154,9 @@ public class FuzzingLab {
                 }
             case "!=":
                 if (value) {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        return Math.abs(condition.left.int_value - condition.right.int_value);
-                    } else if (condition.left.type == TypeEnum.STRING
-                            && condition.right.type == TypeEnum.STRING) {
-                        return stringDifference(condition.left.str_value,
-                                condition.right.str_value);
-                    } else if (condition.left.type == TypeEnum.BOOL
-                            && condition.right.type == TypeEnum.BOOL) {
-                        return condition.left.value == condition.right.value ? 0 : 1;
-                    }
-
+                    return varAbs(condition.left, condition.right);
                 } else {
-                    if (condition.left.type == TypeEnum.INT
-                            && condition.right.type == TypeEnum.INT) {
-                        return condition.left.int_value == condition.right.int_value ? 1 : 0;
-                    } else if (condition.left.type == TypeEnum.STRING
-                            && condition.right.type == TypeEnum.STRING) {
-                        return condition.left.str_value.equals(condition.right.str_value) ? 1
-                                : 0;
-                    } else if (condition.left.type == TypeEnum.BOOL
-                            && condition.right.type == TypeEnum.BOOL) {
-                        return condition.left.value == condition.right.value ? 1 : 0;
-                    }
+                    return notEqualDistance(condition.left, condition.right);
                 }
             case "<":
                 if (value) {
@@ -385,7 +375,7 @@ public class FuzzingLab {
             }
             // Sometimes skip a branch
             // if (numVisited() < totalBranches() - 5) {
-            //     toVisit = toVisit.skip(r.nextInt(5));
+            // toVisit = toVisit.skip(r.nextInt(5));
             // }
             Optional<Entry<Integer, VisitedEnum>> first = toVisit.findAny();
             if (first.isPresent()) {

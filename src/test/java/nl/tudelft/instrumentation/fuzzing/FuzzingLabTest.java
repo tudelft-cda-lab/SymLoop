@@ -30,11 +30,13 @@ public class FuzzingLabTest {
   public void testBranchDistanceEqualInt() {
     MyVar var = new MyVar(new MyVar(1), new MyVar(10), "==");
     assertEquals(9, FuzzingLab.branchDistance(var, false));
+    assertEquals(0, FuzzingLab.branchDistance(var, true));
   }
   @Test
   public void testBranchDistanceUnEqualInt() {
     MyVar var = new MyVar(new MyVar(10), new MyVar(10), "!=");
     assertEquals(1, FuzzingLab.branchDistance(var, false));
+    assertEquals(0, FuzzingLab.branchDistance(var, true));
   }
   @Test
   public void testBranchDistanceAnd() {
