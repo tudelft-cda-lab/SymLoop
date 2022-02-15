@@ -112,35 +112,50 @@ public class FuzzingLab {
         return difference;
     }
 
+    static int getVarIntegerValue(MyVar x) {
+        if (x.type == TypeEnum.INT) {
+            return x.int_value;
+        } else if (x.type == TypeEnum.UNARY && x.operator == "-") {
+            return -getVarIntegerValue(x.left);
+        } else if (x.type == TypeEnum.BINARY && x.operator == "+") {
+            return getVarIntegerValue(x.left) + getVarIntegerValue(x.right);
+        } else if (x.type == TypeEnum.BINARY && x.operator == "-") {
+            return getVarIntegerValue(x.left) - getVarIntegerValue(x.right);
+        }
+        throw new AssertionError(String.format("Var not reducable to integer: %s", x.toString()));
+    }
+
     static Double varAbs(MyVar a, MyVar b) {
-        if (a.type == TypeEnum.INT
-                && b.type == TypeEnum.INT) {
-            return normalise(Math.abs(a.int_value - b.int_value));
-        } else if (a.type == TypeEnum.STRING
+        if (a.type == TypeEnum.STRING
                 && b.type == TypeEnum.STRING) {
             return normalise(stringDifference(a.str_value, b.str_value));
         } else if (a.type == TypeEnum.BOOL
                 && b.type == TypeEnum.BOOL) {
             return normalise(a.value == b.value ? 0 : 1);
+        } else {
+            int av = getVarIntegerValue(a);
+            int bv = getVarIntegerValue(b);
+            return normalise(Math.abs(av - bv));
         }
-        throw new AssertionError("Both types should be equal");
     }
 
     static Double notEqualDistance(MyVar a, MyVar b) {
-        if (a.type == TypeEnum.INT
-                && a.type == TypeEnum.INT) {
-            return normalise(a.int_value == b.int_value ? 1 : 0);
-        } else if (a.type == TypeEnum.STRING
+        if (a.type == TypeEnum.STRING
                 && b.type == TypeEnum.STRING) {
             return normalise(a.str_value.equals(b.str_value) ? 1 : 0);
         } else if (a.type == TypeEnum.BOOL
                 && b.type == TypeEnum.BOOL) {
             return normalise(a.value == b.value ? 1 : 0);
+        } else {
+            int av = getVarIntegerValue(a);
+            int bv = getVarIntegerValue(b);
+            return normalise(av == bv ? 1 : 0);
         }
-        throw new AssertionError("Both types should be equal");
     }
 
     static Double binaryOperatorDistance(MyVar condition, boolean value) {
+        int a;
+        int b;
         switch (condition.operator) {
             case "==":
                 if (value) {
@@ -155,52 +170,37 @@ public class FuzzingLab {
                     return notEqualDistance(condition.left, condition.right);
                 }
             case "<":
-                if (condition.left.type == TypeEnum.INT
-                        && condition.right.type == TypeEnum.INT) {
-                    int a = condition.left.int_value;
-                    int b = condition.right.int_value;
-                    if (value) {
-                        return normalise(a < b ? (b - a) : 0);
-                    } else {
-                        return normalise(a < b ? 0 : (a - b + 1));
-                    }
+                a = getVarIntegerValue(condition.left);
+                b = getVarIntegerValue(condition.right);
+                if (value) {
+                    return normalise(a < b ? (b - a) : 0);
+                } else {
+                    return normalise(a < b ? 0 : (a - b + 1));
                 }
             case "<=":
-                if (condition.left.type == TypeEnum.INT
-                        && condition.right.type == TypeEnum.INT) {
-                    int a = condition.left.int_value;
-                    int b = condition.right.int_value;
-                    if (value) {
-                        return normalise(a <= b ? (b - a + 1) : 0);
-                    } else {
-                        return normalise(a <= b ? 0 : (a - b));
-                    }
+                a = getVarIntegerValue(condition.left);
+                b = getVarIntegerValue(condition.right);
+                if (value) {
+                    return normalise(a <= b ? (b - a + 1) : 0);
+                } else {
+                    return normalise(a <= b ? 0 : (a - b));
                 }
-                break;
             case ">":
-                if (condition.left.type == TypeEnum.INT
-                        && condition.right.type == TypeEnum.INT) {
-                    int a = condition.left.int_value;
-                    int b = condition.right.int_value;
-                    if (value) {
-                        return normalise(a > b ? (a - b) : 0);
-                    } else {
-                        return normalise(a > b ? 0 : (b - a + 1));
-                    }
+                a = getVarIntegerValue(condition.left);
+                b = getVarIntegerValue(condition.right);
+                if (value) {
+                    return normalise(a > b ? (a - b) : 0);
+                } else {
+                    return normalise(a > b ? 0 : (b - a + 1));
                 }
-                break;
             case ">=":
-                if (condition.left.type == TypeEnum.INT
-                        && condition.right.type == TypeEnum.INT) {
-                    int a = condition.left.int_value;
-                    int b = condition.right.int_value;
-                    if (value) {
-                        return normalise(a >= b ? (a - b + 1) : 0);
-                    } else {
-                        return normalise(a >= b ? 0 : (b - a));
-                    }
+                a = getVarIntegerValue(condition.left);
+                b = getVarIntegerValue(condition.right);
+                if (value) {
+                    return normalise(a >= b ? (a - b + 1) : 0);
+                } else {
+                    return normalise(a >= b ? 0 : (b - a));
                 }
-                break;
             case "||":
                 if (value) {
                     return branchDistance(condition.left, value)
@@ -492,6 +492,8 @@ public class FuzzingLab {
         if (matcher.find()) {
             // System.out.printf("MATCH: %s %s\n", out, matcher.group(1));
             outputErrors.add(Integer.parseInt(matcher.group(1)));
+        } else {
+            // System.out.println(out);
         }
     }
 }
