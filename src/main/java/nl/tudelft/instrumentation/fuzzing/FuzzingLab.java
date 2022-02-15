@@ -235,15 +235,16 @@ public class FuzzingLab {
                     }
                 } else {
                     return 1 - branchDistance(condition.left, value);
-//                    throw new AssertionError("not implemented yet, unaryOperatorDistance: + condition.operator);
+                    // throw new AssertionError("not implemented yet, unaryOperatorDistance: +
+                    // condition.operator);
                 }
         }
         throw new AssertionError("not implemented yet, unaryOperatorDistance: " + condition.operator);
     }
 
-    static Double normalise(int dist){
+    static Double normalise(int dist) {
         Double d = Double.valueOf(dist);
-        return d/(d+1);
+        return d / (d + 1);
     }
 
     /**
