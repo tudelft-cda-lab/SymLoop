@@ -2,6 +2,8 @@ package nl.tudelft.instrumentation.fuzzing;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -82,12 +84,17 @@ public class FuzzingLab {
     static List<Pair<Integer, List<String>>> topTraces = new ArrayList<>(5);
     static final int NUM_TOP_TRACES = 5;
     static int iterations = 0;
+    private static int lastFuzzLine = -1;
+    private static int lastVisited = 0;
     static final FuzzMode mode = FuzzMode.EXPLORE_BRANCHES;
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         currentTrace = generateRandomTrace(inputSymbols);
     }
+
+    static Set<Integer> outputErrors = new HashSet<>();
+    static Pattern pattern = Pattern.compile("Invalid input: error_(\\d+)");
 
     static int stringDifference(String a, String b) {
         int index = 0;
@@ -360,9 +367,13 @@ public class FuzzingLab {
             // }
             Optional<Entry<Integer, VisitedEnum>> first = toVisit.findAny();
             if (first.isPresent()) {
-                Pair<Double, List<String>> minimum = minimumBranchDistances.get(first.get().getKey());
-                System.out.printf("Trying to get to line: %d, current distance: %f\n", first.get().getKey(),
-                        minimum.getKey());
+                int ln = first.get().getKey();
+                Pair<Double, List<String>> minimum = minimumBranchDistances.get(ln);
+                // if (ln != lastFuzzLine) {
+                // System.out.printf("Trying to get to line: %d, current distance: %f\n", ln,
+                // minimum.getKey());
+                // lastFuzzLine = ln;
+                // }
                 return mutate(minimum.getValue(), inputSymbols);
             } else {
                 throw new AssertionError("No more branches to visit");
@@ -424,8 +435,11 @@ public class FuzzingLab {
                 int visited = numVisited();
                 int total = totalBranches();
                 int score = visited;
-                System.out.printf("Iteration %d: Visited %d out of %d: %d%%\n", iterations, visited, total,
-                        visited * 100 / total);
+                if (visited > lastVisited) {
+                    lastVisited = visited;
+                    System.out.printf("Iteration %d: Visited %d out of %d: %d%%. Errors found: %d\n", iterations,
+                            visited, total, visited * 100 / total, outputErrors.size());
+                }
 
                 if (total == visited) {
                     isFinished = true;
@@ -471,6 +485,10 @@ public class FuzzingLab {
      * @param out the string that has been outputted in the standard out.
      */
     public static void output(String out) {
-        System.out.println(out);
+        Matcher matcher = pattern.matcher(out);
+        if (matcher.find()) {
+            // System.out.printf("MATCH: %s %s\n", out, matcher.group(1));
+            outputErrors.add(Integer.parseInt(matcher.group(1)));
+        }
     }
 }
