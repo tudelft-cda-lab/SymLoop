@@ -176,6 +176,7 @@ public class FuzzingLab {
                         return normalise(a <= b ? 0 : (a - b));
                     }
                 }
+                break;
             case ">":
                 if (condition.left.type == TypeEnum.INT
                         && condition.right.type == TypeEnum.INT) {
@@ -187,6 +188,7 @@ public class FuzzingLab {
                         return normalise(a > b ? 0 : (b - a + 1));
                     }
                 }
+                break;
             case ">=":
                 if (condition.left.type == TypeEnum.INT
                         && condition.right.type == TypeEnum.INT) {
@@ -198,6 +200,7 @@ public class FuzzingLab {
                         return normalise(a >= b ? 0 : (b - a));
                     }
                 }
+                break;
             case "||":
                 if (value) {
                     return branchDistance(condition.left, value)
