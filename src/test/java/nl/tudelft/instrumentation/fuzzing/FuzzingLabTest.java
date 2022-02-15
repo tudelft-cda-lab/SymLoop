@@ -38,15 +38,18 @@ public class FuzzingLabTest {
     assertEquals(0.5, FuzzingLab.branchDistance(var, false));
     assertEquals(0, FuzzingLab.branchDistance(var, true));
   }
+  private double n(double x) {
+    return x / (x+1);
+  }
   @Test
   public void testBranchDistanceAnd() {
     MyVar var = new MyVar(new MyVar(true), new MyVar(true), "&&");
     assertEquals(0.5, FuzzingLab.branchDistance(var, true));
     var = new MyVar(new MyVar(false), new MyVar(false), "&&");
-    assertEquals(1, FuzzingLab.branchDistance(var, false));
-    var = new MyVar(new MyVar(true), new MyVar(false), "&&");
     assertEquals(0.5, FuzzingLab.branchDistance(var, false));
     var = new MyVar(new MyVar(true), new MyVar(false), "&&");
-    assertEquals(0.5, FuzzingLab.branchDistance(var, false));
+    assertEquals(n(0.5), FuzzingLab.branchDistance(var, false));
+    var = new MyVar(new MyVar(true), new MyVar(false), "&&");
+    assertEquals(n(0.5), FuzzingLab.branchDistance(var, false));
   }
 }

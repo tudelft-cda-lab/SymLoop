@@ -203,8 +203,8 @@ public class FuzzingLab {
                 }
             case "||":
                 if (value) {
-                    return branchDistance(condition.left, value)
-                            + branchDistance(condition.right, value);
+                    return normalise(branchDistance(condition.left, value)
+                            + branchDistance(condition.right, value));
                 } else {
                     return Math.min(branchDistance(condition.left, value),
                             branchDistance(condition.right, value));
@@ -214,20 +214,20 @@ public class FuzzingLab {
                     return Math.min(branchDistance(condition.left, value),
                             branchDistance(condition.right, value));
                 } else {
-                    return branchDistance(condition.left, value)
-                            + branchDistance(condition.right, value);
+                    return normalise(branchDistance(condition.left, value)
+                            + branchDistance(condition.right, value));
                 }
             case "^":
                 if (value) {
-                    return Math.min(branchDistance(condition.left, value)
-                            + branchDistance(condition.right, !value),
-                            branchDistance(condition.left, !value)
-                                    + branchDistance(condition.right, value));
+                    return Math.min(normalise(branchDistance(condition.left, value)
+                            + branchDistance(condition.right, !value)),
+                            normalise(branchDistance(condition.left, !value)
+                                    + branchDistance(condition.right, value)));
                 } else {
-                    return Math.min(branchDistance(condition.left, value)
-                            + branchDistance(condition.right, value),
-                            branchDistance(condition.left, !value)
-                                    + branchDistance(condition.right, !value));
+                    return Math.min(normalise(branchDistance(condition.left, value)
+                            + branchDistance(condition.right, value)),
+                            normalise(branchDistance(condition.left, !value)
+                                    + branchDistance(condition.right, !value)));
                 }
         }
         throw new AssertionError("not implemented yet, binaryOperatorDistance: " + condition.operator);
@@ -250,6 +250,10 @@ public class FuzzingLab {
                 }
         }
         throw new AssertionError("not implemented yet, unaryOperatorDistance: " + condition.operator);
+    }
+
+    static double normalise(double d) {
+        return d / (d + 1);
     }
 
     static Double normalise(int dist) {
