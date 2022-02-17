@@ -331,7 +331,7 @@ public class FuzzingLab {
             minimumBranchDistances.put(line_nr, Pair.of(bd, currentTrace));
         }
 
-        System.out.println("New sum = " + sum + " + " + bd + " = " + (sum + bd));
+//        System.out.println("New sum = " + sum + " + " + bd + " = " + (sum + bd));
         sum += bd;
     }
 
@@ -475,6 +475,8 @@ public class FuzzingLab {
                 int visited = numVisited();
                 int total = totalBranches();
                 int score = visited;
+
+                // Specific for mode: discovering branches
                 if (visited > lastVisited) {
                     lastVisited = visited;
                     System.out.printf("Iteration %d: Visited %d out of %d: %d%%. Errors found: %d\n", iterations,
@@ -494,6 +496,15 @@ public class FuzzingLab {
 
                 topTraces = updateTop5(topTraces, Pair.of(sum, currentTrace));
 
+                // Question A
+                System.out.printf("Unique branches: Visited %d out of %d: %d%%. Errors found: %d\n",
+                        numVisited(), totalBranches(), numVisited() * 100 / totalBranches(), outputErrors.size());
+
+                // Question B
+                System.out.printf("Best: %d, with trace: %s\n", bestTraceScore,
+                        bestTrace.toString());
+
+                // Question C
                 printTop5(topTraces);
 
                 Thread.sleep(0);
