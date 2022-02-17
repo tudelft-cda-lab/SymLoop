@@ -80,13 +80,13 @@ public class FuzzingLab {
     static List<String> bestTrace;
     static int bestTraceScore = 0;
 
-    static int sum = 0;
-    static List<Pair<Integer, List<String>>> topTraces = new ArrayList<>(5);
+    static Double sum = 0.0;
+    static List<Pair<Double, List<String>>> topTraces = new ArrayList<>(5);
     static final int NUM_TOP_TRACES = 5;
     static int iterations = 0;
     private static int lastFuzzLine = -1;
     private static int lastVisited = 0;
-    static final FuzzMode mode = FuzzMode.EXPLORE_BRANCHES;
+    static final FuzzMode mode = FuzzMode.RANDOM;
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -330,6 +330,9 @@ public class FuzzingLab {
             // System.out.printf("new branch on line: %d\n", line_nr);
             minimumBranchDistances.put(line_nr, Pair.of(bd, currentTrace));
         }
+
+        System.out.println("New sum = " + sum + " + " + bd + " = " + (sum + bd));
+        sum += bd;
     }
 
     /**
@@ -436,7 +439,8 @@ public class FuzzingLab {
             // Do things!
             try {
                 // branches.clear();
-                sum = 0;
+                sum = 0.0;
+                System.out.println("Sum reset!");
                 currentTrace = fuzz(DistanceTracker.inputSymbols);
                 DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
                 int visited = numVisited();
@@ -458,8 +462,9 @@ public class FuzzingLab {
                             currentTrace.toString());
                 }
 
-                Pair<Integer, List<String>> current = Pair.of(sum, currentTrace);
+                Pair<Double, List<String>> current = Pair.of(sum, currentTrace);
                 topTraces.add(current);
+                System.out.println("Current: " + current);
                 // While the current item is lower then the item at index i
                 for (int i = topTraces.size() - 2; i >= 0 && topTraces.get(i).getLeft() > current.getLeft(); i--) {
                     topTraces.set(i + 1, topTraces.get(i));
@@ -470,13 +475,13 @@ public class FuzzingLab {
                     topTraces.remove(NUM_TOP_TRACES);
                 }
 
-                // System.out.println("Current top 5:");
-                // for (int i = 0; i < topTraces.size(); i++) {
-                // Pair<Integer, List<String>> pair = topTraces.get(i);
-                // System.out.printf("Number %d: %s, with score %d\n", i + 1,
-                // pair.getRight().toString(),
-                // pair.getLeft());
-                // }
+                 System.out.println("Current top 5:");
+                 for (int i = 0; i < topTraces.size(); i++) {
+                 Pair<Double, List<String>> pair = topTraces.get(i);
+                 System.out.printf("Number %d: %s, with score %f\n", i + 1,
+                 pair.getRight().toString(),
+                 pair.getLeft());
+                 }
 
                 Thread.sleep(0);
             } catch (InterruptedException e) {
