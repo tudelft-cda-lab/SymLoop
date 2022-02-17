@@ -428,6 +428,35 @@ public class FuzzingLab {
         return visited;
     }
 
+    static void printTop5(List<Pair<Double, List<String>>> traces) {
+        System.out.println("Current top 5:");
+        for (int i = 0; i < traces.size(); i++) {
+            Pair<Double, List<String>> pair = traces.get(i);
+            System.out.printf("Number %d: %s, with score %f\n", i + 1,
+                    pair.getRight().toString(),
+                    pair.getLeft()
+            );
+        }
+    }
+
+    static List<Pair<Double, List<String>>> updateTop5(List<Pair<Double, List<String>>> oldTop5, Pair<Double, List<String>> current) {
+
+        oldTop5.add(current);
+        //  System.out.println("Current: " + current);
+
+        // While the current item is lower then the item at index i
+        for (int i = oldTop5.size() - 2; i >= 0 && oldTop5.get(i).getLeft() > current.getLeft(); i--) {
+            oldTop5.set(i + 1, oldTop5.get(i));
+            oldTop5.set(i, current);
+        }
+        // Keep the list at a maximum size
+        if (oldTop5.size() > NUM_TOP_TRACES) {
+            oldTop5.remove(NUM_TOP_TRACES);
+        }
+
+        return oldTop5;
+    }
+
     static void run() {
         initialize(DistanceTracker.inputSymbols);
         DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
@@ -455,6 +484,7 @@ public class FuzzingLab {
                 if (total == visited) {
                     isFinished = true;
                 }
+
                 if (score > bestTraceScore) {
                     bestTraceScore = score;
                     bestTrace = new ArrayList<>(currentTrace);
@@ -462,26 +492,9 @@ public class FuzzingLab {
                             currentTrace.toString());
                 }
 
-                Pair<Double, List<String>> current = Pair.of(sum, currentTrace);
-                topTraces.add(current);
-                System.out.println("Current: " + current);
-                // While the current item is lower then the item at index i
-                for (int i = topTraces.size() - 2; i >= 0 && topTraces.get(i).getLeft() > current.getLeft(); i--) {
-                    topTraces.set(i + 1, topTraces.get(i));
-                    topTraces.set(i, current);
-                }
-                // Keep the list at a maximum size
-                if (topTraces.size() > NUM_TOP_TRACES) {
-                    topTraces.remove(NUM_TOP_TRACES);
-                }
+                topTraces = updateTop5(topTraces, Pair.of(sum, currentTrace));
 
-                 System.out.println("Current top 5:");
-                 for (int i = 0; i < topTraces.size(); i++) {
-                 Pair<Double, List<String>> pair = topTraces.get(i);
-                 System.out.printf("Number %d: %s, with score %f\n", i + 1,
-                 pair.getRight().toString(),
-                 pair.getLeft());
-                 }
+                printTop5(topTraces);
 
                 Thread.sleep(0);
             } catch (InterruptedException e) {
