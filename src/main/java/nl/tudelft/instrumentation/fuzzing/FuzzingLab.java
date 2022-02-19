@@ -593,7 +593,7 @@ public class FuzzingLab {
                             visited, total, visited * 100 / total, outputErrors.size());
                 }
 
-                if (total == visited) {
+                if (total == visited && total > 0) {
                     isFinished = true;
                 }
 
