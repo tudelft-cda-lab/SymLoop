@@ -87,7 +87,7 @@ public class FuzzingLab {
     static int iterations = 0;
     private static int lastFuzzLine = -1;
     private static int lastVisited = 0;
-    static final FuzzMode mode = FuzzMode.RANDOM;
+    static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
 
     static Pair<Double, List<String>> latestTraceHC;
 
@@ -391,9 +391,12 @@ public class FuzzingLab {
             } else {
                 throw new AssertionError("No more branches to visit");
             }
-        } else if (mode == FuzzMode.EXPLORE_BRANCHES){
+        } else if (mode == FuzzMode.HILL_CLIMBER){
+            System.out.println("USING THE HILL CLIMBER!");
+
             // If it is the start of the Hill Climber process
             if (latestTraceHC == null) {
+                System.out.println("First Hill Climber Value!");
                 return generateRandomTrace(inputSymbols);
             }
 
@@ -442,8 +445,47 @@ public class FuzzingLab {
     }
 
     static List<String> hillClimberMutate(Pair<Double, List<String>> current, String[] symbols) {
-        return generateRandomTrace(symbols);
-        // TODO: actually mutating stuff :)
+
+        System.out.println("MUTATING START!");
+        System.out.println("Mutating: " + current.getRight());
+
+        // Configure these variables to your liking
+        Double mutateChance = 0.2;
+        Double removeChance = 0.05;
+        Double addChance = 0.05;
+
+        Double nothingChance = 1 - mutateChance - removeChance - addChance;
+        Integer newSymbols = 0;
+        List<String> result = new ArrayList<>();
+
+        for(int i = 0; i < current.getRight().size(); i++){
+            Double random = Math.random();
+            System.out.println("Random: " + random);
+            if(random >= 0 && random <= mutateChance){
+                // add mutation
+                result.add(symbols[r.nextInt(symbols.length)]);
+                System.out.println("Mutation!");
+            } else if (random > mutateChance && random <= mutateChance + addChance){
+                // add current one and add one later
+                result.add(current.getRight().get(i));
+                newSymbols++;
+                System.out.println("Addition!");
+            } else if (random > mutateChance + addChance && random <= mutateChance + addChance + nothingChance){
+                // keep current input as it is, so add it
+                result.add(current.getRight().get(i));
+                System.out.println("Do nothing!");
+            } else {
+                // else remove aka do nothing with current
+                System.out.println("Removal!");
+            }
+        }
+
+        // add new symbols
+        for(int i = 0; i < newSymbols; i++){
+            result.add(symbols[r.nextInt(symbols.length)]);
+        }
+
+        return result;
     }
 
     static int getRandomNumber(int min, int max) {
@@ -536,6 +578,7 @@ public class FuzzingLab {
                 reset();
                 currentTrace = fuzz(DistanceTracker.inputSymbols);
                 DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+
                 int visited = numVisited();
                 int total = totalBranches();
                 int score = visited;
@@ -560,7 +603,7 @@ public class FuzzingLab {
 
                 topTraces = updateTop5(topTraces, Pair.of(sum, currentTrace));
 
-                printAnswersQuestion1();
+                // printAnswersQuestion1();
 
                 Thread.sleep(0);
             } catch (InterruptedException e) {
