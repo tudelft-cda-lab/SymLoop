@@ -89,6 +89,9 @@ public class FuzzingLab {
     private static int lastVisited = 0;
     static final FuzzMode mode = FuzzMode.RANDOM;
 
+    private static final int EXIT_WHEN_STABLE_FOR = 1000;
+    private static int noChange = 0;
+
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         currentTrace = generateRandomTrace(inputSymbols);
@@ -411,7 +414,7 @@ public class FuzzingLab {
      */
     static List<String> generateRandomTrace(String[] symbols) {
         ArrayList<String> trace = new ArrayList<>();
-        int traceLength = MIN_TRACE_LENGTH + r.nextInt(MAX_TRACE_LENGTH-MIN_TRACE_LENGTH);
+        int traceLength = MIN_TRACE_LENGTH + r.nextInt(MAX_TRACE_LENGTH - MIN_TRACE_LENGTH);
         for (int i = 0; i < traceLength; i++) {
             trace.add(symbols[r.nextInt(symbols.length)]);
         }
@@ -465,13 +468,13 @@ public class FuzzingLab {
 
         System.out.println(branches.toString());
         // Place here your code to guide your fuzzer with its search.
-        while (!isFinished) {
+        while (!isFinished && noChange < EXIT_WHEN_STABLE_FOR) {
             iterations++;
             // Do things!
             try {
                 // branches.clear();
                 sum = 0.0;
-                System.out.println("Sum reset!");
+                System.out.printf("Iteration %d, Sum reset!\n", iterations);
                 currentTrace = fuzz(DistanceTracker.inputSymbols);
                 DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
                 int visited = numVisited();
@@ -483,37 +486,43 @@ public class FuzzingLab {
                     lastVisited = visited;
                     System.out.printf("Iteration %d: Visited %d out of %d: %d%%. Errors found: %d\n", iterations,
                             visited, total, visited * 100 / total, outputErrors.size());
+                    noChange = 0;
+                } else {
+                    noChange++;
                 }
 
-                if (total == visited) {
-                    isFinished = true;
-                }
+                // if (total == visited) {
+                // isFinished = true;
+                // }
 
                 if (score > bestTraceScore) {
                     bestTraceScore = score;
                     bestTrace = new ArrayList<>(currentTrace);
-                    System.out.printf("New best: %d, with trace: %s\n", score,
-                            currentTrace.toString());
+                    // System.out.printf("New best: %d, with trace: %s\n", score,
+                    // currentTrace.toString());
                 }
 
                 topTraces = updateTop5(topTraces, Pair.of(sum, currentTrace));
 
                 // Question A
-                System.out.printf("Unique branches: Visited %d out of %d: %d%%. Errors found: %d\n",
-                        numVisited(), totalBranches(), numVisited() * 100 / totalBranches(), outputErrors.size());
+                System.out.printf("Unique branches: Visited %d out of %d. Errors found: %d\n",
+                        visited, total, outputErrors.size());
 
                 // Question B
                 System.out.printf("Best: %d, with trace: %s\n", bestTraceScore,
                         bestTrace.toString());
 
                 // Question C
-                printTop5(topTraces);
+                // printTop5(topTraces);
 
                 Thread.sleep(0);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+        System.out.printf("Has been stable since iteration: %d\n", iterations - noChange);
+        System.out.printf("%d, %d, %d, %d\n", numVisited(), totalBranches(), outputErrors.size(), iterations - noChange);
+        System.exit(0);
     }
 
     /**

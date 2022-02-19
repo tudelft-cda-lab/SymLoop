@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 cd /home/str/JavaInstrumentation
 mkdir -p instrumented
 
