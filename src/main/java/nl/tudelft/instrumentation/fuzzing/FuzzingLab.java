@@ -392,12 +392,41 @@ public class FuzzingLab {
                 throw new AssertionError("No more branches to visit");
             }
         } else if (mode == FuzzMode.EXPLORE_BRANCHES){
+            // If it is the start of the Hill Climber process
             if (latestTraceHC == null) {
                 return generateRandomTrace(inputSymbols);
             }
-            int permutations = 4;
+
+            // How many mutations we want to make
+            int amount = 4;
+            List<Pair<Double, List<String>>> mutations = new ArrayList<>();
+
+            // Generate mutations
+            for(int i = 0; i < amount; i++){
+                List<String> newMutation = hillClimberMutate(latestTraceHC, inputSymbols);
+                reset();
+                DistanceTracker.runNextFuzzedSequence(newMutation.toArray(new String[0]));
+                mutations.add(Pair.of(sum, newMutation));
+            }
+
+            // Pick best improving mutation
+            Pair<Double, Integer> improvement = Pair.of(0.0, -1);
+            for(int i = 0; i < mutations.size(); i++) {
+                Double currentImprovement = latestTraceHC.getLeft() - mutations.get(i).getLeft();
+                if (currentImprovement > improvement.getLeft()) {
+                    improvement = Pair.of(currentImprovement, i);
+                }
+            }
+
+            // If no improvement is made, pick random mutation
+            if(improvement.getRight() == -1) {
+                improvement = Pair.of(0.0, getRandomNumber(0, mutations.size()-1));
+            }
+
+            // Set latestTraceHC to the chosen mutation
+            latestTraceHC = mutations.get(improvement.getRight());
             
-            return latestTraceHC.getRight(); // TODO: make actual Hill climber
+            return latestTraceHC.getRight();
         } else {
             throw new Error("Unimplemented mode: " + mode);
         }
@@ -413,7 +442,12 @@ public class FuzzingLab {
     }
 
     static List<String> hillClimberMutate(Pair<Double, List<String>> current, String[] symbols) {
-        return null;
+        return generateRandomTrace(symbols);
+        // TODO: actually mutating stuff :)
+    }
+
+    static int getRandomNumber(int min, int max) {
+        return (int) ((Math.random() * (max - min)) + min);
     }
 
     /**
