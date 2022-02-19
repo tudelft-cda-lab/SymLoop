@@ -89,6 +89,8 @@ public class FuzzingLab {
     private static int lastVisited = 0;
     static final FuzzMode mode = FuzzMode.RANDOM;
 
+    static Pair<Double, List<String>> latestTraceHC;
+
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         currentTrace = generateRandomTrace(inputSymbols);
@@ -390,6 +392,9 @@ public class FuzzingLab {
                 throw new AssertionError("No more branches to visit");
             }
         } else if (mode == FuzzMode.EXPLORE_BRANCHES){
+            if (latestTraceHC == null) {
+                return generateRandomTrace(inputSymbols);
+            }
             return generateRandomTrace(inputSymbols); // TODO: make actual Hill climber
         } else {
             throw new Error("Unimplemented mode: " + mode);
