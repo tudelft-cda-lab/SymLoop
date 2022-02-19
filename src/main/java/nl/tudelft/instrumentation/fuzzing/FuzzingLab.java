@@ -397,7 +397,10 @@ public class FuzzingLab {
             // If it is the start of the Hill Climber process
             if (latestTraceHC == null) {
                 System.out.println("First Hill Climber Value!");
-                return generateRandomTrace(inputSymbols);
+                reset();
+                List<String> randomTrace = generateRandomTrace(inputSymbols);
+                DistanceTracker.runNextFuzzedSequence(randomTrace.toArray(new String[0]));
+                latestTraceHC = Pair.of(sum, randomTrace);
             }
 
             // How many mutations we want to make
