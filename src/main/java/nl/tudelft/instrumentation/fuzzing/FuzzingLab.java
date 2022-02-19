@@ -18,6 +18,7 @@ public class FuzzingLab {
         TOP_TRACE,
         EXPLORE_BRANCHES,
         LOWEST_DISTANCE,
+        HILL_CLIMBER,
     }
 
     public enum VisitedEnum {
@@ -388,6 +389,8 @@ public class FuzzingLab {
             } else {
                 throw new AssertionError("No more branches to visit");
             }
+        } else if (mode == FuzzMode.EXPLORE_BRANCHES){
+            return generateRandomTrace(inputSymbols); // TODO: make actual Hill climber
         } else {
             throw new Error("Unimplemented mode: " + mode);
         }
