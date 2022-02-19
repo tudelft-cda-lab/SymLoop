@@ -335,7 +335,7 @@ public class FuzzingLab {
             minimumBranchDistances.put(line_nr, Pair.of(bd, currentTrace));
         }
 
-//        System.out.println("New sum = " + sum + " + " + bd + " = " + (sum + bd));
+        // System.out.println("New sum = " + sum + " + " + bd + " = " + (sum + bd));
         sum += bd;
     }
 
@@ -439,15 +439,15 @@ public class FuzzingLab {
             Pair<Double, List<String>> pair = traces.get(i);
             System.out.printf("Number %d: %s, with score %f\n", i + 1,
                     pair.getRight().toString(),
-                    pair.getLeft()
-            );
+                    pair.getLeft());
         }
     }
 
-    static List<Pair<Double, List<String>>> updateTop5(List<Pair<Double, List<String>>> oldTop5, Pair<Double, List<String>> current) {
+    static List<Pair<Double, List<String>>> updateTop5(List<Pair<Double, List<String>>> oldTop5,
+            Pair<Double, List<String>> current) {
 
         oldTop5.add(current);
-        //  System.out.println("Current: " + current);
+        // System.out.println("Current: " + current);
 
         // While the current item is lower then the item at index i
         for (int i = oldTop5.size() - 2; i >= 0 && oldTop5.get(i).getLeft() > current.getLeft(); i--) {
@@ -521,7 +521,8 @@ public class FuzzingLab {
             }
         }
         System.out.printf("Has been stable since iteration: %d\n", iterations - noChange);
-        System.out.printf("%d, %d, %d, %d\n", numVisited(), totalBranches(), outputErrors.size(), iterations - noChange);
+        System.out.printf("%d, %d, %d, %d\n", numVisited(), totalBranches(), outputErrors.size(),
+                iterations - noChange);
         System.exit(0);
     }
 
