@@ -395,7 +395,9 @@ public class FuzzingLab {
             if (latestTraceHC == null) {
                 return generateRandomTrace(inputSymbols);
             }
-            return generateRandomTrace(inputSymbols); // TODO: make actual Hill climber
+            int permutations = 4;
+            
+            return latestTraceHC.getRight(); // TODO: make actual Hill climber
         } else {
             throw new Error("Unimplemented mode: " + mode);
         }
@@ -408,6 +410,10 @@ public class FuzzingLab {
             base.set(r.nextInt(base.size()), symbols[r.nextInt(symbols.length)]);
         }
         return base;
+    }
+
+    static List<String> hillClimberMutate(Pair<Double, List<String>> current, String[] symbols) {
+        return null;
     }
 
     /**
@@ -465,6 +471,24 @@ public class FuzzingLab {
         return oldTop5;
     }
 
+    static void printAnswersQuestion1() {
+        // Question A
+        System.out.printf("Unique branches: Visited %d out of %d: %d%%. Errors found: %d\n",
+                numVisited(), totalBranches(), numVisited() * 100 / totalBranches(), outputErrors.size());
+
+        // Question B
+        System.out.printf("Best: %d, with trace: %s\n", bestTraceScore,
+                bestTrace.toString());
+
+        // Question C
+        printTop5(topTraces);
+    }
+
+    static void reset() {
+        branches.clear();
+        sum = 0.0;
+    }
+
     static void run() {
         initialize(DistanceTracker.inputSymbols);
         DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
@@ -475,9 +499,7 @@ public class FuzzingLab {
             iterations++;
             // Do things!
             try {
-                // branches.clear();
-                sum = 0.0;
-                System.out.println("Sum reset!");
+                reset();
                 currentTrace = fuzz(DistanceTracker.inputSymbols);
                 DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
                 int visited = numVisited();
@@ -504,16 +526,7 @@ public class FuzzingLab {
 
                 topTraces = updateTop5(topTraces, Pair.of(sum, currentTrace));
 
-                // Question A
-                System.out.printf("Unique branches: Visited %d out of %d: %d%%. Errors found: %d\n",
-                        numVisited(), totalBranches(), numVisited() * 100 / totalBranches(), outputErrors.size());
-
-                // Question B
-                System.out.printf("Best: %d, with trace: %s\n", bestTraceScore,
-                        bestTrace.toString());
-
-                // Question C
-                printTop5(topTraces);
+                printAnswersQuestion1();
 
                 Thread.sleep(0);
             } catch (InterruptedException e) {
