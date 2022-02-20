@@ -85,7 +85,6 @@ public class FuzzingLab {
     static List<Pair<Double, List<String>>> topTraces = new ArrayList<>(5);
     static final int NUM_TOP_TRACES = 5;
     static int iterations = 0;
-    private static int lastFuzzLine = -1;
     private static int lastVisited = 0;
     static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
 
@@ -397,10 +396,9 @@ public class FuzzingLab {
             // If it is the start of the Hill Climber process
             if (latestTraceHC == null) {
                 System.out.println("First Hill Climber Value!");
-                reset();
                 List<String> randomTrace = generateRandomTrace(inputSymbols);
-                DistanceTracker.runNextFuzzedSequence(randomTrace.toArray(new String[0]));
-                latestTraceHC = Pair.of(sum, randomTrace);
+                double score = computeScore(randomTrace);
+                latestTraceHC = Pair.of(score, randomTrace);
             }
 
             // How many mutations we want to make
@@ -410,9 +408,8 @@ public class FuzzingLab {
             // Generate mutations
             for (int i = 0; i < amount; i++) {
                 List<String> newMutation = hillClimberMutate(latestTraceHC, inputSymbols);
-                reset();
-                DistanceTracker.runNextFuzzedSequence(newMutation.toArray(new String[0]));
-                mutations.add(Pair.of(sum, newMutation));
+                double score = computeScore(newMutation);
+                mutations.add(Pair.of(score, newMutation));
             }
 
             // Pick best improving mutation
@@ -447,6 +444,10 @@ public class FuzzingLab {
         return base;
     }
 
+    static String randomSymbolFrom(String[] symbols) {
+        return symbols[r.nextInt(symbols.length)];
+    }
+
     static List<String> hillClimberMutate(Pair<Double, List<String>> current, String[] symbols) {
 
         System.out.println("MUTATING START!");
@@ -457,7 +458,6 @@ public class FuzzingLab {
         Double removeChance = 0.05;
         Double addChance = 0.05;
 
-        Integer newSymbols = 0;
         List<String> result = new ArrayList<>();
 
         for (int i = 0; i < current.getRight().size(); i++) {
@@ -466,32 +466,34 @@ public class FuzzingLab {
             random -= mutateChance;
             if (random <= 0) {
                 // add mutation
-                result.add(symbols[r.nextInt(symbols.length)]);
                 System.out.println("Mutation!");
+                result.add(randomSymbolFrom(symbols));
                 continue;
             }
             random -= addChance;
             if (random <= 0) {
-                // add current one and add one later
+                // add random one and current one
+                result.add(randomSymbolFrom(symbols));
                 result.add(current.getRight().get(i));
-                newSymbols++;
-                System.out.println("Addition!");
+                // System.out.println("Addition!");
                 continue;
             }
             random -= removeChance;
             if (random <= 0) {
-                // keep current input as it is, so add it
+                // else remove aka do nothing with current
                 System.out.println("Removal!");
             } else {
-                // else remove aka do nothing with current
+                // keep current input as it is, so add it
                 System.out.println("Do nothing!");
                 result.add(current.getRight().get(i));
             }
         }
 
-        // add new symbols
-        for (int i = 0; i < newSymbols; i++) {
-            result.add(symbols[r.nextInt(symbols.length)]);
+        // add new symbol at the end.
+        if (r.nextDouble() < addChance) {
+            // int index = r.nextInt(result.size() + 1);
+            // System.out.printf("adding at %d\n", index);
+            result.add(randomSymbolFrom(symbols));
         }
 
         return result;
@@ -510,7 +512,7 @@ public class FuzzingLab {
     static List<String> generateRandomTrace(String[] symbols) {
         ArrayList<String> trace = new ArrayList<>();
         for (int i = 0; i < traceLength; i++) {
-            trace.add(symbols[r.nextInt(symbols.length)]);
+            trace.add(randomSymbolFrom(symbols));
         }
         return trace;
     }
@@ -558,8 +560,8 @@ public class FuzzingLab {
 
     static void printAnswersQuestion1() {
         // Question A
-        System.out.printf("Unique branches: Visited %d out of %d: %d%%. Errors found: %d\n",
-                numVisited(), totalBranches(), numVisited() * 100 / totalBranches(), outputErrors.size());
+        System.out.printf("Unique branches: Visited %d out of %d. Errors found: %d\n",
+                numVisited(), totalBranches(), outputErrors.size());
 
         // Question B
         System.out.printf("Best: %d, with trace: %s\n", bestTraceScore,
@@ -619,6 +621,15 @@ public class FuzzingLab {
                 e.printStackTrace();
             }
         }
+    }
+
+    static double computeScore(List<String> trace) {
+        reset();
+        DistanceTracker.runNextFuzzedSequence(trace.toArray(new String[0]));
+        // System.out.printf("length: %d\n", trace.size());
+        double score = sum;
+        System.out.printf("Score %.4f: len %d: %s\n", score, trace.size(), trace);
+        return score;
     }
 
     /**
