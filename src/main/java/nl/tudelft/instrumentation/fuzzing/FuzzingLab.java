@@ -101,6 +101,8 @@ public class FuzzingLab {
     static final int NUM_TOP_TRACES = 5;
     static int iterations = 0;
     static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
+    static long stableSince = System.currentTimeMillis();
+    static final int STOP_WHEN_STABLE_FOR = 1000 * 30;
 
     static Pair<Double, List<String>> latestTraceHC;
 
@@ -112,6 +114,7 @@ public class FuzzingLab {
     static Set<Integer> outputErrors = new HashSet<>();
     static Pattern pattern = Pattern.compile("Invalid input: error_(\\d+)");
     private static int tracesPerIteration = 20;
+    private static int lastVisited = 0;
 
     static int stringDifference(String a, String b) {
         int index = 0;
@@ -482,7 +485,7 @@ public class FuzzingLab {
 
         // Configure these variables to your liking
         double mutateChance = 0.1;
-        double removeChance = 0.005;
+        double removeChance = 0.01;
         double addChance = 0.005;
 
         List<String> result = new ArrayList<>();
@@ -516,8 +519,6 @@ public class FuzzingLab {
 
         // add new symbol at the end.
         if (r.nextDouble() < addChance) {
-            // int index = r.nextInt(result.size() + 1);
-            // System.out.printf("adding at %d\n", index);
             result.add(randomSymbolFrom(symbols));
         }
 
@@ -608,9 +609,11 @@ public class FuzzingLab {
         initialize(DistanceTracker.inputSymbols);
         DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
 
+        long start = System.currentTimeMillis();
+
         System.out.println(branches.toString());
         // Place here your code to guide your fuzzer with its search.
-        while (!isFinished) {
+        while (!isFinished && stableSince + STOP_WHEN_STABLE_FOR > System.currentTimeMillis()) {
             iterations++;
             // Do things!
             try {
@@ -620,9 +623,17 @@ public class FuzzingLab {
                 int visited = numVisited();
                 int total = totalBranches();
 
-                System.out.printf("Iteration %d: Visited %d / %d. Errors: %d. Score: %.2f, Traces per round: %d. tracelength: %d.\n", iterations,
-                        visited, total, outputErrors.size(), score, tracesPerIteration, currentTrace.size());
+                long now = System.currentTimeMillis();
+                if (visited > lastVisited) {
+                    stableSince = now;
+                    lastVisited = visited;
+                }
 
+                System.out.printf(
+                        "Iter %d: Visited %d / %d. Errors: %d. Score: %.2f, Traces per iter: %d. tracelength: %d. Running for %d.\n",
+                        iterations, visited, total,
+                        outputErrors.size(), score, tracesPerIteration,
+                        currentTrace.size(), (now - start) / 1000);
 
                 if (score > bestTraceScore) {
                     bestTraceScore = score;
@@ -643,6 +654,9 @@ public class FuzzingLab {
                 e.printStackTrace();
             }
         }
+        System.out.printf("stable after %d seconds (over a period of %ds)\n", (stableSince - start) / 1000,
+                STOP_WHEN_STABLE_FOR / 1000);
+        System.exit(0);
     }
 
     static double branchSumUnvisited() {
