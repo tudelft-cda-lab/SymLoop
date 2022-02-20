@@ -18,5 +18,15 @@ prepare () {
     ../AFL/afl-2.52b/afl-gcc "problems/Problem$1.c" -o "problems/Problem$1"
     echo "Fuzzing $1";
     AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 AFL_SKIP_CPUFREQ=1 ../AFL/afl-2.52b/afl-fuzz -i "problems/$1/tests" -o "problems/$1/findings" "problems/Problem$1"
+
+    echo > problems/$1/errors.txt
+    set +e
+    for f in $(ls problems/$1/findings/crashes/id*);
+    do
+        cat $f | problems/Problem$1 2>> problems/$1/errors.txt 1> /dev/null
+    done;
+    clear
+    cat problems/$1/errors.txt | grep error | sort -V | uniq | tee problems/$1/final.txt
+    set -e
 }
 prepare $1
