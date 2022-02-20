@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -52,6 +51,19 @@ public class FuzzingLab {
             throw new AssertionError("unreachable");
         }
 
+        boolean hasVisited(boolean value) {
+            if (this == NONE) {
+                return false;
+            } else if (this == TRUE) {
+                return value;
+            } else if (this == FALSE) {
+                return !value;
+            } else if (this == BOTH) {
+                return true;
+            }
+            throw new AssertionError("unreachable");
+        }
+
         private VisitedEnum() {
         }
 
@@ -78,14 +90,16 @@ public class FuzzingLab {
 
     static Map<Integer, VisitedEnum> branches = new HashMap<Integer, VisitedEnum>();
     static Map<Integer, Pair<Double, List<String>>> minimumBranchDistances = new HashMap<>();
-    static List<String> bestTrace;
-    static int bestTraceScore = 0;
 
-    static Double sum = 0.0;
+    static Map<Integer, Double> minimumBranchTrue = new HashMap<>();
+    static Map<Integer, Double> minimumBranchFalse = new HashMap<>();
+
+    static List<String> bestTrace;
+    static double bestTraceScore = 0;
+
     static List<Pair<Double, List<String>>> topTraces = new ArrayList<>(5);
     static final int NUM_TOP_TRACES = 5;
     static int iterations = 0;
-    private static int lastVisited = 0;
     static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
 
     static Pair<Double, List<String>> latestTraceHC;
@@ -97,6 +111,7 @@ public class FuzzingLab {
 
     static Set<Integer> outputErrors = new HashSet<>();
     static Pattern pattern = Pattern.compile("Invalid input: error_(\\d+)");
+    private static int tracesPerIteration = 20;
 
     static int stringDifference(String a, String b) {
         int index = 0;
@@ -333,8 +348,13 @@ public class FuzzingLab {
             minimumBranchDistances.put(line_nr, Pair.of(bd, currentTrace));
         }
 
-//        System.out.println("New sum = " + sum + " + " + bd + " = " + (sum + bd));
-        sum += bd;
+        if (value) {
+            double newMininum = Math.min(minimumBranchTrue.getOrDefault(line_nr, 1.0), bd);
+            minimumBranchTrue.put(line_nr, newMininum);
+        } else {
+            double newMininum = Math.min(minimumBranchFalse.getOrDefault(line_nr, 1.0), bd);
+            minimumBranchFalse.put(line_nr, newMininum);
+        }
     }
 
     /**
@@ -351,9 +371,12 @@ public class FuzzingLab {
          * using the given input symbols. Please change it to your own code.
          */
 
-        if (mode == FuzzMode.RANDOM || topTraces.size() == 0) {
+        if (mode == FuzzMode.RANDOM) {
             return generateRandomTrace(inputSymbols);
         } else if (mode == FuzzMode.TOP_TRACE) {
+            if (topTraces.size() == 0) {
+                return generateRandomTrace(inputSymbols);
+            }
             System.out.printf("total branch distance %d\n", topTraces.get(0).getKey());
             return mutate(topTraces.get(0).getRight(), inputSymbols);
         } else if (mode == FuzzMode.EXPLORE_BRANCHES || mode == FuzzMode.LOWEST_DISTANCE) {
@@ -391,7 +414,7 @@ public class FuzzingLab {
                 throw new AssertionError("No more branches to visit");
             }
         } else if (mode == FuzzMode.HILL_CLIMBER) {
-            System.out.println("USING THE HILL CLIMBER!");
+            // System.out.println("USING THE HILL CLIMBER!");
 
             // If it is the start of the Hill Climber process
             if (latestTraceHC == null) {
@@ -399,36 +422,40 @@ public class FuzzingLab {
                 List<String> randomTrace = generateRandomTrace(inputSymbols);
                 double score = computeScore(randomTrace);
                 latestTraceHC = Pair.of(score, randomTrace);
+            } else {
+                // Recompute the score
+                latestTraceHC = Pair.of(computeScore(latestTraceHC.getRight()), latestTraceHC.getRight());
             }
 
-            // How many mutations we want to make
-            int amount = 4;
             List<Pair<Double, List<String>>> mutations = new ArrayList<>();
 
-            // Generate mutations
-            for (int i = 0; i < amount; i++) {
-                List<String> newMutation = hillClimberMutate(latestTraceHC, inputSymbols);
+            // Generate mutated traces
+            for (int i = 0; i < tracesPerIteration; i++) {
+                List<String> newMutation = hillClimberMutate(latestTraceHC.getRight(), inputSymbols);
                 double score = computeScore(newMutation);
                 mutations.add(Pair.of(score, newMutation));
             }
 
-            // Pick best improving mutation
-            Pair<Double, Integer> improvement = Pair.of(0.0, -1);
-            for (int i = 0; i < mutations.size(); i++) {
-                Double currentImprovement = latestTraceHC.getLeft() - mutations.get(i).getLeft();
-                if (currentImprovement > improvement.getLeft()) {
-                    improvement = Pair.of(currentImprovement, i);
+            // Pick best improving trace
+            int lowestIndex = 0;
+            double lowestScore = mutations.get(0).getLeft();
+            for (int i = 1; i < mutations.size(); i++) {
+                double currentScore = mutations.get(i).getLeft();
+                if (currentScore < lowestScore) {
+                    lowestScore = currentScore;
+                    lowestIndex = i;
                 }
             }
-
-            // If no improvement is made, pick random mutation
-            if (improvement.getRight() == -1) {
-                improvement = Pair.of(0.0, getRandomNumber(0, mutations.size() - 1));
+            // if the best of the traces is not better than the last one
+            if (lowestScore > latestTraceHC.getLeft() && r.nextDouble() < 0.1) {
+                // Generate a random trace
+                List<String> trace = generateRandomTrace(inputSymbols);
+                latestTraceHC = Pair.of(computeScore(trace), trace);
+                // Increase the number of traces to generate for the next rounds
+                // amountToGenerate++;
+            } else {
+                latestTraceHC = mutations.get(lowestIndex);
             }
-
-            // Set latestTraceHC to the chosen mutation
-            latestTraceHC = mutations.get(improvement.getRight());
-
             return latestTraceHC.getRight();
         } else {
             throw new Error("Unimplemented mode: " + mode);
@@ -439,7 +466,7 @@ public class FuzzingLab {
         int amount = r.nextInt(base.size());
         base = new ArrayList<>(base);
         for (int i = 0; i < amount; i++) {
-            base.set(r.nextInt(base.size()), symbols[r.nextInt(symbols.length)]);
+            base.set(r.nextInt(base.size()), randomSymbolFrom(symbols));
         }
         return base;
     }
@@ -448,44 +475,42 @@ public class FuzzingLab {
         return symbols[r.nextInt(symbols.length)];
     }
 
-    static List<String> hillClimberMutate(Pair<Double, List<String>> current, String[] symbols) {
+    static List<String> hillClimberMutate(List<String> current, String[] symbols) {
 
-        System.out.println("MUTATING START!");
-        System.out.println("Mutating: " + current.getRight());
+        // System.out.println("MUTATING START!");
+        // System.out.println("Mutating: " + current.getRight());
 
         // Configure these variables to your liking
-        Double mutateChance = 0.2;
-        Double removeChance = 0.05;
-        Double addChance = 0.05;
+        double mutateChance = 0.1;
+        double removeChance = 0.005;
+        double addChance = 0.005;
 
         List<String> result = new ArrayList<>();
 
-        for (int i = 0; i < current.getRight().size(); i++) {
+        for (int i = 0; i < current.size(); i++) {
             Double random = r.nextDouble();
-            System.out.println("Random: " + random);
+            // System.out.println("Random: " + random);
             random -= mutateChance;
             if (random <= 0) {
                 // add mutation
-                System.out.println("Mutation!");
                 result.add(randomSymbolFrom(symbols));
                 continue;
             }
             random -= addChance;
             if (random <= 0) {
                 // add random one and current one
+                result.add(current.get(i));
                 result.add(randomSymbolFrom(symbols));
-                result.add(current.getRight().get(i));
-                // System.out.println("Addition!");
                 continue;
             }
             random -= removeChance;
             if (random <= 0) {
                 // else remove aka do nothing with current
-                System.out.println("Removal!");
+                // System.out.println("Removal!");
             } else {
                 // keep current input as it is, so add it
-                System.out.println("Do nothing!");
-                result.add(current.getRight().get(i));
+                // System.out.println("Do nothing!");
+                result.add(current.get(i));
             }
         }
 
@@ -511,7 +536,12 @@ public class FuzzingLab {
      */
     static List<String> generateRandomTrace(String[] symbols) {
         ArrayList<String> trace = new ArrayList<>();
-        for (int i = 0; i < traceLength; i++) {
+        int length = traceLength;
+        if (currentTrace != null) {
+            length = Math.max(currentTrace.size(), traceLength);
+            length = r.nextInt(length) + length / 2;
+        }
+        for (int i = 0; i < length; i++) {
             trace.add(randomSymbolFrom(symbols));
         }
         return trace;
@@ -533,13 +563,13 @@ public class FuzzingLab {
         System.out.println("Current top 5:");
         for (int i = 0; i < traces.size(); i++) {
             Pair<Double, List<String>> pair = traces.get(i);
-            System.out.printf("Number %d: %s, with score %f\n", i + 1,
+            System.out.printf("Number %d: %s, with score %.2f\n", i + 1,
                     pair.getRight().toString(),
                     pair.getLeft());
         }
     }
 
-    static List<Pair<Double, List<String>>> updateTop5(List<Pair<Double, List<String>>> oldTop5,
+    static void updateTop5(List<Pair<Double, List<String>>> oldTop5,
             Pair<Double, List<String>> current) {
 
         oldTop5.add(current);
@@ -554,8 +584,6 @@ public class FuzzingLab {
         if (oldTop5.size() > NUM_TOP_TRACES) {
             oldTop5.remove(NUM_TOP_TRACES);
         }
-
-        return oldTop5;
     }
 
     static void printAnswersQuestion1() {
@@ -564,16 +592,16 @@ public class FuzzingLab {
                 numVisited(), totalBranches(), outputErrors.size());
 
         // Question B
-        System.out.printf("Best: %d, with trace: %s\n", bestTraceScore,
+        System.out.printf("Best: %.2f, with trace: %s\n", bestTraceScore,
                 bestTrace.toString());
 
         // Question C
-        printTop5(topTraces);
+        // printTop5(topTraces);
     }
 
     static void reset() {
-        branches.clear();
-        sum = 0.0;
+        minimumBranchTrue.clear();
+        minimumBranchFalse.clear();
     }
 
     static void run() {
@@ -586,50 +614,66 @@ public class FuzzingLab {
             iterations++;
             // Do things!
             try {
-                reset();
                 currentTrace = fuzz(DistanceTracker.inputSymbols);
-                DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+                double score = computeScore(currentTrace);
 
                 int visited = numVisited();
                 int total = totalBranches();
-                int score = visited;
 
-                // Specific for mode: discovering branches
-                if (visited > lastVisited) {
-                    lastVisited = visited;
-                    System.out.printf("Iteration %d: Visited %d out of %d: %d%%. Errors found: %d\n", iterations,
-                            visited, total, visited * 100 / total, outputErrors.size());
-                }
+                System.out.printf("Iteration %d: Visited %d / %d. Errors: %d. Score: %.2f, Traces per round: %d. tracelength: %d.\n", iterations,
+                        visited, total, outputErrors.size(), score, tracesPerIteration, currentTrace.size());
 
-                if (total == visited && total > 0) {
-                    isFinished = true;
-                }
 
                 if (score > bestTraceScore) {
                     bestTraceScore = score;
                     bestTrace = new ArrayList<>(currentTrace);
-                    System.out.printf("New best: %d, with trace: %s\n", score,
+                    System.out.printf("New best: %f, with trace: %s\n", score,
                             currentTrace.toString());
                 }
 
-                topTraces = updateTop5(topTraces, Pair.of(sum, currentTrace));
+                // updateTop5(topTraces, Pair.of(score, currentTrace));
 
                 // printAnswersQuestion1();
 
-                Thread.sleep(0);
+                if (iterations % 1000 == 0) {
+                    Thread.sleep(0);
+                }
+                isFinished = total == visited && total > 0;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
 
+    static double branchSumUnvisited() {
+        double sum = 0;
+        for (int line_nr : branches.keySet()) {
+            VisitedEnum visited = branches.get(line_nr);
+            if (!visited.hasVisited(true)) {
+                sum += minimumBranchFalse.getOrDefault(line_nr, 1.0);
+            }
+            if (!visited.hasVisited(false)) {
+                sum += minimumBranchTrue.getOrDefault(line_nr, 1.0);
+            }
+        }
+        return sum;
+    }
+
+    static double branchesSumAll() {
+        double sum = 0;
+        for (int line_nr : branches.keySet()) {
+            VisitedEnum visited = branches.get(line_nr);
+            sum += minimumBranchFalse.getOrDefault(line_nr, 1.0);
+            sum += minimumBranchTrue.getOrDefault(line_nr, 1.0);
+        }
+        return sum;
+    }
+
     static double computeScore(List<String> trace) {
         reset();
         DistanceTracker.runNextFuzzedSequence(trace.toArray(new String[0]));
-        // System.out.printf("length: %d\n", trace.size());
-        double score = sum;
-        System.out.printf("Score %.4f: len %d: %s\n", score, trace.size(), trace);
-        return score;
+        return branchSumUnvisited();
+        // return branchesSumAll();
     }
 
     /**
