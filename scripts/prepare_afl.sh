@@ -12,7 +12,6 @@ prepare () {
     mkdir -p problems/$1
     mkdir -p problems/$1/tests
     mkdir -p problems/$1/findings
-    # cat "problems/Problem$1.c" | grep -E "inputs\[\] = {.*};$"
     sed -n "s/^.*inputs\[\] = {\s*\(\S*\)}.*$/\1/p" "problems/Problem$1.c" | xargs -n 1 -d , | xargs -I % sh -c "echo % > problems/$1/tests/%.txt && echo >> problems/$1/tests/%.txt"
     echo "Compiling $1";
     ../AFL/afl-2.52b/afl-gcc "problems/Problem$1.c" -o "problems/Problem$1"
