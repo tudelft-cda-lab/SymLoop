@@ -9,9 +9,7 @@ prepare () {
     echo "Modifying $1";
     sed -i 's/extern void __VERIFIER_error(int);/void __VERIFIER_error(int i) {fprintf(stderr, "error_%d ", i);assert(0);}/' "problems/Problem$1.c"
     sed -i 's/scanf("%d", &input);/int ret = scanf("%d", \&input ); if (ret != 1) return 0;/' "problems/Problem$1.c"
-    mkdir -p problems/$1
-    mkdir -p problems/$1/tests
-    mkdir -p problems/$1/findings
+    mkdir -p problems/$1/tests problems/$1/findings
     sed -n "s/^.*inputs\[\] = {\s*\(\S*\)}.*$/\1/p" "problems/Problem$1.c" | xargs -n 1 -d , | xargs -I % sh -c "echo % > problems/$1/tests/%.txt && echo >> problems/$1/tests/%.txt"
     echo "Compiling $1";
     ../AFL/afl-2.52b/afl-gcc "problems/Problem$1.c" -o "problems/Problem$1"
