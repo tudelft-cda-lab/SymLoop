@@ -391,7 +391,7 @@ public class FuzzingLab {
             } else {
                 throw new AssertionError("No more branches to visit");
             }
-        } else if (mode == FuzzMode.HILL_CLIMBER){
+        } else if (mode == FuzzMode.HILL_CLIMBER) {
             System.out.println("USING THE HILL CLIMBER!");
 
             // If it is the start of the Hill Climber process
@@ -408,7 +408,7 @@ public class FuzzingLab {
             List<Pair<Double, List<String>>> mutations = new ArrayList<>();
 
             // Generate mutations
-            for(int i = 0; i < amount; i++){
+            for (int i = 0; i < amount; i++) {
                 List<String> newMutation = hillClimberMutate(latestTraceHC, inputSymbols);
                 reset();
                 DistanceTracker.runNextFuzzedSequence(newMutation.toArray(new String[0]));
@@ -417,7 +417,7 @@ public class FuzzingLab {
 
             // Pick best improving mutation
             Pair<Double, Integer> improvement = Pair.of(0.0, -1);
-            for(int i = 0; i < mutations.size(); i++) {
+            for (int i = 0; i < mutations.size(); i++) {
                 Double currentImprovement = latestTraceHC.getLeft() - mutations.get(i).getLeft();
                 if (currentImprovement > improvement.getLeft()) {
                     improvement = Pair.of(currentImprovement, i);
@@ -425,13 +425,13 @@ public class FuzzingLab {
             }
 
             // If no improvement is made, pick random mutation
-            if(improvement.getRight() == -1) {
-                improvement = Pair.of(0.0, getRandomNumber(0, mutations.size()-1));
+            if (improvement.getRight() == -1) {
+                improvement = Pair.of(0.0, getRandomNumber(0, mutations.size() - 1));
             }
 
             // Set latestTraceHC to the chosen mutation
             latestTraceHC = mutations.get(improvement.getRight());
-            
+
             return latestTraceHC.getRight();
         } else {
             throw new Error("Unimplemented mode: " + mode);
@@ -484,7 +484,7 @@ public class FuzzingLab {
         }
 
         // add new symbols
-        for(int i = 0; i < newSymbols; i++){
+        for (int i = 0; i < newSymbols; i++) {
             result.add(symbols[r.nextInt(symbols.length)]);
         }
 
@@ -527,15 +527,15 @@ public class FuzzingLab {
             Pair<Double, List<String>> pair = traces.get(i);
             System.out.printf("Number %d: %s, with score %f\n", i + 1,
                     pair.getRight().toString(),
-                    pair.getLeft()
-            );
+                    pair.getLeft());
         }
     }
 
-    static List<Pair<Double, List<String>>> updateTop5(List<Pair<Double, List<String>>> oldTop5, Pair<Double, List<String>> current) {
+    static List<Pair<Double, List<String>>> updateTop5(List<Pair<Double, List<String>>> oldTop5,
+            Pair<Double, List<String>> current) {
 
         oldTop5.add(current);
-        //  System.out.println("Current: " + current);
+        // System.out.println("Current: " + current);
 
         // While the current item is lower then the item at index i
         for (int i = oldTop5.size() - 2; i >= 0 && oldTop5.get(i).getLeft() > current.getLeft(); i--) {
