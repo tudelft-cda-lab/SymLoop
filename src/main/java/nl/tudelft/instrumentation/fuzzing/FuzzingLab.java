@@ -457,29 +457,35 @@ public class FuzzingLab {
         Double removeChance = 0.05;
         Double addChance = 0.05;
 
-        Double nothingChance = 1 - mutateChance - removeChance - addChance;
         Integer newSymbols = 0;
         List<String> result = new ArrayList<>();
 
-        for(int i = 0; i < current.getRight().size(); i++){
-            Double random = Math.random();
+        for (int i = 0; i < current.getRight().size(); i++) {
+            Double random = r.nextDouble();
             System.out.println("Random: " + random);
-            if(random >= 0 && random <= mutateChance){
+            random -= mutateChance;
+            if (random <= 0) {
                 // add mutation
                 result.add(symbols[r.nextInt(symbols.length)]);
                 System.out.println("Mutation!");
-            } else if (random > mutateChance && random <= mutateChance + addChance){
+                continue;
+            }
+            random -= addChance;
+            if (random <= 0) {
                 // add current one and add one later
                 result.add(current.getRight().get(i));
                 newSymbols++;
                 System.out.println("Addition!");
-            } else if (random > mutateChance + addChance && random <= mutateChance + addChance + nothingChance){
+                continue;
+            }
+            random -= removeChance;
+            if (random <= 0) {
                 // keep current input as it is, so add it
-                result.add(current.getRight().get(i));
-                System.out.println("Do nothing!");
+                System.out.println("Removal!");
             } else {
                 // else remove aka do nothing with current
-                System.out.println("Removal!");
+                System.out.println("Do nothing!");
+                result.add(current.getRight().get(i));
             }
         }
 
