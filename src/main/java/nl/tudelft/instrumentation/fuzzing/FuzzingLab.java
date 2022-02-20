@@ -655,7 +655,7 @@ public class FuzzingLab {
             }
         }
         System.out.printf("stable after %d seconds (over a period of %ds)\n", (stableSince - start) / 1000,
-                STOP_WHEN_STABLE_FOR / 1000);
+                (System.currentTimeMillis() - stableSince)  / 1000);
         System.exit(0);
     }
 

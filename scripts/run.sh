@@ -1,8 +1,10 @@
 #!/bin/bash
+set -e
 modified=$(stat -c%Z src/main/java/nl/tudelft/instrumentation/fuzzing/FuzzingLab.java)
+touch scripts/lastmodified
 lastmodified=$(cat scripts/lastmodified)
+echo $modified > scripts/lastmodified
 if [ "$modified" -gt "$lastmodified" ]; then
-  echo $modified > scripts/lastmodified
   mvn clean package
   clear
 fi
