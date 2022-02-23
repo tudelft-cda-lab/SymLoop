@@ -1,10 +1,9 @@
 package nl.tudelft.instrumentation.fuzzing;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -14,9 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class FuzzingLab {
     private enum FuzzMode {
         RANDOM,
-        TOP_TRACE,
-        EXPLORE_BRANCHES,
-        LOWEST_DISTANCE,
+        COVERAGE_SET,
         HILL_CLIMBER,
     }
 
@@ -90,6 +87,7 @@ public class FuzzingLab {
     static boolean isFinished = false;
 
     static Map<Integer, VisitedEnum> branches = new HashMap<Integer, VisitedEnum>();
+    static Map<Integer, VisitedEnum> currentBranches = new HashMap<Integer, VisitedEnum>();
     static Map<Integer, Pair<Double, List<String>>> minimumBranchDistances = new HashMap<>();
 
     static Map<Integer, Double> minimumBranchTrue = new HashMap<>();
@@ -99,10 +97,11 @@ public class FuzzingLab {
     static double bestTraceScore = 0;
 
     static List<Pair<Double, List<String>>> topTraces = new ArrayList<>(5);
-    static final int NUM_TOP_TRACES = 5;
+    static int NUM_TOP_TRACES = 1;
     static int iterations = 0;
     // static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
     static final FuzzMode mode = FuzzMode.RANDOM;
+    // static final FuzzMode mode = FuzzMode.COVERAGE_SET;
     static long stableSince = System.currentTimeMillis();
     static final int STOP_WHEN_STABLE_FOR = 1000 * 10;
 
@@ -318,7 +317,6 @@ public class FuzzingLab {
      * !p1 : d = 1 - d(p1) CHECK
      */
     static Double branchDistance(MyVar condition, boolean value) {
-        // System.out.println(condition);
         switch (condition.type) {
             case BINARY:
                 return binaryOperatorDistance(condition, value);
@@ -345,12 +343,12 @@ public class FuzzingLab {
         // System.out.printf("line %5d, now: %b,\tdist: %2d, %s\n", line_nr, value, bd,
         // condition.toString());
 
-        if(!branches.containsKey(line_nr)){
+        if (!branches.containsKey(line_nr) && mode == FuzzMode.RANDOM) {
             incrementTop5();
         }
 
-
         branches.put(line_nr, branches.getOrDefault(line_nr, VisitedEnum.NONE).andVisit(value));
+        currentBranches.put(line_nr, currentBranches.getOrDefault(line_nr, VisitedEnum.NONE).andVisit(value));
         if (minimumBranchDistances.containsKey(line_nr)) {
             if (minimumBranchDistances.get(line_nr).getLeft() > bd) {
                 minimumBranchDistances.put(line_nr, Pair.of(bd, currentTrace));
@@ -387,52 +385,9 @@ public class FuzzingLab {
 
         if (mode == FuzzMode.RANDOM) {
             return generateRandomTrace(inputSymbols);
-        } else if (mode == FuzzMode.TOP_TRACE) {
-            if (topTraces.size() == 0) {
-                return generateRandomTrace(inputSymbols);
-            }
-            System.out.printf("total branch distance %d\n", topTraces.get(0).getKey());
-            return mutate(topTraces.get(0).getRight(), inputSymbols);
-        } else if (mode == FuzzMode.EXPLORE_BRANCHES || mode == FuzzMode.LOWEST_DISTANCE) {
-            // Only visit branches that have not been visited both ways.
-            Stream<Entry<Integer, VisitedEnum>> toVisit = branches.entrySet().stream().filter(x -> {
-                return x.getValue() != VisitedEnum.BOTH;
-            });
-            if (mode == FuzzMode.EXPLORE_BRANCHES) {
-                // Visit in order of line numbers
-                toVisit = toVisit.sorted((a, b) -> {
-                    return a.getKey().compareTo(b.getKey());
-                });
-            } else if (mode == FuzzMode.LOWEST_DISTANCE) {
-                // Visit in order of branch with smallest branch distance
-                toVisit = toVisit.sorted((a, b) -> {
-                    return minimumBranchDistances.get(a.getKey()).getKey()
-                            .compareTo(minimumBranchDistances.get(b.getKey()).getKey());
-                });
-            }
-            // Sometimes skip a branch
-            // if (numVisited() < totalBranches() - 5) {
-            // toVisit = toVisit.skip(r.nextInt(5));
-            // }
-            Optional<Entry<Integer, VisitedEnum>> first = toVisit.findAny();
-            if (first.isPresent()) {
-                int ln = first.get().getKey();
-                Pair<Double, List<String>> minimum = minimumBranchDistances.get(ln);
-                // if (ln != lastFuzzLine) {
-                // System.out.printf("Trying to get to line: %d, current distance: %f\n", ln,
-                // minimum.getKey());
-                // lastFuzzLine = ln;
-                // }
-                return mutate(minimum.getValue(), inputSymbols);
-            } else {
-                throw new AssertionError("No more branches to visit");
-            }
         } else if (mode == FuzzMode.HILL_CLIMBER) {
-            // System.out.println("USING THE HILL CLIMBER!");
-
             // If it is the start of the Hill Climber process
             if (latestTraceHC == null) {
-                System.out.println("First Hill Climber Value!");
                 List<String> randomTrace = generateRandomTrace(inputSymbols);
                 double score = computeScore(randomTrace);
                 latestTraceHC = Pair.of(score, randomTrace);
@@ -471,6 +426,8 @@ public class FuzzingLab {
                 latestTraceHC = mutations.get(lowestIndex);
             }
             return latestTraceHC.getRight();
+        } else if (mode == FuzzMode.COVERAGE_SET) {
+            return generateRandomTrace(inputSymbols);
         } else {
             throw new Error("Unimplemented mode: " + mode);
         }
@@ -490,10 +447,6 @@ public class FuzzingLab {
     }
 
     static List<String> hillClimberMutate(List<String> current, String[] symbols) {
-
-        // System.out.println("MUTATING START!");
-        // System.out.println("Mutating: " + current.getRight());
-
         // Configure these variables to your liking
         double mutateChance = 0.1;
         double removeChance = 0.01;
@@ -503,7 +456,6 @@ public class FuzzingLab {
 
         for (int i = 0; i < current.size(); i++) {
             Double random = r.nextDouble();
-            // System.out.println("Random: " + random);
             random -= mutateChance;
             if (random <= 0) {
                 // add mutation
@@ -520,10 +472,8 @@ public class FuzzingLab {
             random -= removeChance;
             if (random <= 0) {
                 // else remove aka do nothing with current
-                // System.out.println("Removal!");
             } else {
                 // keep current input as it is, so add it
-                // System.out.println("Do nothing!");
                 result.add(current.get(i));
             }
         }
@@ -545,7 +495,7 @@ public class FuzzingLab {
     static List<String> generateRandomTrace(String[] symbols) {
         ArrayList<String> trace = new ArrayList<>();
         int length = traceLength;
-        if (mode == FuzzMode.RANDOM) {
+        if (mode == FuzzMode.RANDOM || mode == FuzzMode.COVERAGE_SET) {
             length = r.nextInt(MAX_TRACE_LENGTH - MIN_TRACE_LENGTH) + MIN_TRACE_LENGTH;
         } else if (currentTrace != null) {
             length = Math.max(currentTrace.size(), traceLength);
@@ -562,9 +512,13 @@ public class FuzzingLab {
     }
 
     static int numVisited() {
+        return numVisited(branches);
+    }
+
+    static int numVisited(Map<Integer, VisitedEnum> m) {
         int visited = 0;
-        for (Integer lineNumber : branches.keySet()) {
-            visited += branches.get(lineNumber).amount();
+        for (Integer lineNumber : m.keySet()) {
+            visited += m.get(lineNumber).amount();
         }
         return visited;
     }
@@ -573,20 +527,23 @@ public class FuzzingLab {
         System.out.println("Current top 5:");
         for (int i = 0; i < traces.size(); i++) {
             Pair<Double, List<String>> pair = traces.get(i);
-            System.out.printf("Number %d: %s, with score %.2f\n", i + 1,
-                    pair.getRight().toString(),
-                    pair.getLeft());
+            System.out.printf("#%02d with score %6.2f %s\n", i + 1,
+                    pair.getLeft(),
+                    String.join("", pair.getRight()));
         }
     }
 
     static void updateTop5(List<Pair<Double, List<String>>> oldTop5,
             Pair<Double, List<String>> current) {
 
+        if (current.getKey() <= 0) {
+            return;
+        }
         oldTop5.add(current);
         // System.out.println("Current: " + current);
 
         // While the current item is lower then the item at index i
-        for (int i = oldTop5.size() - 2; i >= 0 && oldTop5.get(i).getLeft() > current.getLeft(); i--) {
+        for (int i = oldTop5.size() - 2; i >= 0 && oldTop5.get(i).getLeft() < current.getLeft(); i--) {
             oldTop5.set(i + 1, oldTop5.get(i));
             oldTop5.set(i, current);
         }
@@ -605,12 +562,13 @@ public class FuzzingLab {
 
     static void printAnswersQuestion1() {
         // Question A
-        // System.out.printf("Unique branches: Visited %d out of %d. Errors found: %d\n",
-        //        numVisited(), totalBranches(), outputErrors.size());
+        // System.out.printf("Unique branches: Visited %d out of %d. Errors found:
+        // %d\n",
+        // numVisited(), totalBranches(), outputErrors.size());
 
         // Question B
-        //System.out.printf("Best: %.2f, with trace: %s\n", bestTraceScore,
-         //       bestTrace.toString());
+        // System.out.printf("Best: %.2f, with trace: %s\n", bestTraceScore,
+        // bestTrace.toString());
 
         // Question C
         printTop5(topTraces);
@@ -619,6 +577,7 @@ public class FuzzingLab {
     static void reset() {
         minimumBranchTrue.clear();
         minimumBranchFalse.clear();
+        currentBranches.clear();
     }
 
     static void run() {
@@ -635,7 +594,6 @@ public class FuzzingLab {
             try {
                 currentTrace = fuzz(DistanceTracker.inputSymbols);
                 double score = computeScore(currentTrace);
-                score = branchesSumAll();
 
                 int visited = numVisited();
                 int total = totalBranches();
@@ -645,12 +603,13 @@ public class FuzzingLab {
                     stableSince = now;
                     lastVisited = visited;
                 }
+                printAnswersQuestion1();
 
                 System.out.printf(
-                        "Iter %d: Visited %d / %d. Errors: %d. Score: %.2f, Traces per iter: %d. tracelength: %d. Running for %d.\n",
+                        "Iter %d: Visited %d / %d. Errors: %d. Score: %.2f, Traces per iter: %d. tracelength: %d. Running for %.2f\n",
                         iterations, visited, total,
                         outputErrors.size(), score, tracesPerIteration,
-                        currentTrace.size(), (now - start) / 1000);
+                        currentTrace.size(), (now - start) / 1000.0);
 
                 if (score > bestTraceScore) {
                     bestTraceScore = score;
@@ -661,7 +620,9 @@ public class FuzzingLab {
 
                 updateTop5(topTraces, Pair.of(score, currentTrace));
 
-                printAnswersQuestion1();
+                if (iterations % 100 == 0 && mode == FuzzMode.COVERAGE_SET) {
+                    compress();
+                }
 
                 if (iterations % 1000 == 0) {
                     Thread.sleep(0);
@@ -672,7 +633,7 @@ public class FuzzingLab {
             }
         }
         System.out.printf("stable after %d seconds (over a period of %ds)\n", (stableSince - start) / 1000,
-                (System.currentTimeMillis() - stableSince)  / 1000);
+                (System.currentTimeMillis() - stableSince) / 1000);
         System.exit(0);
     }
 
@@ -701,9 +662,38 @@ public class FuzzingLab {
 
     static double computeScore(List<String> trace) {
         reset();
+        List<String> oldTrace = currentTrace;
+        int visited = numVisited();
         DistanceTracker.runNextFuzzedSequence(trace.toArray(new String[0]));
-        return branchSumUnvisited();
-        // return branchesSumAll();
+        if (mode == FuzzMode.RANDOM) {
+            return branchesSumAll();
+        } else if (mode == FuzzMode.HILL_CLIMBER) {
+            return branchSumUnvisited();
+        } else if (mode == FuzzMode.COVERAGE_SET) {
+            int newVisited = numVisited();
+            if (newVisited > visited) {
+                return Double.valueOf(newVisited - visited);
+            }
+            return 0;
+        }
+        throw new IllegalArgumentException("No scoring for current mode");
+    }
+
+    static void compress() {
+        List<Pair<Integer, List<String>>> sorted = topTraces.stream().map((a) -> {
+            reset();
+            DistanceTracker.runNextFuzzedSequence(a.getRight().toArray(new String[0]));
+            return Pair.of(numVisited(currentBranches), a.getRight());
+        }).sorted((a, b) -> {
+            return b.getKey().compareTo(a.getKey());
+        }).collect(Collectors.toList());
+        branches.clear();
+        topTraces.clear();
+        for (Pair<Integer, List<String>> trace : sorted) {
+            double score = computeScore(trace.getRight());
+            updateTop5(topTraces, Pair.of(score, trace.getRight()));
+        }
+        NUM_TOP_TRACES++;
     }
 
     /**
