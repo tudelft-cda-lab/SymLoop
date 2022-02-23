@@ -631,8 +631,8 @@ public class FuzzingLab {
                 e.printStackTrace();
             }
         }
-        System.out.printf("stable after %d seconds (over a period of %ds)\n", (stableSince - start) / 1000,
-                (System.currentTimeMillis() - stableSince) / 1000);
+        System.out.printf("stable after %d seconds (over a period of %ds): Erros: %s\n", (stableSince - start) / 1000,
+                (System.currentTimeMillis() - stableSince) / 1000, outputErrors.toString());
         System.exit(0);
     }
 
