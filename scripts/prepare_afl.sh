@@ -12,9 +12,10 @@ prepare () {
     mkdir -p problems/$1/tests problems/$1/findings
     sed -n "s/^.*inputs\[\] = {\s*\(\S*\)}.*$/\1/p" "problems/Problem$1.c" | xargs -n 1 -d , | xargs -I % sh -c "echo % > problems/$1/tests/%.txt && echo >> problems/$1/tests/%.txt"
     echo "Compiling $1";
-    # ../AFL/afl-2.52b/afl-gcc "problems/Problem$1.c" -o "problems/Problem$1"
+    ../AFL/afl-2.52b/afl-gcc "problems/Problem$1.c" -o "problems/Problem$1"
     echo "Fuzzing $1";
-    # AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 AFL_SKIP_CPUFREQ=1 ../AFL/afl-2.52b/afl-fuzz -i "problems/$1/tests" -o "problems/$1/findings" "problems/Problem$1"
+    AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 AFL_SKIP_CPUFREQ=1 ../AFL/afl-2.52b/afl-fuzz -i "problems/$1/tests" -o "problems/$1/findings" "problems/Problem$1"
+    ../AFL/afl-2.52b/afl-plot problems/$1/findings/ problems/$1/plot
 
     echo > problems/$1/errors.txt
     set +e
@@ -27,4 +28,6 @@ prepare () {
     set -e
     echo Found $(cat problems/$1/final.txt | wc -l) distinct errors
 }
-prepare $1
+# for i in {11..19}; do
+prepare $i
+# }
