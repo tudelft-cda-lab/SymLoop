@@ -85,7 +85,8 @@ public class FuzzingLab {
 
     static Random r = new Random();
     static List<String> currentTrace;
-    static int traceLength = 10;
+    static int MIN_TRACE_LENGTH = 0;
+    static int MAX_TRACE_LENGTH = 100;
     static boolean isFinished = false;
 
     static Map<Integer, VisitedEnum> branches = new HashMap<Integer, VisitedEnum>();
@@ -105,6 +106,9 @@ public class FuzzingLab {
     static final int STOP_WHEN_STABLE_FOR = 1000 * 30;
 
     static Pair<Double, List<String>> latestTraceHC;
+
+    private static final int EXIT_WHEN_STABLE_FOR = 1000;
+    private static int noChange = 0;
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
