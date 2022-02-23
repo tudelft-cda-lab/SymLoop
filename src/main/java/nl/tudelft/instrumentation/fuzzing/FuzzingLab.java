@@ -415,13 +415,12 @@ public class FuzzingLab {
                     lowestIndex = i;
                 }
             }
-            // if the best of the traces is not better than the last one
+            // If the best of the traces is not better than the last one
+            // And with a 10% chance
             if (lowestScore > latestTraceHC.getLeft() && r.nextDouble() < 0.1) {
                 // Generate a random trace
                 List<String> trace = generateRandomTrace(inputSymbols);
                 latestTraceHC = Pair.of(computeScore(trace), trace);
-                // Increase the number of traces to generate for the next rounds
-                // amountToGenerate++;
             } else {
                 latestTraceHC = mutations.get(lowestIndex);
             }
