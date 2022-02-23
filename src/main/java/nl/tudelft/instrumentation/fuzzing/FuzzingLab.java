@@ -85,8 +85,8 @@ public class FuzzingLab {
 
     static Random r = new Random();
     static List<String> currentTrace;
-    static int MIN_TRACE_LENGTH = 0;
-    static int MAX_TRACE_LENGTH = 100;
+    static final int MIN_TRACE_LENGTH = 0;
+    static final int MAX_TRACE_LENGTH = 100;
     static boolean isFinished = false;
 
     static Map<Integer, VisitedEnum> branches = new HashMap<Integer, VisitedEnum>();
@@ -107,9 +107,6 @@ public class FuzzingLab {
 
     static Pair<Double, List<String>> latestTraceHC;
 
-    private static final int EXIT_WHEN_STABLE_FOR = 1000;
-    private static int noChange = 0;
-
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         currentTrace = generateRandomTrace(inputSymbols);
@@ -119,6 +116,7 @@ public class FuzzingLab {
     static Pattern pattern = Pattern.compile("Invalid input: error_(\\d+)");
     private static int tracesPerIteration = 20;
     private static int lastVisited = 0;
+    private static int traceLength = 10;
 
     static int stringDifference(String a, String b) {
         int index = 0;
@@ -529,10 +527,6 @@ public class FuzzingLab {
         return result;
     }
 
-    static int getRandomNumber(int min, int max) {
-        return (int) ((Math.random() * (max - min)) + min);
-    }
-
     /**
      * Generate a random trace from an array of symbols.
      * 
@@ -542,7 +536,9 @@ public class FuzzingLab {
     static List<String> generateRandomTrace(String[] symbols) {
         ArrayList<String> trace = new ArrayList<>();
         int length = traceLength;
-        if (currentTrace != null) {
+        if (mode == FuzzMode.RANDOM) {
+            length = r.nextInt(MAX_TRACE_LENGTH - MIN_TRACE_LENGTH) + MIN_TRACE_LENGTH;
+        } else if (currentTrace != null) {
             length = Math.max(currentTrace.size(), traceLength);
             length = r.nextInt(length) + length / 2;
         }
@@ -680,7 +676,6 @@ public class FuzzingLab {
     static double branchesSumAll() {
         double sum = 0;
         for (int line_nr : branches.keySet()) {
-            VisitedEnum visited = branches.get(line_nr);
             sum += minimumBranchFalse.getOrDefault(line_nr, 1.0);
             sum += minimumBranchTrue.getOrDefault(line_nr, 1.0);
         }
