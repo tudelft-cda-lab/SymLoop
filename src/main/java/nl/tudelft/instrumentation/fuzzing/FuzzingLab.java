@@ -102,6 +102,7 @@ public class FuzzingLab {
     static final int NUM_TOP_TRACES = 5;
     static int iterations = 0;
     static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
+    // static final FuzzMode mode = FuzzMode.RANDOM;
     static long stableSince = System.currentTimeMillis();
     static final int STOP_WHEN_STABLE_FOR = 1000 * 30;
 
@@ -356,9 +357,11 @@ public class FuzzingLab {
         if (value) {
             double newMininum = Math.min(minimumBranchTrue.getOrDefault(line_nr, 1.0), bd);
             minimumBranchTrue.put(line_nr, newMininum);
+            minimumBranchFalse.put(line_nr, 0.0);
         } else {
             double newMininum = Math.min(minimumBranchFalse.getOrDefault(line_nr, 1.0), bd);
             minimumBranchFalse.put(line_nr, newMininum);
+            minimumBranchTrue.put(line_nr, 0.0);
         }
     }
 
