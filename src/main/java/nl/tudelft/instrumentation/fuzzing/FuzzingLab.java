@@ -101,10 +101,10 @@ public class FuzzingLab {
     static List<Pair<Double, List<String>>> topTraces = new ArrayList<>(5);
     static final int NUM_TOP_TRACES = 5;
     static int iterations = 0;
-    static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
-    // static final FuzzMode mode = FuzzMode.RANDOM;
+    // static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
+    static final FuzzMode mode = FuzzMode.RANDOM;
     static long stableSince = System.currentTimeMillis();
-    static final int STOP_WHEN_STABLE_FOR = 1000 * 30;
+    static final int STOP_WHEN_STABLE_FOR = 1000 * 10;
 
     static Pair<Double, List<String>> latestTraceHC;
 
@@ -344,6 +344,12 @@ public class FuzzingLab {
         Double bd = branchDistance(condition, value);
         // System.out.printf("line %5d, now: %b,\tdist: %2d, %s\n", line_nr, value, bd,
         // condition.toString());
+
+        if(!branches.containsKey(line_nr)){
+            incrementTop5();
+        }
+
+
         branches.put(line_nr, branches.getOrDefault(line_nr, VisitedEnum.NONE).andVisit(value));
         if (minimumBranchDistances.containsKey(line_nr)) {
             if (minimumBranchDistances.get(line_nr).getLeft() > bd) {
@@ -590,17 +596,24 @@ public class FuzzingLab {
         }
     }
 
+    static void incrementTop5() {
+        for (int i = 0; i < topTraces.size(); i++) {
+            Pair<Double, List<String>> pair = topTraces.get(i);
+            topTraces.set(i, Pair.of(pair.getLeft() + 2, pair.getRight()));
+        }
+    }
+
     static void printAnswersQuestion1() {
         // Question A
-        System.out.printf("Unique branches: Visited %d out of %d. Errors found: %d\n",
-                numVisited(), totalBranches(), outputErrors.size());
+        // System.out.printf("Unique branches: Visited %d out of %d. Errors found: %d\n",
+        //        numVisited(), totalBranches(), outputErrors.size());
 
         // Question B
-        System.out.printf("Best: %.2f, with trace: %s\n", bestTraceScore,
-                bestTrace.toString());
+        //System.out.printf("Best: %.2f, with trace: %s\n", bestTraceScore,
+         //       bestTrace.toString());
 
         // Question C
-        // printTop5(topTraces);
+        printTop5(topTraces);
     }
 
     static void reset() {
@@ -622,6 +635,7 @@ public class FuzzingLab {
             try {
                 currentTrace = fuzz(DistanceTracker.inputSymbols);
                 double score = computeScore(currentTrace);
+                score = branchesSumAll();
 
                 int visited = numVisited();
                 int total = totalBranches();
@@ -645,9 +659,9 @@ public class FuzzingLab {
                             currentTrace.toString());
                 }
 
-                // updateTop5(topTraces, Pair.of(score, currentTrace));
+                updateTop5(topTraces, Pair.of(score, currentTrace));
 
-                // printAnswersQuestion1();
+                printAnswersQuestion1();
 
                 if (iterations % 1000 == 0) {
                     Thread.sleep(0);
