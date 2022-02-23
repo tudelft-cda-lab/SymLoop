@@ -29,5 +29,6 @@ prepare () {
     echo Found $(cat problems/$1/final.txt | wc -l) distinct errors
 }
 # for i in {11..19}; do
-prepare $i
+# prepare $i
 # }
+prepare $1
