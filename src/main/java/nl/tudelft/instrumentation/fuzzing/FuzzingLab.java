@@ -355,13 +355,13 @@ public class FuzzingLab {
         }
 
         if (value) {
-            double newMininum = Math.min(minimumBranchTrue.getOrDefault(line_nr, 1.0), bd);
-            minimumBranchTrue.put(line_nr, newMininum);
-            minimumBranchFalse.put(line_nr, 0.0);
-        } else {
             double newMininum = Math.min(minimumBranchFalse.getOrDefault(line_nr, 1.0), bd);
             minimumBranchFalse.put(line_nr, newMininum);
             minimumBranchTrue.put(line_nr, 0.0);
+        } else {
+            double newMininum = Math.min(minimumBranchTrue.getOrDefault(line_nr, 1.0), bd);
+            minimumBranchTrue.put(line_nr, newMininum);
+            minimumBranchFalse.put(line_nr, 0.0);
         }
     }
 
@@ -667,10 +667,10 @@ public class FuzzingLab {
         for (int line_nr : branches.keySet()) {
             VisitedEnum visited = branches.get(line_nr);
             if (!visited.hasVisited(true)) {
-                sum += minimumBranchFalse.getOrDefault(line_nr, 1.0);
+                sum += minimumBranchTrue.getOrDefault(line_nr, 1.0);
             }
             if (!visited.hasVisited(false)) {
-                sum += minimumBranchTrue.getOrDefault(line_nr, 1.0);
+                sum += minimumBranchFalse.getOrDefault(line_nr, 1.0);
             }
         }
         return sum;
