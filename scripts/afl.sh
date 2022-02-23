@@ -1,14 +1,14 @@
 #!/bin/bash
 set -e
 cd /home/str/JavaInstrumentation
-mkdir -p problems
-OUT=problems
+OUT=afl
+mkdir -p $OUT
 
 prepare () {
     echo "Copying $1";
     cp "../RERS/Problem$1/Problem$1.c" $OUT/
     echo "Modifying $1";
-    sed -i 's/extern void __VERIFIER_error(int);/void __VERIFIER_error(int i) {fprintf(stderr, "error_%d ", i);assert(0);}/' "problems/Problem$1.c"
+    sed -i 's/extern void __VERIFIER_error(int);/void __VERIFIER_error(int i) {fprintf(stderr, "error_%d ", i);assert(0);}/' "$OUT/Problem$1.c"
     sed -i 's/scanf("%d", &input);/int ret = scanf("%d", \&input ); if (ret != 1) return 0;/' "$OUT/Problem$1.c"
     mkdir -p $OUT/$1/tests $OUT/$1/findings
     sed -n "s/^.*inputs\[\] = {\s*\(\S*\)}.*$/\1/p" "$OUT/Problem$1.c" | xargs -n 1 -d , | xargs -I % sh -c "echo % > $OUT/$1/tests/%.txt && echo >> $OUT/$1/tests/%.txt"
