@@ -82,8 +82,8 @@ public class FuzzingLab {
 
     static Random r = new Random();
     static List<String> currentTrace;
-    static final int MIN_TRACE_LENGTH = 0;
-    static final int MAX_TRACE_LENGTH = 100;
+    static final int MIN_TRACE_LENGTH = 10;
+    static final int MAX_TRACE_LENGTH = 50;
     static boolean isFinished = false;
 
     static Map<Integer, VisitedEnum> branches = new HashMap<Integer, VisitedEnum>();
@@ -97,11 +97,12 @@ public class FuzzingLab {
     static double bestTraceScore = 0;
 
     static List<Pair<Double, List<String>>> topTraces = new ArrayList<>(5);
+    static List<Pair<Double, List<String>>> topCombo = new ArrayList<>();
     static int NUM_TOP_TRACES = 1;
     static int iterations = 0;
     // static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
-    static final FuzzMode mode = FuzzMode.RANDOM;
-    // static final FuzzMode mode = FuzzMode.COVERAGE_SET;
+    // static final FuzzMode mode = FuzzMode.RANDOM;
+    static final FuzzMode mode = FuzzMode.COVERAGE_SET;
     static long stableSince = System.currentTimeMillis();
     static final int STOP_WHEN_STABLE_FOR = 1000 * 10;
 
@@ -117,6 +118,9 @@ public class FuzzingLab {
     private static int tracesPerIteration = 20;
     private static int lastVisited = 0;
     private static int traceLength = 10;
+
+    private static int discoveredBranches = 0;
+    private static boolean addToBranches = false;
 
     static int stringDifference(String a, String b) {
         int index = 0;
@@ -346,8 +350,15 @@ public class FuzzingLab {
         if (!branches.containsKey(line_nr) && mode == FuzzMode.RANDOM) {
             incrementTop5();
         }
+        if (!branches.containsKey(line_nr) || !branches.get(line_nr).hasVisited(value)) {
+            if(!currentBranches.containsKey(line_nr) || !currentBranches.get(line_nr).hasVisited(value)){
+                discoveredBranches += 1;
+            }
+        }
 
-        branches.put(line_nr, branches.getOrDefault(line_nr, VisitedEnum.NONE).andVisit(value));
+        if(addToBranches){
+            branches.put(line_nr, branches.getOrDefault(line_nr, VisitedEnum.NONE).andVisit(value));
+        }
         currentBranches.put(line_nr, currentBranches.getOrDefault(line_nr, VisitedEnum.NONE).andVisit(value));
         if (minimumBranchDistances.containsKey(line_nr)) {
             if (minimumBranchDistances.get(line_nr).getLeft() > bd) {
@@ -577,6 +588,7 @@ public class FuzzingLab {
         minimumBranchTrue.clear();
         minimumBranchFalse.clear();
         currentBranches.clear();
+        discoveredBranches = 0;
     }
 
     static void run() {
@@ -592,7 +604,9 @@ public class FuzzingLab {
             // Do things!
             try {
                 currentTrace = fuzz(DistanceTracker.inputSymbols);
+                addToBranches = false;
                 double score = computeScore(currentTrace);
+                addToBranches = true;
 
                 int visited = numVisited();
                 int total = totalBranches();
@@ -600,8 +614,8 @@ public class FuzzingLab {
                 long now = System.currentTimeMillis();
                 if (visited > lastVisited) {
                     stableSince = now;
-                    lastVisited = visited;
                 }
+                lastVisited = visited;
                 printAnswersQuestion1();
 
                 System.out.printf(
@@ -619,9 +633,25 @@ public class FuzzingLab {
 
                 updateTop5(topTraces, Pair.of(score, currentTrace));
 
-                if (iterations % 100 == 0 && mode == FuzzMode.COVERAGE_SET) {
-                    compress();
+                if (iterations % 20000 == 0 && mode == FuzzMode.COVERAGE_SET) {
+                    if(topTraces.size() == 0){
+                        System.out.println("=========================");
+                        printTop5(topCombo);
+                        System.out.println("=========================");
+                        System.exit(-1);
+                    }
+                    NUM_TOP_TRACES=100;
+                    score = computeScore(topTraces.get(0).getRight());
+                    updateTop5(topCombo, Pair.of(score, topTraces.get(0).getRight()));
+                    System.out.println("=========================");
+                    printTop5(topCombo);
+                    System.out.println("=========================");
+                    topTraces.clear();
+                    NUM_TOP_TRACES=1;
+                    Thread.sleep(1000);
+                    // compress();
                 }
+                stableSince = now;
 
                 if (iterations % 1000 == 0) {
                     Thread.sleep(0);
@@ -669,11 +699,12 @@ public class FuzzingLab {
         } else if (mode == FuzzMode.HILL_CLIMBER) {
             return branchSumUnvisited();
         } else if (mode == FuzzMode.COVERAGE_SET) {
-            int newVisited = numVisited();
-            if (newVisited > visited) {
-                return Double.valueOf(newVisited - visited);
-            }
-            return 0;
+            return discoveredBranches;
+            // int newVisited = numVisited();
+            // if (newVisited > visited) {
+            //     return Double.valueOf(newVisited - visited);
+            // }
+            // return 0;
         }
         throw new IllegalArgumentException("No scoring for current mode");
     }
@@ -690,7 +721,9 @@ public class FuzzingLab {
         topTraces.clear();
         for (Pair<Integer, List<String>> trace : sorted) {
             double score = computeScore(trace.getRight());
-            updateTop5(topTraces, Pair.of(score, trace.getRight()));
+            if(score > 2) {
+                updateTop5(topTraces, Pair.of(score, trace.getRight()));
+            }
         }
         NUM_TOP_TRACES++;
     }
