@@ -39,10 +39,12 @@ public class FuzzingLab {
     static int NUM_TOP_TRACES = 1;
     static int iterations = 0;
     // static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
-    // static final FuzzMode mode = FuzzMode.RANDOM;
-    static final FuzzMode mode = FuzzMode.COVERAGE_SET;
+    static final FuzzMode mode = FuzzMode.RANDOM;
+    // static final FuzzMode mode = FuzzMode.COVERAGE_SET;
     static long stableSince = System.currentTimeMillis();
-    static final int STOP_WHEN_STABLE_FOR = 1000 * 10;
+    static final int STOP_WHEN_STABLE_FOR = 1000 * 10 * 10000;
+    // static final int STOP_AFTER = 1000 * 60 * 10;
+    static final int STOP_AFTER = 1000 * 10;
 
     static Pair<Double, List<String>> latestTraceHC;
 
@@ -60,10 +62,10 @@ public class FuzzingLab {
     private static int discoveredBranches = 0;
     private static boolean addToBranches = false;
 
-
     public static double branchDistance(MyVar condition, boolean value) {
         return BranchDistance.compute(condition, value);
     }
+
     /**
      * Write your solution that specifies what should happen when a new branch has
      * been found.
@@ -317,6 +319,10 @@ public class FuzzingLab {
         discoveredBranches = 0;
     }
 
+    static boolean hasElapsed(long since, long amount) {
+        return since + amount <= System.currentTimeMillis();
+    }
+
     static void run() {
         initialize(DistanceTracker.inputSymbols);
         DistanceTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
@@ -325,12 +331,12 @@ public class FuzzingLab {
 
         System.out.println(branches.toString());
         // Place here your code to guide your fuzzer with its search.
-        while (!isFinished && stableSince + STOP_WHEN_STABLE_FOR > System.currentTimeMillis()) {
+        while (!isFinished && !hasElapsed(stableSince, STOP_WHEN_STABLE_FOR) && !hasElapsed(start, STOP_AFTER)) {
             iterations++;
             // Do things!
             try {
                 currentTrace = fuzz(DistanceTracker.inputSymbols);
-                addToBranches = false;
+                addToBranches = mode != FuzzMode.COVERAGE_SET;
                 double score = computeScore(currentTrace);
                 addToBranches = true;
 
@@ -342,8 +348,6 @@ public class FuzzingLab {
                     stableSince = now;
                 }
                 lastVisited = visited;
-                printAnswersQuestion1();
-
                 System.out.printf(
                         "Iter %d: Visited %d / %d. Errors: %d. Score: %.2f, Traces per iter: %d. tracelength: %d. Running for %.2f\n",
                         iterations, visited, total,
@@ -355,9 +359,9 @@ public class FuzzingLab {
                     bestTrace = new ArrayList<>(currentTrace);
                     System.out.printf("New best: %f, with trace: %s\n", score,
                             currentTrace.toString());
+                    updateTop5(topTraces, Pair.of(score, currentTrace));
                 }
 
-                updateTop5(topTraces, Pair.of(score, currentTrace));
 
                 if (iterations % 20000 == 0 && mode == FuzzMode.COVERAGE_SET) {
                     if (topTraces.size() == 0) {
@@ -387,8 +391,10 @@ public class FuzzingLab {
                 e.printStackTrace();
             }
         }
+        ArrayList<Integer> out = new ArrayList<>(outputErrors);
+        out.sort((a, b) -> a.compareTo(b));
         System.out.printf("stable after %d seconds (over a period of %ds): Erros: %s\n", (stableSince - start) / 1000,
-                (System.currentTimeMillis() - stableSince) / 1000, outputErrors.toString());
+                (System.currentTimeMillis() - stableSince) / 1000, out.toString());
         System.exit(0);
     }
 
