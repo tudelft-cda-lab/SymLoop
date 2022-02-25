@@ -20,8 +20,9 @@ prepare () {
 
     echo > $OUT/$1/errors.txt
     set +e
-    for f in $(ls $OUT/$1/findings/crashes/id*);
+    for f in $(ls -tr $OUT/$1/findings/crashes/id*);
     do
+        echo $f >> $OUT/$1/errors.txt
         cat $f | $OUT/Problem$1 2>> $OUT/$1/errors.txt 1> /dev/null
     done;
     clear
