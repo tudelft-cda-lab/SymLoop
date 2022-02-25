@@ -10,5 +10,5 @@ for i in {11..19}; do
   echo "DONE $i" >> experiments/$D/full.log
   # echo Done problem $i
   echo "Iter,Visited,Discovered,Errors,Score,TracesPerIter,Tracelength,Time" > experiments/$D/$i.sheet.csv
-  cat experiments/$D/$i.log | grep 'Iter' | grep -o '[0-9]\+\(\.[0-9]\+\)\?' | xargs -n 8 | tr ' ' ',' > experiments/$D/$i.sheet.csv
+  cat experiments/$D/$i.log | grep 'Iter' | grep -o '[0-9]\+\(\.[0-9]\+\)\?' | xargs -n 8 | tr ' ' ',' >> experiments/$D/$i.sheet.csv
 done
