@@ -27,3 +27,5 @@ Thumbs.db
 target/
 instrumented/
 Problem*.java
+scripts/lastmodified
+problems/

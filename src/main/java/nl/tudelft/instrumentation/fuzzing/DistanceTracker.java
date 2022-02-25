@@ -88,7 +88,7 @@ public class DistanceTracker {
      * @param line_nr the line number of the if-statement.
      */
     public static void myIf(MyVar condition, boolean value, int line_nr){
-        System.out.println("Found a new branch");
+        // System.out.println("Found a new branch");
         FuzzingLab.encounteredNewBranch(condition, value, line_nr);
     }
 
