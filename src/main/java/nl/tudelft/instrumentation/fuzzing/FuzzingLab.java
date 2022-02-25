@@ -43,8 +43,7 @@ public class FuzzingLab {
     // static final FuzzMode mode = FuzzMode.COVERAGE_SET;
     static long stableSince = System.currentTimeMillis();
     static final int STOP_WHEN_STABLE_FOR = 1000 * 10 * 10000;
-    // static final int STOP_AFTER = 1000 * 60 * 10;
-    static final int STOP_AFTER = 1000 * 10;
+    static final int STOP_AFTER = 1000 * 60 * 10;
 
     static Pair<Double, List<String>> latestTraceHC;
 
