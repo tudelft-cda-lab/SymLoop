@@ -25,8 +25,6 @@ public class FuzzingLab {
 
     static BranchVisitedTracker branchTracker = new BranchVisitedTracker();
     static BranchVisitedTracker currentBranchTracker = new BranchVisitedTracker();
-    // static Map<Integer, VisitedEnum> currentBranches = new HashMap<Integer,
-    // VisitedEnum>();
     static Map<Integer, Pair<Double, List<String>>> minimumBranchDistances = new HashMap<>();
 
     static Map<Integer, Double> minimumBranchTrue = new HashMap<>();
@@ -40,8 +38,8 @@ public class FuzzingLab {
     static int NUM_TOP_TRACES = 5;
     static int iterations = 0;
     static final FuzzMode mode = FuzzMode.RANDOM;
-    // static final FuzzMode mode = FuzzMode.RANDOM;
     // static final FuzzMode mode = FuzzMode.COVERAGE_SET;
+    // static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
     static final int STOP_AFTER = 1000 * 60 * 10;
 
     static Pair<Double, List<String>> latestTraceHC;
