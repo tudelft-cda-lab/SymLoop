@@ -323,8 +323,7 @@ public class FuzzingLab {
                 if (score > bestTraceScore) {
                     bestTraceScore = score;
                     bestTrace = new ArrayList<>(currentTrace);
-                    System.out.printf("New best: %f, with trace: %s\n", score,
-                            currentTrace.toString());
+                    System.out.printf("New best: %f, with trace: %s\n", score, currentTrace.toString());
                     updateTopN(topTraces, Pair.of(score, currentTrace), NUM_TOP_TRACES);
                     printAnswersQuestion1();
                 }
@@ -352,7 +351,8 @@ public class FuzzingLab {
         }
         ArrayList<Integer> out = new ArrayList<>(outputErrors);
         out.sort((a, b) -> a.compareTo(b));
-        System.out.printf("Ran for %d seconds: Errors: %s\n", (System.currentTimeMillis() - start) / 1000, out.toString());
+        System.out.printf("Ran for %d seconds: Errors: %s\n", (System.currentTimeMillis() - start) / 1000,
+                out.toString());
         System.exit(0);
     }
 
