@@ -3,7 +3,6 @@ package nl.tudelft.instrumentation.fuzzing;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -16,6 +15,10 @@ public class FuzzingLab {
         COVERAGE_SET,
         HILL_CLIMBER,
     }
+
+    static final FuzzMode mode = FuzzMode.RANDOM;
+    // static final FuzzMode mode = FuzzMode.COVERAGE_SET;
+    // static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
 
     static Random r = new Random();
     static List<String> currentTrace;
@@ -33,13 +36,10 @@ public class FuzzingLab {
     static List<String> bestTrace;
     static double bestTraceScore = 0;
 
-    static List<Pair<Double, List<String>>> topTraces = new ArrayList<>(5);
+    static List<Pair<Double, List<String>>> topTraces = new ArrayList<>();
     static List<Pair<Double, List<String>>> topCombo = new ArrayList<>();
     static int NUM_TOP_TRACES = 5;
     static int iterations = 0;
-    static final FuzzMode mode = FuzzMode.RANDOM;
-    // static final FuzzMode mode = FuzzMode.COVERAGE_SET;
-    // static final FuzzMode mode = FuzzMode.HILL_CLIMBER;
     static final int STOP_AFTER = 1000 * 60 * 10;
 
     static Pair<Double, List<String>> latestTraceHC;
