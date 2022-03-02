@@ -38,12 +38,16 @@ public class SymbolicExecutionLab {
 
     static MyVar createInput(String name, Expr value, Sort s) {
         // Create an input var, these should be free variables!
-        return new MyVar(PathTracker.ctx.mkString(""));
+        Context c = PathTracker.ctx;
+        return new MyVar(c.mkConst(c.mkSymbol(name + "_" + PathTracker.z3counter++), s), name);
     }
 
     static MyVar createBoolExpr(BoolExpr var, String operator) {
         // Any unary expression (!)
-        return new MyVar(PathTracker.ctx.mkFalse());
+        if (operator.equals("!")) {
+            return new MyVar(PathTracker.ctx.mkNot(var));
+        }
+            throw new IllegalArgumentException(String.format("unary operator: %s not implement", operator));
     }
 
     static MyVar createBoolExpr(BoolExpr left_var, BoolExpr right_var, String operator) {
@@ -86,6 +90,7 @@ public class SymbolicExecutionLab {
 
     static void newSatisfiableInput(LinkedList<String> new_inputs) {
         // Hurray! found a new branch using these new inputs!
+        System.out.printf("New satisfiable input: %s", new_inputs);
     }
 
     /**
@@ -122,6 +127,8 @@ public class SymbolicExecutionLab {
     static void run() {
         initialize(PathTracker.inputSymbols);
         PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+        System.out.println(PathTracker.ctx);
+        System.out.println(PathTracker.inputs);
         // Place here your code to guide your fuzzer with its search using Symbolic
         // Execution.
         while (!isFinished) {
