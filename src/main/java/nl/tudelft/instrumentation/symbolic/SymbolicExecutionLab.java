@@ -2,6 +2,8 @@ package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
 import com.microsoft.z3.*;
+
+import nl.tudelft.instrumentation.fuzzing.BranchVisitedTracker;
 import nl.tudelft.instrumentation.fuzzing.DistanceTracker;
 
 import java.util.Random;
@@ -18,6 +20,7 @@ public class SymbolicExecutionLab {
     static List<String> currentTrace;
     static int traceLength = 10;
     static List<String> nextTrace = null;
+    static BranchVisitedTracker branchTracker = new BranchVisitedTracker();
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -39,17 +42,21 @@ public class SymbolicExecutionLab {
 
     static MyVar createInput(String name, Expr value, Sort s) {
         // Create an input var, these should be free variables!
-        // Do bound it to a value
         // Do not add it to the model
         Context c = PathTracker.ctx;
         Expr intermediate = c.mkConst(c.mkSymbol(name + "_" + PathTracker.z3counter++), s);
         // intermediate = c.mkEq(intermediate, value);
         MyVar input = new MyVar(intermediate, name);
         PathTracker.inputs.add(input);
-        // PathTracker.z3model = c.mkAnd(intermediate, PathTracker.z3model);
+        
+        // restrict inputs to the valid input symbols found in PathTracker.inputSymbols
+        BoolExpr temp = c.mkFalse();
+        for(int i = 0; i < PathTracker.inputSymbols.length; i++){
+            temp = c.mkOr(temp, c.mkEq(c.mkString(PathTracker.inputSymbols[i]), intermediate));
+        }
+        PathTracker.z3model = c.mkAnd(temp, PathTracker.z3model);
+
         return input;
-        // TOCHECK
-        // return new MyVar(c.mkTrue());
     }
 
     static MyVar createBoolExpr(BoolExpr var, String operator) {
@@ -131,10 +138,11 @@ public class SymbolicExecutionLab {
         // PathTracker.z3modelz3model = c.mkAnd(c.mkEq(z3var, value),
         // PathTracker.z3model);
 
-        if (nextTrace == null) {
+        branchTracker.visit(line_nr, value);
+        if (nextTrace == null &&!branchTracker.hasVisited(line_nr, !value)) {
             Context c = PathTracker.ctx;
-            System.out.printf("line %d, value: %b, trace: %s\n", line_nr, value, currentTrace);
-            PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), true);
+            // System.out.printf("line %d, value: %b, trace: %s\n", line_nr, value, currentTrace);
+            PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
 
             BoolExpr temp = c.mkEq(condition.z3var, c.mkBool(value));
             // c.mkOr(c.mkEq(condition.z3var, c.mkBool(value)), c.mkEq(condition.z3var,
@@ -147,8 +155,12 @@ public class SymbolicExecutionLab {
 
     static void newSatisfiableInput(LinkedList<String> new_inputs) {
         // Hurray! found a new branch using these new inputs!
-        System.out.printf("New satisfiable input: %s\n", new_inputs);
-        nextTrace = new_inputs;
+        LinkedList<String> temp = new LinkedList<String>();
+        for(String s : new_inputs) {
+            temp.add(s.replaceAll("\"", ""));
+        }
+        nextTrace = temp;
+        System.out.printf("New satisfiable input: %s\n", temp);
     }
 
     /**
@@ -199,15 +211,17 @@ public class SymbolicExecutionLab {
                     nextTrace = null;
                 }
                 PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-                System.in.read();
-                Thread.sleep(10);
+                // System.in.read();
                 // System.out.println("Woohoo, looping!");
+                System.out.printf("Visited: %d out of %d\n", branchTracker.numVisited(), branchTracker.totalBranches());
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
             }
+            // catch (IOException e) {
+            //     // TODO Auto-generated catch block
+            //     e.printStackTrace();
+            // }
         }
     }
 
