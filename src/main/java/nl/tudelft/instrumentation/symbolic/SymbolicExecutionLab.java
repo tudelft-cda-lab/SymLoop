@@ -62,9 +62,12 @@ public class SymbolicExecutionLab {
 
     static MyVar createIntExpr(IntExpr var, String operator) {
         // Any unary expression (+, -)
-        if (operator.equals("+") || operator.equals("-"))
-            return new MyVar(PathTracker.ctx.mkInt(0));
-        return new MyVar(PathTracker.ctx.mkFalse());
+        if (operator.equals("+")) {
+            return new MyVar(var);
+        } else if (operator.equals("-")) {
+            return new MyVar(PathTracker.ctx.mkUnaryMinus(var));
+        }
+        throw new IllegalArgumentException(String.format("int expression: %s not implement", operator));
     }
 
     static MyVar createIntExpr(IntExpr left_var, IntExpr right_var, String operator) {
