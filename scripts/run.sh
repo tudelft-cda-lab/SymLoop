@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-modified=$(stat -c%Z src/main/java/nl/tudelft/instrumentation/fuzzing/FuzzingLab.java)
+modified=$(stat -c%Z src/main/java/nl/tudelft/instrumentation/symbolic/SymbolicExecutionLab.java)
 touch scripts/lastmodified
 lastmodified=$(cat scripts/lastmodified)
 if [ "$modified" -gt "$lastmodified" ]; then
@@ -8,4 +8,4 @@ if [ "$modified" -gt "$lastmodified" ]; then
   clear
 fi
 echo $modified > scripts/lastmodified
-java -cp target/aistr.jar:./instrumented:. Problem$1
+java -cp target/aistr.jar:lib/com.microsoft.z3.jar:./instrumented Problem$1
