@@ -48,7 +48,12 @@ public class SymbolicExecutionLab {
 
     static MyVar createBoolExpr(BoolExpr left_var, BoolExpr right_var, String operator) {
         // Any binary expression (&, &&, |, ||)
-        return new MyVar(PathTracker.ctx.mkFalse());
+        if (operator.equals("&&") || operator.equals("&")) {
+            return new MyVar(PathTracker.ctx.mkAnd(left_var, right_var));
+        } else if (operator.equals("||") || operator.equals("|")) {
+            return new MyVar(PathTracker.ctx.mkOr(left_var, right_var));
+        }
+        throw new IllegalArgumentException(String.format("binary operator: %s not implement", operator));
     }
 
     static MyVar createIntExpr(IntExpr var, String operator) {
