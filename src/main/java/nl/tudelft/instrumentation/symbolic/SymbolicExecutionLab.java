@@ -212,7 +212,7 @@ public class SymbolicExecutionLab {
                 PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
                 // System.in.read();
                 // System.out.println("Woohoo, looping!");
-                System.out.printf("Visited: %d out of %d\n", branchTracker.numVisited(), branchTracker.totalBranches());
+                System.out.printf("Visited: %d out of %d, #nextTraces: %d\n", branchTracker.numVisited(), branchTracker.totalBranches(), nextTraces.size());
                 Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
