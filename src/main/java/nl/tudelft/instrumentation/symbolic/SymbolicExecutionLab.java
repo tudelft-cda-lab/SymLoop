@@ -99,7 +99,11 @@ public class SymbolicExecutionLab {
 
     static MyVar createStringExpr(SeqExpr left_var, SeqExpr right_var, String operator) {
         // We only support String.equals
-        return new MyVar(PathTracker.ctx.mkFalse());
+        // return new MyVar(PathTracker.ctx.mkFalse());
+        if(operator.equals("==")) {
+            return new MyVar(PathTracker.ctx.mkEq(left_var, right_var));
+        }
+        throw new IllegalArgumentException(String.format("string operator: %s not implement", operator));
     }
 
     static void assign(MyVar var, String name, Expr value, Sort s) {
@@ -148,7 +152,6 @@ public class SymbolicExecutionLab {
 
     static void run() {
         initialize(PathTracker.inputSymbols);
-        PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
         System.out.println(PathTracker.ctx);
         System.out.println(PathTracker.inputs);
         // Place here your code to guide your fuzzer with its search using Symbolic
@@ -156,8 +159,10 @@ public class SymbolicExecutionLab {
         while (!isFinished) {
             // Do things!
             try {
-                System.out.println("Woohoo, looping!");
-                Thread.sleep(1000);
+                initialize(PathTracker.inputSymbols);
+                PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+                Thread.sleep(1);
+                // System.out.println("Woohoo, looping!");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -165,7 +170,9 @@ public class SymbolicExecutionLab {
     }
 
     public static void output(String out) {
-        System.out.println(out);
+        if(!out.contains("Current state")) {
+            System.out.println(out);
+        }
     }
 
 }
