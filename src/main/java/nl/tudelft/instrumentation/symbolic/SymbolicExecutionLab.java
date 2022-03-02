@@ -17,6 +17,7 @@ public class SymbolicExecutionLab {
     static Boolean isFinished = false;
     static List<String> currentTrace;
     static int traceLength = 10;
+    static List<String> nextTrace = null;
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -38,8 +39,17 @@ public class SymbolicExecutionLab {
 
     static MyVar createInput(String name, Expr value, Sort s) {
         // Create an input var, these should be free variables!
+        // Do bound it to a value
+        // Do not add it to the model
         Context c = PathTracker.ctx;
-        return new MyVar(c.mkConst(c.mkSymbol(name + "_" + PathTracker.z3counter++), s), name);
+        Expr intermediate = c.mkConst(c.mkSymbol(name + "_" + PathTracker.z3counter++), s);
+        // intermediate = c.mkEq(intermediate, value);
+        MyVar input = new MyVar(intermediate, name);
+        PathTracker.inputs.add(input);
+        // PathTracker.z3model = c.mkAnd(intermediate, PathTracker.z3model);
+        return input;
+        // TOCHECK
+        // return new MyVar(c.mkTrue());
     }
 
     static MyVar createBoolExpr(BoolExpr var, String operator) {
@@ -73,11 +83,11 @@ public class SymbolicExecutionLab {
 
     static MyVar createIntExpr(IntExpr left_var, IntExpr right_var, String operator) {
         // Any binary expression (+, -, /, etc)
-        if(operator.equals("==")){
+        if (operator.equals("==")) {
             return new MyVar(PathTracker.ctx.mkEq(left_var, right_var));
-        } else if(operator.equals("<=")){
+        } else if (operator.equals("<=")) {
             return new MyVar(PathTracker.ctx.mkLe(left_var, right_var));
-        } else if(operator.equals(">=")) {
+        } else if (operator.equals(">=")) {
             return new MyVar(PathTracker.ctx.mkGe(left_var, right_var));
         } else if (operator.equals("<")) {
             return new MyVar(PathTracker.ctx.mkLt(left_var, right_var));
@@ -100,8 +110,9 @@ public class SymbolicExecutionLab {
     static MyVar createStringExpr(SeqExpr left_var, SeqExpr right_var, String operator) {
         // We only support String.equals
         // return new MyVar(PathTracker.ctx.mkFalse());
-        if(operator.equals("==")) {
+        if (operator.equals("==")) {
             return new MyVar(PathTracker.ctx.mkEq(left_var, right_var));
+
         }
         throw new IllegalArgumentException(String.format("string operator: %s not implement", operator));
     }
@@ -117,11 +128,27 @@ public class SymbolicExecutionLab {
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
         // Call the solver
+        // PathTracker.z3modelz3model = c.mkAnd(c.mkEq(z3var, value),
+        // PathTracker.z3model);
+
+        if (nextTrace == null) {
+            Context c = PathTracker.ctx;
+            System.out.printf("line %d, value: %b, trace: %s\n", line_nr, value, currentTrace);
+            PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), true);
+
+            BoolExpr temp = c.mkEq(condition.z3var, c.mkBool(value));
+            // c.mkOr(c.mkEq(condition.z3var, c.mkBool(value)), c.mkEq(condition.z3var,
+            // c.mkBool(value)));
+            // System.exit(-1);
+            PathTracker.z3branches = c.mkAnd(temp, PathTracker.z3branches);
+        }
+        // PathTrakcer.z3branches = c.mkEq(z3model, c.mkTrue())
     }
 
     static void newSatisfiableInput(LinkedList<String> new_inputs) {
         // Hurray! found a new branch using these new inputs!
-        System.out.printf("New satisfiable input: %s", new_inputs);
+        System.out.printf("New satisfiable input: %s\n", new_inputs);
+        nextTrace = new_inputs;
     }
 
     /**
@@ -157,25 +184,35 @@ public class SymbolicExecutionLab {
 
     static void run() {
         initialize(PathTracker.inputSymbols);
-        System.out.println(PathTracker.ctx);
-        System.out.println(PathTracker.inputs);
+        // System.out.println(PathTracker.ctx);
+        // System.out.println(PathTracker.inputs);
         // Place here your code to guide your fuzzer with its search using Symbolic
         // Execution.
         while (!isFinished) {
             // Do things!
             try {
-                initialize(PathTracker.inputSymbols);
+                PathTracker.reset();
+                if (nextTrace == null) {
+                    initialize(PathTracker.inputSymbols);
+                } else {
+                    currentTrace = nextTrace;
+                    nextTrace = null;
+                }
                 PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-                Thread.sleep(1);
+                System.in.read();
+                Thread.sleep(10);
                 // System.out.println("Woohoo, looping!");
             } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
     }
 
     public static void output(String out) {
-        if(!out.contains("Current state")) {
+        if (!out.contains("Current state")) {
             System.out.println(out);
         }
     }
