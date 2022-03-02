@@ -19,7 +19,7 @@ public class SymbolicExecutionLab {
     static Boolean isFinished = false;
     static List<String> currentTrace;
     static int traceLength = 10;
-    static List<String> nextTrace = null;
+    static List<List<String>> nextTraces = new ArrayList();
     static BranchVisitedTracker branchTracker = new BranchVisitedTracker();
 
     static void initialize(String[] inputSymbols) {
@@ -139,7 +139,7 @@ public class SymbolicExecutionLab {
         // PathTracker.z3model);
 
         branchTracker.visit(line_nr, value);
-        if (nextTrace == null &&!branchTracker.hasVisited(line_nr, !value)) {
+        if (!branchTracker.hasVisited(line_nr, !value)) {
             Context c = PathTracker.ctx;
             // System.out.printf("line %d, value: %b, trace: %s\n", line_nr, value, currentTrace);
             PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
@@ -159,7 +159,7 @@ public class SymbolicExecutionLab {
         for(String s : new_inputs) {
             temp.add(s.replaceAll("\"", ""));
         }
-        nextTrace = temp;
+        nextTraces.add(temp);
         System.out.printf("New satisfiable input: %s\n", temp);
     }
 
@@ -204,11 +204,10 @@ public class SymbolicExecutionLab {
             // Do things!
             try {
                 PathTracker.reset();
-                if (nextTrace == null) {
+                if (nextTraces.isEmpty()) {
                     initialize(PathTracker.inputSymbols);
                 } else {
-                    currentTrace = nextTrace;
-                    nextTrace = null;
+                    currentTrace = nextTraces.remove(0);
                 }
                 PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
                 // System.in.read();
