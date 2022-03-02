@@ -47,7 +47,7 @@ public class SymbolicExecutionLab {
         if (operator.equals("!")) {
             return new MyVar(PathTracker.ctx.mkNot(var));
         }
-            throw new IllegalArgumentException(String.format("unary operator: %s not implement", operator));
+        throw new IllegalArgumentException(String.format("unary operator: %s not implement", operator));
     }
 
     static MyVar createBoolExpr(BoolExpr left_var, BoolExpr right_var, String operator) {
@@ -67,15 +67,34 @@ public class SymbolicExecutionLab {
         } else if (operator.equals("-")) {
             return new MyVar(PathTracker.ctx.mkUnaryMinus(var));
         }
-        throw new IllegalArgumentException(String.format("int expression: %s not implement", operator));
+
+        throw new IllegalArgumentException(String.format("unary int expression: %s not implement", operator));
     }
 
     static MyVar createIntExpr(IntExpr left_var, IntExpr right_var, String operator) {
         // Any binary expression (+, -, /, etc)
-        if (operator.equals("+") || operator.equals("-") || operator.equals("/") || operator.equals("*")
-                || operator.equals("%") || operator.equals("^"))
-            return new MyVar(PathTracker.ctx.mkInt(0));
-        return new MyVar(PathTracker.ctx.mkFalse());
+        if(operator.equals("==")){
+            return new MyVar(PathTracker.ctx.mkEq(left_var, right_var));
+        } else if(operator.equals("<=")){
+            return new MyVar(PathTracker.ctx.mkLe(left_var, right_var));
+        } else if(operator.equals(">=")) {
+            return new MyVar(PathTracker.ctx.mkGe(left_var, right_var));
+        } else if (operator.equals("<")) {
+            return new MyVar(PathTracker.ctx.mkLt(left_var, right_var));
+        } else if (operator.equals(">")) {
+            return new MyVar(PathTracker.ctx.mkGt(left_var, right_var));
+        } else if (operator.equals("*")) {
+            return new MyVar(PathTracker.ctx.mkMul(left_var, right_var));
+        } else if (operator.equals("-")) {
+            return new MyVar(PathTracker.ctx.mkSub(left_var, right_var));
+        } else if (operator.equals("+")) {
+            return new MyVar(PathTracker.ctx.mkAdd(left_var, right_var));
+        } else if (operator.equals("%")) {
+            return new MyVar(PathTracker.ctx.mkMod(left_var, right_var));
+        } else if (operator.equals("/")) {
+            return new MyVar(PathTracker.ctx.mkDiv(left_var, right_var));
+        }
+        throw new IllegalArgumentException(String.format("binary int expression: %s not implement", operator));
     }
 
     static MyVar createStringExpr(SeqExpr left_var, SeqExpr right_var, String operator) {
