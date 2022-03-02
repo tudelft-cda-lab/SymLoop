@@ -108,6 +108,11 @@ public class SymbolicExecutionLab {
 
     static void assign(MyVar var, String name, Expr value, Sort s) {
         // All variable assignments, use single static assignment
+        Context c = PathTracker.ctx;
+        Expr z3var = c.mkConst(c.mkSymbol(name + "_" + PathTracker.z3counter++), s);
+        // Update variable Z3 in assignment
+        var.z3var = z3var;
+        PathTracker.z3model = c.mkAnd(c.mkEq(z3var, value), PathTracker.z3model);
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
