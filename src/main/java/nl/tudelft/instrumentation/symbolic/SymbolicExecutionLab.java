@@ -280,10 +280,6 @@ public class SymbolicExecutionLab {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            // catch (IOException e) {
-            // // TODO Auto-generated catch block
-            // e.printStackTrace();
-            // }
         }
     }
 
