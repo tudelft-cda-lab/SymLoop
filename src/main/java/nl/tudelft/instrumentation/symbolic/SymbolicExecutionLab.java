@@ -182,41 +182,14 @@ public class SymbolicExecutionLab {
         branchTracker.visit(line_nr, value);
         if (!stateEstimates.containsKey(line_nr)) {
             stateEstimates.put(line_nr, new HashSet<>());
-        } else {
         }
         Set<Long> stateMap = stateEstimates.get(line_nr);
-        if(!branchTracker.hasVisitedBoth(line_nr)){
-        if (!stateMap.contains(pathEstimate)) {
-            stateMap.add(pathEstimate);
-        // if (!branchTracker.hasVisited(line_nr, !value) && (!triedBranches.hasVisited(line_nr, !value))) { // ||
-            // impossibleBranchesPathLengths.getOrDefault(line_nr,
-            // Integer.MAX_VALUE) < pathLength)) {
-            // if (!branchTracker.hasVisited(line_nr, !value) &&
-            // (!triedBranches.hasVisited(line_nr, !value) ||
-            // impossibleBranchesPathLengths.getOrDefault(line_nr, Integer.MAX_VALUE) >=
-            // pathLength)) {
-            // if (!branchTracker.hasVisited(line_nr, !value)){ //&&
-            // (!triedBranches.hasVisited(line_nr, !value) ||
-            // impossibleBranchesPathLengths.getOrDefault(line_nr, Integer.MAX_VALUE) >=
-            // pathLength)) {
-            // System.out.printf("line %d, value: %b, trace: %s\n", line_nr, value,
-            // currentTrace);
-            PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
-            // boolean solutionFoundSelf = PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(value)), false);
-            // System.out.printf("Now trying to solve %d, %b, new: %b, pathLength:
-            // %d\n",line_nr, !value, solutionFound,
-            // impossibleBranchesPathLengths.getOrDefault(line_nr, Integer.MAX_VALUE));
-            // impossibleBranchesPathLengths.put(line_nr, pathLength);
-            triedBranches.visit(line_nr, !value);
-
-            // c.mkOr(c.mkEq(condition.z3var, c.mkBool(value)), c.mkEq(condition.z3var,
-            // c.mkBool(value)));
-            // System.exit(-1);
-            // }
-        } else {
-            // stateMap.add(pathEstimate);
-            // System.out.printf("Skipping, %d\n", line_nr);
-        }
+        if (!branchTracker.hasVisitedBoth(line_nr)) {
+            if (!stateMap.contains(pathEstimate)) {
+                stateMap.add(pathEstimate);
+                PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
+                triedBranches.visit(line_nr, !value);
+            }
         }
         BoolExpr temp = c.mkEq(condition.z3var, c.mkBool(value));
         PathTracker.z3branches = c.mkAnd(temp, PathTracker.z3branches);
@@ -229,9 +202,13 @@ public class SymbolicExecutionLab {
             temp.add(s.replaceAll("\"", ""));
         }
         // TODO: add a random input at the end
-        temp.add(PathTracker.inputSymbols[r.nextInt(PathTracker.inputSymbols.length)]);
+        temp.add(newRandomInputChar());
         nextTraces.add(new NextTrace(temp, currentLineNumber, pathLength));
         System.out.printf("New satisfiable input: %s\n", temp);
+    }
+
+    static String newRandomInputChar() {
+        return PathTracker.inputSymbols[r.nextInt(PathTracker.inputSymbols.length)];
     }
 
     /**
@@ -272,7 +249,6 @@ public class SymbolicExecutionLab {
         currentLineNumber = 0;
         pathEstimate = 0L;
     }
-
 
     static void run() {
         initialize(PathTracker.inputSymbols);
