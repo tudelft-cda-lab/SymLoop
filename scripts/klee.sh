@@ -37,7 +37,7 @@ void __VERIFIER_error(int i) { fprintf(stderr, "error_%d ", i); assert(0); }/' "
             echo "$ERR" | grep -o -i -E "error_[0-9]+" | tee -a errors.txt
         fi
     done;
-    cat errors.txt | sort -t" " -u -k3,3 | sort > sorted.txt
+    cat errors.txt | sort -s -t" " -u -k3,3 | sort > sorted.txt
     # mkdir -p $OUT/$1/tests $OUT/$1/findings
     # sed -n "s/^.*inputs\[\] = {\s*\(\S*\)}.*$/\1/p" "$OUT/Problem$1.c" | xargs -n 1 -d , | xargs -I % sh -c "echo % > $OUT/$1/tests/%.txt && echo >> $OUT/$1/tests/%.txt"
     # echo "Compiling $1";
