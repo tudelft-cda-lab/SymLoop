@@ -52,8 +52,6 @@ public class SymbolicExecutionLab {
     static Map<Integer, Integer> impossibleBranchesPathLengths = new HashMap<>();
     static Map<Integer, Set<Long>> stateEstimates = new HashMap<>();
 
-    static BranchVisitedTracker triedBranches = new BranchVisitedTracker();
-
     private static int currentLineNumber = 0;
     private static int pathLength = 0;
     private static long pathEstimate = 0L;
@@ -170,9 +168,6 @@ public class SymbolicExecutionLab {
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-        // Call the solver
-        // PathTracker.z3modelz3model = c.mkAnd(c.mkEq(z3var, value),
-        // PathTracker.z3model);
         Context c = PathTracker.ctx;
         currentLineNumber = line_nr;
         pathLength += 1;
@@ -187,6 +182,7 @@ public class SymbolicExecutionLab {
         if (!branchTracker.hasVisitedBoth(line_nr)) {
             if (!stateMap.contains(pathEstimate)) {
                 stateMap.add(pathEstimate);
+                // Call the solver
                 PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
                 triedBranches.visit(line_nr, !value);
             }
@@ -253,10 +249,6 @@ public class SymbolicExecutionLab {
     static void run() {
         initialize(PathTracker.inputSymbols);
         nextTraces.add(new NextTrace(currentTrace, currentLineNumber, pathLength));
-        initialize(PathTracker.inputSymbols);
-        nextTraces.add(new NextTrace(currentTrace, currentLineNumber, pathLength));
-        // System.out.println(PathTracker.ctx);
-        // System.out.println(PathTracker.inputs);
         // Place here your code to guide your fuzzer with its search using Symbolic
         // Execution.
         while (!isFinished) {
@@ -265,7 +257,6 @@ public class SymbolicExecutionLab {
                 reset();
                 if (nextTraces.isEmpty()) {
                     System.exit(0);
-                    // initialize(PathTracker.inputSymbols);
                 } else {
                     NextTrace trace = nextTraces.poll();
                     System.out.printf("now doing %d, %d\n", trace.getLineNr(), trace.pathLength());
