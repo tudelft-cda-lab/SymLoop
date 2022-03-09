@@ -172,23 +172,20 @@ public class SymbolicExecutionLab {
         currentLineNumber = line_nr;
         pathLength += 1;
         pathEstimate += line_nr;
-
-        // Check if the state is not visited (sum of path length)
         branchTracker.visit(line_nr, value);
         if (!stateEstimates.containsKey(line_nr)) {
             stateEstimates.put(line_nr, new HashSet<>());
         }
-        Set<Long> stateMap = stateEstimates.get(line_nr);
         if (!branchTracker.hasVisitedBoth(line_nr)) {
+            Set<Long> stateMap = stateEstimates.get(line_nr);
             if (!stateMap.contains(pathEstimate)) {
                 stateMap.add(pathEstimate);
                 // Call the solver
                 PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
-                triedBranches.visit(line_nr, !value);
             }
         }
-        BoolExpr temp = c.mkEq(condition.z3var, c.mkBool(value));
-        PathTracker.z3branches = c.mkAnd(temp, PathTracker.z3branches);
+        BoolExpr branchCondition = c.mkEq(condition.z3var, c.mkBool(value));
+        PathTracker.z3branches = c.mkAnd(branchCondition, PathTracker.z3branches);
     }
 
     static void newSatisfiableInput(LinkedList<String> new_inputs) {
