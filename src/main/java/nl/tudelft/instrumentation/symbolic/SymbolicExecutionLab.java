@@ -194,7 +194,7 @@ public class SymbolicExecutionLab {
         for (String s : new_inputs) {
             temp.add(s.replaceAll("\"", ""));
         }
-        // TODO: add a random input at the end
+        // Add a random input at the end to allow solving new paths
         temp.add(newRandomInputChar());
         nextTraces.add(new NextTrace(temp, currentLineNumber, pathLength));
         System.out.printf("New satisfiable input: %s\n", temp);
