@@ -24,13 +24,20 @@ void __VERIFIER_error(int i) { fprintf(stderr, "error_%d ", i); assert(0); }/' "
     export LD_LIBRARY_PATH=/home/str/klee/build/lib/:$LD_LIBRARY_PATH
     clang-6.0 -I "/home/str/klee/include" -L "/home/str/klee/build/lib" "Problem$1.c" -o "Problem$1-test.bc" -lkleeRuntest
     rm errors.txt
-    for f in $(ls -tr ./klee-last/ | grep ktest | head -n 10000);
+    for f in $(ls -tr ./klee-last/ | grep ktest);
     do
         # cat $f | $OUT/Problem$1 2>> $OUT/$1/errors.txt 1> /dev/null
         # /home/str/klee/build/bin/ktest-tool $f
         # echo "$f" >> "errors.txt"
-        KTEST_FILE="klee-last/$f" "./Problem$1-test.bc" 2> >(grep Assertion | tee -a errors.txt && stat --printf="%Y $f " "./klee-last/$f" | tee -a errors.txt) 1> /dev/null
+        # stat --printf="%Y $f " "./klee-last/$f"
+        ERR=$(KTEST_FILE="klee-last/$f" "./Problem$1-test.bc" 2> out.txt 1> /dev/null)
+        ERR=$(cat out.txt | grep Assertion)
+        if [[ ! -z $ERR ]]; then
+            stat --printf="%Y $f " "./klee-last/$f" | tee -a errors.txt
+            echo "$ERR" | grep -o -i -E "error_[0-9]+" | tee -a errors.txt
+        fi
     done;
+    cat errors.txt | sort -t" " -u -k3,3 | sort > sorted.txt
     # mkdir -p $OUT/$1/tests $OUT/$1/findings
     # sed -n "s/^.*inputs\[\] = {\s*\(\S*\)}.*$/\1/p" "$OUT/Problem$1.c" | xargs -n 1 -d , | xargs -I % sh -c "echo % > $OUT/$1/tests/%.txt && echo >> $OUT/$1/tests/%.txt"
     # echo "Compiling $1";
