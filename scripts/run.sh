@@ -8,4 +8,4 @@ if [ "$modified" -gt "$lastmodified" ]; then
   clear
 fi
 echo $modified > scripts/lastmodified
-java -cp target/aistr.jar:lib/com.microsoft.z3.jar:./instrumented:. Problem$1
+java -XX:+UseConcMarkSweepGC -XX:-UseGCOverheadLimit -Xmx4G -cp target/aistr.jar:lib/com.microsoft.z3.jar:./instrumented:. Problem$1

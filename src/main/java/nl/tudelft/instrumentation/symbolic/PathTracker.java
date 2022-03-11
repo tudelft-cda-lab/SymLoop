@@ -68,9 +68,6 @@ public class PathTracker {
                 new_inputs.add(m.evaluate(v.z3var, true).toString());
             }
             SymbolicExecutionLab.newSatisfiableInput(new_inputs);
-        } else {
-            // System.out.println("unsatisfiable SHOULD NOT HAPPEN");
-            // System.exit(-1);
         }
     }
 

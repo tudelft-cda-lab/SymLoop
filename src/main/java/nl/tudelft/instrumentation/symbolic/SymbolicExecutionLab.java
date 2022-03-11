@@ -14,6 +14,33 @@ import java.io.IOException;
  */
 public class SymbolicExecutionLab {
 
+    static String[] coverageSet = new String[]{
+        "AFJFGFEEIBDGJBDEIBEIBJBCHACFFIIICBCGIDD",
+        "BCDABFEGDEDDAJDJBFBFHABDDFAFBAFABJC",
+        "IFIEJBDCADCCEAJHEFDIJHAIFGFHFDEDJABICDBBHF",
+        "EBJHJDIGDDCEFDJGJIEJCJDCCHEEAJHGJ",
+        "HIGBDFEGBDFDGBGFCIAGCDABGAICJHGEFGDJAJBJBBAACJFE",
+        "AFJFDAFFADFEJAHIEBHJDFIABJCIJFHGDBIICIDCHGHBIFH",
+        "GJCDGHEFCF",
+        "BBFAFEBDDFJF",
+        "ADIFCFHJJEDDJEJDGCAFBBHHGJHAJBC",
+        "FADBAEHGIFEFIFAGJICEECDHHHEFAGJICGIBAJFJEAAD",
+        "IFJIHIBFFADJFCDGIICDIFEEFDBHAIGECBFABGJ",
+        "BIIFEIIHGHFAIFBACDICDFHCAAEGHAJGAEFIHFE",
+        "FJEGAHHDJBGAD",
+        "FJFDEBEDADDDJEICGJFJG",
+        "IICGCCJBGFHCIBEEGFFEHHFJAIFCD",
+        "DBDBFHJIGICBJGICDDJCGBADEBIHIFGBCJIDCCFBEAIJIBJA",
+        "GDHFICBCJABBAFJFICCHAEEBACAGHGEIFBFJFDEFB",
+        "JFHBHHHCHBBHDJFFGBJAIBCEIGCGDCEACCGFEIDABICIG",
+        "BFBAGBAJDCEEEJEHEEECJHJBIHCJIDFIJEGHAIIIEC",
+        "BDFBFJFBDBAADBDIBIGDHFBHIEDIBIDGHDAJCBJAEE",
+        "GFDJFIIBAGEAIGDG",
+        "GIJCCFJCABFADDGHDIGIIDAHHAFFGGFDHDFDIBFFAJFDD",
+        "JFBHHIJEIGEJGGIEHIIFBJGGFB"
+    };
+
+
     static class NextTrace implements Comparable<NextTrace> {
         List<String> trace;
         int linenr;
@@ -46,15 +73,15 @@ public class SymbolicExecutionLab {
     static Random r = new Random();
     static Boolean isFinished = false;
     static List<String> currentTrace;
-    static int traceLength = 10;
+    static int traceLength = 1;
     static PriorityQueue<NextTrace> nextTraces = new PriorityQueue<>();
     static BranchVisitedTracker branchTracker = new BranchVisitedTracker();
     static Map<Integer, Integer> impossibleBranchesPathLengths = new HashMap<>();
-    static Map<Integer, Set<Long>> stateEstimates = new HashMap<>();
+    static ErrorTracker errorTracker = new ErrorTracker();
+    static long startTime = System.currentTimeMillis();
 
     private static int currentLineNumber = 0;
     private static int pathLength = 0;
-    private static long pathEstimate = 0L;
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -171,18 +198,10 @@ public class SymbolicExecutionLab {
         Context c = PathTracker.ctx;
         currentLineNumber = line_nr;
         pathLength += 1;
-        pathEstimate += line_nr;
         branchTracker.visit(line_nr, value);
-        if (!stateEstimates.containsKey(line_nr)) {
-            stateEstimates.put(line_nr, new HashSet<>());
-        }
         if (!branchTracker.hasVisitedBoth(line_nr)) {
-            Set<Long> stateMap = stateEstimates.get(line_nr);
-            if (!stateMap.contains(pathEstimate)) {
-                stateMap.add(pathEstimate);
-                // Call the solver
-                PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
-            }
+            // Call the solver
+            PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
         }
         BoolExpr branchCondition = c.mkEq(condition.z3var, c.mkBool(value));
         PathTracker.z3branches = c.mkAnd(branchCondition, PathTracker.z3branches);
@@ -194,10 +213,10 @@ public class SymbolicExecutionLab {
         for (String s : new_inputs) {
             temp.add(s.replaceAll("\"", ""));
         }
+        System.out.printf("New satisfiable input: %s\n", temp);
         // Add a random input at the end to allow solving new paths
         temp.add(newRandomInputChar());
         nextTraces.add(new NextTrace(temp, currentLineNumber, pathLength));
-        System.out.printf("New satisfiable input: %s\n", temp);
     }
 
     static String newRandomInputChar() {
@@ -240,28 +259,44 @@ public class SymbolicExecutionLab {
         System.gc();
         pathLength = 0;
         currentLineNumber = 0;
-        pathEstimate = 0L;
     }
 
     static void run() {
         initialize(PathTracker.inputSymbols);
         nextTraces.add(new NextTrace(currentTrace, currentLineNumber, pathLength));
+        startTime = System.currentTimeMillis();
         // Place here your code to guide your fuzzer with its search using Symbolic
         // Execution.
+        //
+        // for(String s : coverageSet) {
+        //     System.out.printf("\t%s: \n", s);
+        //     String[] a = (String[]) s.split("");
+        //     // System.out.printf("%s,\n", Arrays.asList(a));
+        //     // nextTraces.add(new NextTrace(Arrays.asList(a), currentLineNumber, pathLength));
+        // }
+        // for(String s : PathTracker.inputSymbols) {
+        //     nextTraces.add(new NextTrace(Arrays.asList(new String[]{s}), currentLineNumber, pathLength));
+        // }
         while (!isFinished) {
-            // Do things!
             try {
                 reset();
                 if (nextTraces.isEmpty()) {
+                    System.out.println(errorTracker.getSet());
                     System.exit(0);
                 } else {
                     NextTrace trace = nextTraces.poll();
-                    System.out.printf("now doing %d, %d\n", trace.getLineNr(), trace.pathLength());
+                    printfYellow("now doing line: %d, pathLength: %d, %s\n", trace.getLineNr(), trace.pathLength(), trace.trace);
                     currentTrace = trace.trace;
+                    PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+                    // Potential improvement: add a contraint that the currentTrace should not be a solution in the future.
+                    // Checking if the solver is actually right
+                    if((!branchTracker.hasVisitedBoth(trace.getLineNr())) && trace.getLineNr() != 0){
+                        printfRed("SOLVER IS WRONG, did not discover the solvable branch\n");
+                        System.out.printf("TRUE: %b, FALSE: %b\n",branchTracker.hasVisited(trace.getLineNr(), true), branchTracker.hasVisited(trace.getLineNr(), false));
+                        System.exit(-1);
+                    }
                 }
-                PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
                 // System.in.read();
-                // System.out.println("Woohoo, looping!");
                 System.out.printf("Visited: %d out of %d, #nextTraces: %d\n", branchTracker.numVisited(),
                         branchTracker.totalBranches(), nextTraces.size());
                 Thread.sleep(10);
@@ -271,9 +306,31 @@ public class SymbolicExecutionLab {
         }
     }
 
+    public static void printfGreen(String a, Object... args) {
+        printfColor("\u001B[32m", a, args);
+    }
+
+    public static void printfRed(String a, Object... args) {
+        printfColor("\u001B[31m", a, args);
+    }
+
+    public static void printfColor(String color, String a, Object... args) {
+        System.out.print(color);
+        System.out.printf(a, args);
+        System.out.print("\033[0m");
+    }
+
+    public static void printfYellow(String a, Object... args) {
+        printfColor("\u001B[33m", a, args);
+    }
+
     public static void output(String out) {
-        if (!out.contains("Current state")) {
-            System.out.println(out);
+        if(errorTracker.add(out)) {
+            // System.out.printf("%sFound new error, current amount is: %d.%s\n", ANSI_GREEN, errorTracker.amount(), ANSI_RESET);
+            long current = System.currentTimeMillis();
+            long seconds = (current-startTime)/1000;
+            printfGreen("Found new error, current amount is\t%d\t. in \t%d\t seconds\n", errorTracker.amount(), seconds);
+
         }
     }
 
