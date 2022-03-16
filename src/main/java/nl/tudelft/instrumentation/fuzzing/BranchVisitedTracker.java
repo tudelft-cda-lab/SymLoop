@@ -19,6 +19,10 @@ public class BranchVisitedTracker {
         return visited.getOrDefault(line, VisitedEnum.NONE).hasVisited(value);
     }
 
+    public boolean hasVisitedBoth(int line) {
+        return visited.getOrDefault(line, VisitedEnum.NONE).equals(VisitedEnum.BOTH);
+    }
+
     public void visit(int line, boolean value) {
         visited.put(line, visited.getOrDefault(line, VisitedEnum.NONE).andVisit(value));
     }

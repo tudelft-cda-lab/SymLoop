@@ -23,7 +23,7 @@ public class PathTracker {
     static CallableTraceRunner<Void> problem;
     static String[] inputSymbols;
     // Longest a single testcase is allowed to run
-    static final int timeoutMS = 1000;
+    static final int timeoutMS = 1000000;
 
     /**
      * Used to reset the constraints and everything else of z3 before running the next sequence.
@@ -68,8 +68,6 @@ public class PathTracker {
                 new_inputs.add(m.evaluate(v.z3var, true).toString());
             }
             SymbolicExecutionLab.newSatisfiableInput(new_inputs);
-        } else {
-            //System.out.println("unsatisfiable");
         }
     }
 
