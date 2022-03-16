@@ -10,18 +10,22 @@ public class PatchingGA extends GeneticAlgorithm {
     }
     public ArrayList<String[]> getInitialPopulation(int populationSize) {
         ArrayList<String[]> population = new ArrayList<>();
+        for(int i = 0; i < populationSize; i++) {
+            population.add(OperatorTracker.operators.clone());
+        }
         return population;
     }
 
     public void run(String[] candidate) {
+        PatchingLab.runCandidate(candidate);
     }
 
     public double[] getSuspiciousness(){
-        return null;
+        return PatchingLab.currentSuspicious;
     }
 
     public double getFitness() {
-        return 0.0;
+        return PatchingLab.currentFitness;
     }
 }
 

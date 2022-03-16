@@ -41,6 +41,8 @@ public abstract class GeneticAlgorithm {
             crossover(a, b, susA, susB);
             mutate(a, susA);
             mutate(b, susB);
+            newPopulation.add(a);
+            newPopulation.add(b);
         }
         this.population = newPopulation;
     }
@@ -71,7 +73,7 @@ public abstract class GeneticAlgorithm {
                 return i;
             }
         }
-        throw new IllegalArgumentException("should not be possible");
+        throw new AssertionError("should not be possible");
     }
 
 
