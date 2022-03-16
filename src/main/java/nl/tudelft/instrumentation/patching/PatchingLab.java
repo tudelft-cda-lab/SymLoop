@@ -34,7 +34,7 @@ public class PatchingLab {
         return false;
     }
 
-    static void basicFitness(results) {
+    static void basicFitness(List<Boolean> results) {
         System.out.println(results);
 
         int counter = 0;
@@ -43,6 +43,9 @@ public class PatchingLab {
                 counter++;
             }
         }
+
+//        System.out.println(counter);
+//        System.out.println(results.size());
         int fitness = counter / results.size();
         System.out.println("Fitness for this problem is: " + fitness);
     }
