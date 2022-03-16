@@ -6,9 +6,11 @@ public class PatchingLab {
 
     static Random r = new Random();
     static boolean isFinished = false;
+    static boolean[] operatorIsBoolean;
 
     static void initialize() {
         // initialize the population based on OperatorTracker.operators
+        operatorIsBoolean = new boolean[OperatorTracker.operators.length];
     }
 
     // encounteredOperator gets called for each operator encountered while running tests
@@ -29,6 +31,7 @@ public class PatchingLab {
     static boolean encounteredOperator(String operator, boolean left, boolean right, int operator_nr) {
         // Do something useful
         System.out.print("BOOL OP");
+        operatorIsBoolean[operator_nr] = true;
 
         String replacement = OperatorTracker.operators[operator_nr];
         if (replacement.equals("!=")) return left != right;
