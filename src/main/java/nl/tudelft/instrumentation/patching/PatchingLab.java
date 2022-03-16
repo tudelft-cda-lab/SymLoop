@@ -34,20 +34,17 @@ public class PatchingLab {
         return false;
     }
 
-    static void basicFitness(List<Boolean> results) {
-        System.out.println(results);
-
-        int counter = 0;
+    static float basicFitness(List<Boolean> results) {
+        float counter = 0;
         for (int i = 0; i < results.size(); i++) {
             if (results.get(i) == false) {
-                counter++;
+                counter += 1;
             }
         }
 
-        System.out.println(counter);
-        System.out.println(results.size());
-        float fitness = (float) counter / (float) results.size();
+        float fitness = counter / (float) results.size();
         System.out.println("Fitness for this problem is: " + fitness);
+        return fitness
     }
 
     static void run() {
