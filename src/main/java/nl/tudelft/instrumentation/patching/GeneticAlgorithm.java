@@ -11,11 +11,14 @@ public abstract class GeneticAlgorithm {
     public GeneticAlgorithm(int populationSize) {
         this.populationSize = populationSize;
         this.population = getInitialPopulation(populationSize);
+        if(this.population.size() != populationSize) {
+            throw new AssertionError("Length should match");
+        }
     }
 
     public abstract ArrayList<String[]> getInitialPopulation(int populationSize);
 
-    public void selection() {
+    public void generation() {
         ArrayList<Double> scores = new ArrayList<>();
         ArrayList<double[]> suspiciousness = new ArrayList<>();
         double totalScore = 0.0f;
@@ -39,6 +42,7 @@ public abstract class GeneticAlgorithm {
             mutate(a, susA);
             mutate(b, susB);
         }
+        this.population = newPopulation;
     }
 
     public void crossover(String[] a, String[] b, double[] susA, double[] susB) {

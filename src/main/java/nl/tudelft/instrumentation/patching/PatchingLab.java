@@ -9,10 +9,13 @@ public class PatchingLab {
     static boolean[] operatorIsBoolean;
     static int[] visited;
 
+    static GeneticAlgorithm ga;
+
     static void initialize() {
         // initialize the population based on OperatorTracker.operators
         operatorIsBoolean = new boolean[OperatorTracker.operators.length];
         visited = new int[OperatorTracker.operators.length];
+         ga = new PatchingGA(10);
     }
 
     // encounteredOperator gets called for each operator encountered while running tests
