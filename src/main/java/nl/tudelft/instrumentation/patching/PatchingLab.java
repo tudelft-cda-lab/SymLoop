@@ -44,9 +44,9 @@ public class PatchingLab {
             }
         }
 
-//        System.out.println(counter);
-//        System.out.println(results.size());
-        int fitness = counter / results.size();
+        System.out.println(counter);
+        System.out.println(results.size());
+        float fitness = (float) counter / (float) results.size();
         System.out.println("Fitness for this problem is: " + fitness);
     }
 
