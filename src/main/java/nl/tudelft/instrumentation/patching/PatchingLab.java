@@ -14,6 +14,7 @@ public class PatchingLab {
     // encounteredOperator gets called for each operator encountered while running tests
     static boolean encounteredOperator(String operator, int left, int right, int operator_nr) {
         // Do something useful
+        System.out.print("NUM OP");
 
         String replacement = OperatorTracker.operators[operator_nr];
         if (replacement.equals("!=")) return left != right;
@@ -27,6 +28,7 @@ public class PatchingLab {
 
     static boolean encounteredOperator(String operator, boolean left, boolean right, int operator_nr) {
         // Do something useful
+        System.out.print("BOOL OP");
 
         String replacement = OperatorTracker.operators[operator_nr];
         if (replacement.equals("!=")) return left != right;
@@ -44,7 +46,7 @@ public class PatchingLab {
 
         float fitness = counter / (float) results.size();
         System.out.println("Fitness for this problem is: " + fitness);
-        return fitness
+        return fitness;
     }
 
     static void run() {
