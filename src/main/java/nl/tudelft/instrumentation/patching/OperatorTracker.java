@@ -1,4 +1,5 @@
 package nl.tudelft.instrumentation.patching;
+
 import nl.tudelft.instrumentation.runner.CallableTraceRunner;
 
 import java.io.BufferedReader;
@@ -6,6 +7,7 @@ import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.*;
+
 /**
  * This class is used to start and run the tests for the algorithm that you
  * will build to do automated code patching.
@@ -27,33 +29,37 @@ public class OperatorTracker {
     /**
      * This method is used to call the encounteredOperator method from the FuzzingLab class.
      * This methods handles operators for integers.
-     * @param operator the operator of the operation.
-     * @param left left-hand side of the expression.
-     * @param right right-hand side of the expression.
+     *
+     * @param operator    the operator of the operation.
+     * @param left        left-hand side of the expression.
+     * @param right       right-hand side of the expression.
      * @param operator_nr the id of the operator.
      * @return
      */
-    public static boolean myOperator(String operator, int left, int right, int operator_nr){
+    public static boolean myOperator(String operator, int left, int right, int operator_nr) {
         return PatchingLab.encounteredOperator(operator, left, right, operator_nr);
     }
+
     /**
      * This method is used to call the encounteredOperator method from the FuzzingLab class.
      * This methods handles operators for booleans.
-     * @param operator the operator of the operation.
-     * @param left left-hand side of the expression.
-     * @param right right-hand side of the expression.
+     *
+     * @param operator    the operator of the operation.
+     * @param left        left-hand side of the expression.
+     * @param right       right-hand side of the expression.
      * @param operator_nr the id of the operator.
      * @return
      */
-    public static boolean myOperator(String operator, boolean left, boolean right, int operator_nr){
+    public static boolean myOperator(String operator, boolean left, boolean right, int operator_nr) {
         return PatchingLab.encounteredOperator(operator, left, right, operator_nr);
     }
 
     /**
      * Append the output of the program to a list containing all outputs.
+     *
      * @param out
      */
-    public static void output(String out){
+    public static void output(String out) {
         PatchingLab.output(out);
         outputs = outputs + out;
     }
@@ -64,17 +70,13 @@ public class OperatorTracker {
      * assess how well you algorithm is working.
      */
     public static boolean checkOutput(int current_test) {
-        if (outputs.equals(tests.elementAt(current_test)[1])) {
-            return true;
-        } else {
-            return false;
-        }
+        return outputs.equals(tests.elementAt(current_test)[1]);
     }
     /**
      * Initialize some of the fields in this class.
      * @param o the list of operators.
      */
-    public static void initialize(String[] o){
+    public static void initialize(String[] o) {
         operators = o;
         readTests();
     }
@@ -82,7 +84,7 @@ public class OperatorTracker {
      * Read the test cases from a file. In this case we are reading the test cases
      * from "tests.txt"
      */
-    public static void readTests(){
+    public static void readTests() {
         try (Stream<String> stream = new BufferedReader(
                 new InputStreamReader(OperatorTracker.class.getResourceAsStream("/tests.txt"))).lines()
         )
@@ -105,7 +107,7 @@ public class OperatorTracker {
     /**
      * Initialize and hand over control to PatchingLab
      * @param operators The operators used in the current problem
-     * @param eca The current problem instance
+     * @param eca       The current problem instance
      */
     public static void run(String[] operators, CallableTraceRunner<Void> eca) {
         problem = eca;
@@ -139,11 +141,9 @@ public class OperatorTracker {
         }, timeoutMS, TimeUnit.MILLISECONDS);
 
         // Wait for it to be completed
-        boolean wasCancelled = false;
         try {
             handler.get();
         } catch (CancellationException e) {
-            wasCancelled = true;
             System.out.println("TIMEOUT!");
             System.exit(-1);
         } catch (InterruptedException | ExecutionException e) {
@@ -152,9 +152,6 @@ public class OperatorTracker {
         }
 
         // Return the result
-        if (wasCancelled) {
-            return false;
-        }
         return checkOutput(testIndex);
     }
 

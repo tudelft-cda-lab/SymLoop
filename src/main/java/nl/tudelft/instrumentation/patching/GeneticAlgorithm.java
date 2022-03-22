@@ -1,12 +1,15 @@
 package nl.tudelft.instrumentation.patching;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.Arrays;
 
 public abstract class GeneticAlgorithm {
 
     private ArrayList<String[]> population;
-    private int populationSize;
-    private Random random = new Random(1);
+    private final int populationSize;
+    private final Random random = new Random(4);
 
     public GeneticAlgorithm(int populationSize) {
         this.populationSize = populationSize;
@@ -19,30 +22,48 @@ public abstract class GeneticAlgorithm {
     public abstract ArrayList<String[]> getInitialPopulation(int populationSize);
 
     public void generation() {
-        ArrayList<Double> scores = new ArrayList<>();
-        ArrayList<double[]> suspiciousness = new ArrayList<>();
+        double[] scores = new double[population.size()];
+        double[][] suspiciousness = new double[population.size()][];
         double totalScore = 0.0f;
-        for (String[] candidate : population) {
-            run(candidate);
-            double fit = getFitness();
-            scores.add(fit);
-            suspiciousness.add(getSuspiciousness());
+        double minFit = Double.MAX_VALUE;
+        int i = 0;
+        int nonZero = 0;
+        double maxFit = 0;
+        for (i = 0; i < population.size(); i++) {
+            String[] candidate = population.get(i);
+            double fit = getFitness(candidate);
+            minFit = Math.min(minFit, fit);
+            maxFit = Math.max(maxFit, fit);
+            scores[i] = fit;
+            if (fit > 0.0) {
+                nonZero++;
+            }
+            suspiciousness[i] = getSuspiciousness();
             totalScore += fit;
         }
+        double avgNonZero = (totalScore / nonZero)*0.999;
+        totalScore=0;
+        for (i = 0; i < scores.length; i++) {
+            scores[i] = Math.max(0, scores[i] - avgNonZero);
+            totalScore += scores[i];
+        }
+        // System.out.printf("Averga %f, Max: %f\n", avgNonZero, maxFit);
 
         ArrayList<String[]> newPopulation = new ArrayList<>();
-        for(int i = 0; i < this.populationSize/2; i++){
+        for(i = 0; i < this.populationSize/2; i++){
             int indexA = randomCandidate(scores, totalScore);
             int indexB = randomCandidate(scores, totalScore);
             String[] a = population.get(indexA).clone();
             String[] b = population.get(indexB).clone();
-            double[] susA = suspiciousness.get(indexA).clone();
-            double[] susB = suspiciousness.get(indexB).clone();
-            crossover(a, b, susA, susB);
+            double[] susA = suspiciousness[indexA].clone();
+            double[] susB = suspiciousness[indexB].clone();
+            // crossover(a, b, susA, susB);
             mutate(a, susA);
             mutate(b, susB);
             newPopulation.add(a);
             newPopulation.add(b);
+            // System.out.println(String.join(" ", a));
+            // System.out.println(String.join(" ", b));
         }
         this.population = newPopulation;
     }
@@ -62,13 +83,13 @@ public abstract class GeneticAlgorithm {
         }
     }
 
-    public int randomCandidate(ArrayList<Double> scores, double totalScore) {
+    public int randomCandidate(double[] scores, double totalScore) {
         double rand = random.nextDouble() * totalScore;
-        if(scores.size() != population.size()) {
+        if(scores.length != population.size()) {
             throw new IllegalArgumentException("Sizes should be equal");
         }
-        for(int i = 0; i < scores.size(); i ++){
-            rand -= scores.get(i);
+        for(int i = 0; i < scores.length; i ++){
+            rand -= scores[i];
             if(rand <= 0){
                 return i;
             }
@@ -82,16 +103,26 @@ public abstract class GeneticAlgorithm {
         if(candidate.length != suspicious.length) {
             throw new IllegalArgumentException("Sizes should be equal");
         }
-        for(int i = 0; i < suspicious.length; i++) {
-            sum += suspicious[i];
+        System.out.println(Arrays.toString(suspicious));
+        for (double v : suspicious) {
+            if (v <= 0.5)  {
+                continue;
+            }
+            sum += v;
         }
-        double mutationRate = sum * 1.0; //multiply the sum by number of operators on average that need to change.
-
+        double mutationRate = 2.0; //multiply the sum by number of operators on average that need to change.
         for(int i = 0; i < suspicious.length; i++) {
-            if(random.nextDouble() * mutationRate < suspicious[i]) {
+            double v = suspicious[i];
+            if (v <= 0.5)  {
+                continue;
+            }
+            double value = v;
+            if(random.nextDouble() / mutationRate < value / sum) {
                 candidate[i] = randomOperator(i);
+                System.out.printf("mutating at %d: susp is %f \n", i, v);
             }
         }
+//        System.out.printf("Done %d mutations\n", mutations);
     }
 
     public String randomChoice(String[] a){
@@ -101,17 +132,15 @@ public abstract class GeneticAlgorithm {
     public String randomOperator(int operator_nr) {
         String[] booleanOperators = {"!=", "=="};
         String[] intOperators = {"!=", "==", "<", ">", "<=", ">="};
-        if(PatchingLab.operatorIsBoolean[operator_nr]) {
-            return randomChoice(booleanOperators);
-        } else {
+        if(PatchingLab.operatorIsInt[operator_nr]) {
             return randomChoice(intOperators);
+        } else {
+            return randomChoice(booleanOperators);
         }
     }
-    
-    public abstract void run(String[] candidate);
 
     public abstract double[] getSuspiciousness();
 
-    public abstract double getFitness();
+    public abstract double getFitness(String [] candidate);
 
 }

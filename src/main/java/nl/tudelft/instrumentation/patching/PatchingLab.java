@@ -4,9 +4,8 @@ import java.util.*;
 
 public class PatchingLab {
 
-    static Random r = new Random();
     static boolean isFinished = false;
-    static boolean[] operatorIsBoolean;
+    static boolean[] operatorIsInt;
     static int[] visited;
 
     static String[] currentOperators = null;
@@ -17,15 +16,16 @@ public class PatchingLab {
 
     static void initialize() {
         // initialize the population based on OperatorTracker.operators
-        operatorIsBoolean = new boolean[OperatorTracker.operators.length];
+        operatorIsInt = new boolean[OperatorTracker.operators.length];
         visited = new int[OperatorTracker.operators.length];
-        ga = new PatchingGA(100);
+        ga = new PatchingGA(8);
     }
 
     // encounteredOperator gets called for each operator encountered while running tests
     static boolean encounteredOperator(String operator, int left, int right, int operator_nr) {
         // Do something useful
         visited[operator_nr] = 1;
+        // operatorIsInt[operator_nr] = true;
 
         String replacement = getOperator(operator_nr);
         if (replacement.equals("!=")) return left != right;
@@ -47,7 +47,6 @@ public class PatchingLab {
 
     static boolean encounteredOperator(String operator, boolean left, boolean right, int operator_nr) {
         // Do something useful
-        operatorIsBoolean[operator_nr] = true;
         visited[operator_nr] = 1;
 
         String replacement = getOperator(operator_nr);
@@ -58,14 +57,13 @@ public class PatchingLab {
 
     static double basicFitness(List<Boolean> results) {
         double counter = 0;
-        for (int i = 0; i < results.size(); i++) {
-            if (results.get(i) == false) {
+        for (Boolean result : results) {
+            if (!result) {
                 counter += 1;
             }
         }
 
-        double fitness = counter / (double) results.size();
-        return fitness;
+        return counter / (double) results.size();
     }
 
     static double[] tarantulations() {
@@ -87,7 +85,7 @@ public class PatchingLab {
                 addArrays(fail, visited);
             }
         }
-        if(totalfail == 0){
+        if(totalfail == 0) {
             System.out.println("FOUND PATCH");
             System.out.println(Arrays.asList(currentOperators));
             System.exit(0);
@@ -97,26 +95,35 @@ public class PatchingLab {
         double totalpassed = (double) totalpass;
         currentFitness = calculateFitness(totalpass, totalfail);
         System.out.printf("fitness: %f, totalpass: %d, totalfail: %d\n", currentFitness, totalpass, totalfail);
+        if(totalpass != 0) {
+            for (int i = 0; i < amountOperators; i++) {
+                double score = 1.0;
 
-        for (int i = 0; i < amountOperators; i++) {
-            double score = 1.0;
-
-            if (fail[i] != 0 || pass[i] != 0) {
-                double failed = fail[i];
-                double passed = pass[i];
-                score = (failed / totalfailed) / ((failed / totalfailed) + (passed / totalpassed));
-
-
+                if (fail[i] != 0 || pass[i] != 0) {
+                    double failed = fail[i];
+                    double passed = pass[i];
+                    score = (failed / totalfailed) / ((failed / totalfailed) + (passed / totalpassed));
+                }
+                scores[i] = score;
             }
-            scores[i] = score;
+        } else {
+            for (int i = 0; i < amountOperators; i++) {
+                if (fail[i] > 0) {
+                    scores[i] = 0;
+                } else {
+                    scores[i] = 1;
+                }
+            }
         }
-
         return scores;
     }
 
     static double calculateFitness(int totalpass, int totalfailed) {
-        // return 1.0 / (0.1 * totalpass + 10.0 * totalfailed);
-        return 1.0 / (totalfailed * totalfailed);
+//         double baseline = (0.1 * (double) (totalfailed+totalpass));
+        // return 1.0 / ((0.1 * ((double) totalpass) + 10.0 * ((double) totalfailed)) - baseline);
+       // return 1.0 / Math.pow(totalfailed, 2);
+       return totalpass;
+        // return totalpass;
     }
 
     static void addArrays(int[] a1, int[] a2) {
