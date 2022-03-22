@@ -1,5 +1,6 @@
 package nl.tudelft.instrumentation.patching;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 public class Candidate {
@@ -30,5 +31,18 @@ public class Candidate {
         this.suspiciousness.ifPresent(doubles -> copy.suspiciousness = Optional.ofNullable(doubles.clone()));
         this.score.ifPresent(s -> copy.score = Optional.of(s));
         return copy;
+    }
+
+    public double getScore() {
+        return score.orElseThrow(() -> new IllegalArgumentException("No score found"));
+    }
+
+    @Override
+    public String toString() {
+        return ""+score.orElse(0.0);
+//        return "Candidate{" +
+//                "score=" + score +
+////                ", operators=" + Arrays.toString(operators) +
+//                '}';
     }
 }

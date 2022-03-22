@@ -18,14 +18,14 @@ public class PatchingLab {
         // initialize the population based on OperatorTracker.operators
         operatorIsInt = new boolean[OperatorTracker.operators.length];
         visited = new int[OperatorTracker.operators.length];
-        ga = new PatchingGA(8);
+        ga = new PatchingGA(20);
     }
 
     // encounteredOperator gets called for each operator encountered while running tests
     static boolean encounteredOperator(String operator, int left, int right, int operator_nr) {
         // Do something useful
         visited[operator_nr] = 1;
-        // operatorIsInt[operator_nr] = true;
+//        operatorIsInt[operator_nr] = true;
 
         String replacement = getOperator(operator_nr);
         if (replacement.equals("!=")) return left != right;
@@ -91,10 +91,10 @@ public class PatchingLab {
             System.exit(0);
         }
 
-        double totalfailed = (double) totalfail;
-        double totalpassed = (double) totalpass;
+        double totalfailed = totalfail;
+        double totalpassed = totalpass;
         currentFitness = calculateFitness(totalpass, totalfail);
-        System.out.printf("fitness: %f, totalpass: %d, totalfail: %d\n", currentFitness, totalpass, totalfail);
+//        System.out.printf("fitness: %f, totalpass: %d, totalfail: %d\n", currentFitness, totalpass, totalfail);
         if(totalpass != 0) {
             for (int i = 0; i < amountOperators; i++) {
                 double score = 1.0;
@@ -172,8 +172,7 @@ public class PatchingLab {
             ga.generation();
 
             try {
-                System.out.println("Woohoo, looping!");
-                Thread.sleep(1);
+                Thread.sleep(0);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

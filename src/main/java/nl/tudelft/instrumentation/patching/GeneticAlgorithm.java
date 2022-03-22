@@ -1,5 +1,8 @@
 package nl.tudelft.instrumentation.patching;
 
+import org.checkerframework.checker.units.qual.C;
+
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -8,7 +11,7 @@ public abstract class GeneticAlgorithm {
 
     private List<Candidate> population;
     private final int populationSize;
-    protected final Random random = new Random(4);
+    protected final Random random = new Random();
     private final GeneticAlgorithmSelector selector;
 
     public GeneticAlgorithm(int populationSize, GeneticAlgorithmSelector selector) {
@@ -28,18 +31,23 @@ public abstract class GeneticAlgorithm {
             double fit = getFitness(candidate.operators);
             candidate.score(fit, getSuspiciousness());
         });
-        List<Candidate> newPopulation = this.selector.select(this.population);
+        population.sort(Comparator.comparingDouble(Candidate::getScore).reversed());
+        System.out.println(population);
+        List<Candidate> newPopulation = this.selector.select(this.population, this.populationSize);
         for (int i = 0; i < this.populationSize; i += 2) {
-            Candidate a = population.get(i);
-            Candidate b = population.get(i + 1);
+            Candidate a = newPopulation.get(i);
+            Candidate b = newPopulation.get(i + 1);
             crossover(a, b);
             mutate(a);
             mutate(b);
-            newPopulation.add(a);
-            newPopulation.add(b);
 //             System.out.println(String.join(" ", a.operators));
 //             System.out.println(String.join(" ", b.operators));
         }
+        newPopulation.add(new Candidate(
+            randomOperators()
+        ));
+        newPopulation.add(population.get(0).deepCopy());
+
         this.population = newPopulation;
     }
 
@@ -78,13 +86,13 @@ public abstract class GeneticAlgorithm {
         for (double v : suspicious) {
             sum += v;
         }
-        double mutationRate = 1.0; //multiply the sum by number of operators on average that need to change.
+        double mutationRate = 5.0 / suspicious.length; //multiply the sum by number of operators on average that need to change.
         boolean mutated = false;
         for (int i = 0; i < suspicious.length; i++) {
             double v = suspicious[i];
-            if (random.nextDouble() / mutationRate < v / sum) {
+            if (random.nextDouble() < mutationRate * v) {
                 c.operators[i] = randomOperator(i);
-                System.out.printf("mutating at %d: susp is %f \n", i, v);
+//                System.out.printf("mutating at %d: susp is %f \n", i, v);
                 mutated = true;
             }
         }
@@ -110,5 +118,13 @@ public abstract class GeneticAlgorithm {
     public abstract double[] getSuspiciousness();
 
     public abstract double getFitness(String[] candidate);
+
+    public String[] randomOperators() {
+        String[] operators = new String[OperatorTracker.operators.length];
+        for (int j = 0; j < operators.length; j++) {
+            operators[j] = randomOperator(j);
+        }
+        return operators;
+    }
 
 }

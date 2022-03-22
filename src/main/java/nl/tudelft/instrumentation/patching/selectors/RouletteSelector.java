@@ -9,7 +9,7 @@ import java.util.List;
 public class RouletteSelector extends GeneticAlgorithmSelector {
 
     @Override
-    public List<Candidate> select(List<Candidate> population) {
+    public List<Candidate> select(List<Candidate> population, int populationSize) {
         double[] scores = new double[population.size()];
         double totalScore = 0.0f;
         double minFit = Double.MAX_VALUE;
@@ -33,7 +33,7 @@ public class RouletteSelector extends GeneticAlgorithmSelector {
             totalScore += scores[i];
         }
         List<Candidate> selected = new ArrayList<>(population.size());
-        for (Candidate ignored : population) {
+        for (int i = 0; i < populationSize; i++) {
             int index = randomCandidateIndex(scores, totalScore);
             selected.add(population.get(index).deepCopy());
         }
