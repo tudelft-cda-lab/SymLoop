@@ -1,10 +1,8 @@
 package nl.tudelft.instrumentation.patching;
 
-import org.checkerframework.checker.units.qual.C;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 
 public abstract class GeneticAlgorithm {
@@ -14,7 +12,6 @@ public abstract class GeneticAlgorithm {
     protected final Random random = new Random();
     private final GeneticAlgorithmSelector selector;
     private int generation = 0;
-    private final int PRINT_EVERY = 10;
     private final long starttime;
 
     public GeneticAlgorithm(int populationSize, GeneticAlgorithmSelector selector) {
@@ -41,28 +38,21 @@ public abstract class GeneticAlgorithm {
         for (int i = 0; i < this.populationSize; i += 2) {
             Candidate a = newPopulation.get(i);
             Candidate b = newPopulation.get(i + 1);
-            if(random.nextDouble() < 0.3){
+            if (random.nextDouble() < 0.3) {
                 crossover(a, b);
             }
             mutate(a);
             mutate(b);
-//             System.out.println(String.join(" ", a.operators));
-//             System.out.println(String.join(" ", b.operators));
         }
-        newPopulation.add(new Candidate(
-            randomOperators()
-        ));
+        newPopulation.add(new Candidate(randomOperators()));
         newPopulation.add(population.get(0).deepCopy());
         Candidate c = population.get(0).deepCopy();
         mutatePercantage(0.05, c);
         newPopulation.add(c);
 
-        generation+=1;
-//        if(generation % PRINT_EVERY == 0) {
-//            System.out.println(String.join(" ", population.get(0).operators));
-            int score = (int) Math.floor(population.get(0).getScore());
-            System.out.printf("Gen, %d, maxscore, %d, time, %d, percentage, %.3f\n", generation, score, System.currentTimeMillis() - starttime, (double) score / (double) OperatorTracker.tests.size());
-//        }
+        generation += 1;
+        int score = (int) Math.floor(population.get(0).getScore());
+        System.out.printf("Gen, %d, maxscore, %d, time, %d, percentage, %.3f\n", generation, score, System.currentTimeMillis() - starttime, (double) score / (double) OperatorTracker.tests.size());
         this.population = newPopulation;
 
 
@@ -103,24 +93,24 @@ public abstract class GeneticAlgorithm {
         for (double v : suspicious) {
             sum += v;
         }
-        double mutationRate = 4.0 / suspicious.length; //multiply the sum by number of operators on average that need to change.
+        double mutationRate = 3.0 / suspicious.length; //multiply the sum by number of operators on average that need to change.
         int mutated = 0;
         for (int i = 0; i < suspicious.length; i++) {
             double v = suspicious[i];
             if (v > 0.1 && random.nextDouble() < mutationRate * v) {
-                c.operators[i] = randomOperator(i);
+                c.operators[i] = randomOperatorNotSame(i, c.operators[i]);
 //                System.out.printf("mutating at %d: susp is %f \n", i, v);
                 mutated += 1;
             }
         }
 //        System.out.printf("mutated: %d\n", mutated);
 //        if (mutated) {
-            c.hasBeenModified();
+        c.hasBeenModified();
 //        }
     }
 
     public void mutatePercantage(double percentage, Candidate c) {
-        for(int i = 0; i < c.operators.length * percentage; i++){
+        for (int i = 0; i < c.operators.length * percentage; i++) {
             int r = random.nextInt(c.operators.length);
             c.operators[r] = randomOperator(r);
         }
@@ -140,6 +130,24 @@ public abstract class GeneticAlgorithm {
             return randomChoice(booleanOperators);
         }
     }
+
+    public String randomOperatorNotSame(int operator_nr, String old) {
+        String[] booleanOperators = {"!=", "=="};
+        String[] intOperators = {"!=", "==", "<", ">", "<=", ">="};
+        if (PatchingLab.operatorIsInt[operator_nr]) {
+            int i = random.nextInt(intOperators.length - 1);
+            return intOperators[i+1];
+        } else {
+            if (old.equals("!=")) {
+                return "==";
+            } else if (old.equals("==")) {
+                return "!=";
+            } else {
+                return randomChoice(booleanOperators);
+            }
+        }
+    }
+
 
     public abstract double[] getSuspiciousness();
 
