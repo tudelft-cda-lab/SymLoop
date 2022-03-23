@@ -37,7 +37,9 @@ public abstract class GeneticAlgorithm {
         for (int i = 0; i < this.populationSize; i += 2) {
             Candidate a = newPopulation.get(i);
             Candidate b = newPopulation.get(i + 1);
-            crossover(a, b);
+            if(random.nextDouble() < 0.3){
+                crossover(a, b);
+            }
             mutate(a);
             mutate(b);
 //             System.out.println(String.join(" ", a.operators));
@@ -47,6 +49,9 @@ public abstract class GeneticAlgorithm {
             randomOperators()
         ));
         newPopulation.add(population.get(0).deepCopy());
+        Candidate c = population.get(0).deepCopy();
+        mutatePercantage(0.05, c);
+        newPopulation.add(c);
 
         this.population = newPopulation;
     }
@@ -86,19 +91,28 @@ public abstract class GeneticAlgorithm {
         for (double v : suspicious) {
             sum += v;
         }
-        double mutationRate = 5.0 / suspicious.length; //multiply the sum by number of operators on average that need to change.
-        boolean mutated = false;
+        double mutationRate = 2.0 / suspicious.length; //multiply the sum by number of operators on average that need to change.
+        int mutated = 0;
         for (int i = 0; i < suspicious.length; i++) {
             double v = suspicious[i];
-            if (random.nextDouble() < mutationRate * v) {
+            if (v > 0.8 && random.nextDouble() < mutationRate * v) {
                 c.operators[i] = randomOperator(i);
 //                System.out.printf("mutating at %d: susp is %f \n", i, v);
-                mutated = true;
+                mutated += 1;
             }
         }
-        if (mutated) {
+//        System.out.printf("mutated: %d\n", mutated);
+//        if (mutated) {
             c.hasBeenModified();
+//        }
+    }
+
+    public void mutatePercantage(double percentage, Candidate c) {
+        for(int i = 0; i < c.operators.length * percentage; i++){
+            int r = random.nextInt(c.operators.length);
+            c.operators[r] = randomOperator(r);
         }
+        c.hasBeenModified();
     }
 
     public String randomChoice(String[] a) {

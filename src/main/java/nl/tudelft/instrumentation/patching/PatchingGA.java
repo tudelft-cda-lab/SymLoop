@@ -10,14 +10,15 @@ public class PatchingGA extends GeneticAlgorithm {
 
     public PatchingGA(int populationSize) {
 //        super(populationSize, new RouletteSelector());
-        super(populationSize, new TournamentSelector(10, 0.6));
+        super(populationSize, new TournamentSelector(10, 0.7));
     }
 
     public List<Candidate> getInitialPopulation(int populationSize) {
         ArrayList<Candidate> population = new ArrayList<>();
         for (int i = 0; i < populationSize; i++) {
-//            String[] operators = OperatorTracker.operators.clone();
-            population.add(new Candidate(randomOperators()));
+            String[] operators = OperatorTracker.operators.clone();
+//            String[] operators = randomOperators();
+            population.add(new Candidate(operators));
         }
         return population;
     }
