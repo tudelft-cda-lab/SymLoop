@@ -76,15 +76,15 @@ public class OperatorTracker {
         return outputs.equals(expected);
     }
 
-    public static double checkOutputDouble(int current_test) {
-        String expected = tests.elementAt(current_test)[1];
-        if (outputs.equals(expected)) {
-            return 1.0;
-        } else {
-            return 1.0 / BranchDistance.stringDifference(outputs, expected);
-//            return 1.0 / (1.0+Math.abs(outputs.length() - expected.length()));
-        }
-    }
+//    public static double checkOutputDouble(int current_test) {
+//        String expected = tests.elementAt(current_test)[1];
+//        if (outputs.equals(expected)) {
+//            return 1.0;
+//        } else {
+//            return 1.0 / BranchDistance.stringDifference(outputs, expected);
+////            return 1.0 / (1.0+Math.abs(outputs.length() - expected.length()));
+//        }
+//    }
 
     /**
      * Initialize some of the fields in this class.
@@ -137,7 +137,7 @@ public class OperatorTracker {
      * @param testIndex index of the test to run
      * @return whether the test passed or not
      */
-    public static double runTest(int testIndex) {
+    public static boolean runTest(int testIndex) {
         current_test = testIndex;
 
         // Pass the test input to the problem
@@ -166,10 +166,10 @@ public class OperatorTracker {
         }
 
         // Return the result
-        return checkOutputDouble(testIndex);
+        return checkOutput(testIndex);
     }
 
-    static List<Double> runAllTests() {
+    static List<Boolean> runAllTests() {
         return IntStream.range(0, tests.size())
                 .mapToObj(OperatorTracker::runTest)
                 .collect(Collectors.toList());

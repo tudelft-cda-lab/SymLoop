@@ -61,7 +61,7 @@ public abstract class GeneticAlgorithm {
 //        if(generation % PRINT_EVERY == 0) {
 //            System.out.println(String.join(" ", population.get(0).operators));
             int score = (int) Math.floor(population.get(0).getScore());
-            System.out.printf("Gen, %d, maxscore, %d, time, %d\n", generation, score, System.currentTimeMillis() - starttime);
+            System.out.printf("Gen, %d, maxscore, %d, time, %d, percentage, %.3f\n", generation, score, System.currentTimeMillis() - starttime, (double) score / (double) OperatorTracker.tests.size());
 //        }
         this.population = newPopulation;
 

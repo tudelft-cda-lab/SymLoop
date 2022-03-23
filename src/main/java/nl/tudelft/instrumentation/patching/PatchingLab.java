@@ -76,17 +76,15 @@ public class PatchingLab {
         int totalfail = 0;
 
         int amountTests = OperatorTracker.tests.size();
-        double totalOff = 0;
         for (int i = 0; i < amountTests; i++) {
-            double res = OperatorTracker.runTest(i);
-            if (res == 1.0) {
+            boolean res = OperatorTracker.runTest(i);
+            if (res) {
                 totalpass++;
                 addArrays(pass, visited);
             } else {
                 totalfail++;
                 addArrays(fail, visited);
             }
-            totalOff += res / (double) amountTests;
         }
         if(totalfail == 0) {
             System.out.println("FOUND PATCH");
@@ -96,9 +94,7 @@ public class PatchingLab {
 
         double totalfailed = totalfail;
         double totalpassed = totalpass;
-//        currentFitness = calculateFitness(totalpass, totalfail);
-        currentFitness = totalpass + totalOff;
-//        System.out.printf("fitness: %f, totalpass: %d, totalfail: %d\n", currentFitness, totalpass, totalfail);
+        currentFitness = calculateFitness(totalpass, totalfail);
         if(totalpass != 0) {
             for (int i = 0; i < amountOperators; i++) {
                 double score = 1.0;
