@@ -35,7 +35,7 @@ package nl.tudelft.instrumentation.fuzzing;
  */
 public class BranchDistance {
 
-    private static int stringDifference(String a, String b) {
+    public static int stringDifference(String a, String b) {
         int index = 0;
         int difference = 0;
         while (index < a.length() && index < b.length()) {
@@ -44,9 +44,11 @@ public class BranchDistance {
         }
         while (index < a.length()) {
             difference += a.charAt(index);
+            index++;
         }
         while (index < b.length()) {
             difference += b.charAt(index);
+            index++;
         }
         return difference;
     }

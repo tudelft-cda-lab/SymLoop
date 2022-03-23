@@ -1,5 +1,6 @@
 package nl.tudelft.instrumentation.patching;
 
+import javax.management.StandardMBean;
 import java.util.*;
 
 public class PatchingLab {
@@ -25,7 +26,7 @@ public class PatchingLab {
     static boolean encounteredOperator(String operator, int left, int right, int operator_nr) {
         // Do something useful
         visited[operator_nr] = 1;
-//        operatorIsInt[operator_nr] = true;
+        operatorIsInt[operator_nr] = true;
 
         String replacement = getOperator(operator_nr);
         if (replacement.equals("!=")) return left != right;
@@ -75,15 +76,17 @@ public class PatchingLab {
         int totalfail = 0;
 
         int amountTests = OperatorTracker.tests.size();
+        double totalOff = 0;
         for (int i = 0; i < amountTests; i++) {
-            boolean res = OperatorTracker.runTest(i);
-            if (res) {
+            double res = OperatorTracker.runTest(i);
+            if (res == 1.0) {
                 totalpass++;
                 addArrays(pass, visited);
             } else {
                 totalfail++;
                 addArrays(fail, visited);
             }
+            totalOff += res / (double) amountTests;
         }
         if(totalfail == 0) {
             System.out.println("FOUND PATCH");
@@ -93,7 +96,8 @@ public class PatchingLab {
 
         double totalfailed = totalfail;
         double totalpassed = totalpass;
-        currentFitness = calculateFitness(totalpass, totalfail);
+//        currentFitness = calculateFitness(totalpass, totalfail);
+        currentFitness = totalpass + totalOff;
 //        System.out.printf("fitness: %f, totalpass: %d, totalfail: %d\n", currentFitness, totalpass, totalfail);
         if(totalpass != 0) {
             for (int i = 0; i < amountOperators; i++) {
@@ -160,7 +164,7 @@ public class PatchingLab {
         // Place the code here you want to run once:
         // You want to change this of course, this is just an example
         // Tests are loaded from resources/tests.txt, make sure you put in the right tests for the right problem!
-        List<Boolean> testresults = OperatorTracker.runAllTests();
+//        List<Boolean> testresults = OperatorTracker.runAllTests();
         System.out.println("Entered run");
         // System.out.println(OperatorTracker.tests.size());
 

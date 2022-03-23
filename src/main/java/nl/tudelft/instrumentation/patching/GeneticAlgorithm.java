@@ -13,12 +13,16 @@ public abstract class GeneticAlgorithm {
     private final int populationSize;
     protected final Random random = new Random();
     private final GeneticAlgorithmSelector selector;
+    private int generation = 0;
+    private final int PRINT_EVERY = 10;
+    private final long starttime;
 
     public GeneticAlgorithm(int populationSize, GeneticAlgorithmSelector selector) {
         this.populationSize = populationSize;
         this.population = getInitialPopulation(populationSize);
         this.selector = selector;
         this.selector.setRandom(random);
+        starttime = System.currentTimeMillis();
         if (this.population.size() != populationSize) {
             throw new AssertionError("Length should match");
         }
@@ -53,7 +57,15 @@ public abstract class GeneticAlgorithm {
         mutatePercantage(0.05, c);
         newPopulation.add(c);
 
+        generation+=1;
+//        if(generation % PRINT_EVERY == 0) {
+//            System.out.println(String.join(" ", population.get(0).operators));
+            int score = (int) Math.floor(population.get(0).getScore());
+            System.out.printf("Gen, %d, maxscore, %d, time, %d\n", generation, score, System.currentTimeMillis() - starttime);
+//        }
         this.population = newPopulation;
+
+
     }
 
     public void crossover(Candidate a, Candidate b) {
@@ -91,11 +103,11 @@ public abstract class GeneticAlgorithm {
         for (double v : suspicious) {
             sum += v;
         }
-        double mutationRate = 2.0 / suspicious.length; //multiply the sum by number of operators on average that need to change.
+        double mutationRate = 4.0 / suspicious.length; //multiply the sum by number of operators on average that need to change.
         int mutated = 0;
         for (int i = 0; i < suspicious.length; i++) {
             double v = suspicious[i];
-            if (v > 0.8 && random.nextDouble() < mutationRate * v) {
+            if (v > 0.1 && random.nextDouble() < mutationRate * v) {
                 c.operators[i] = randomOperator(i);
 //                System.out.printf("mutating at %d: susp is %f \n", i, v);
                 mutated += 1;
