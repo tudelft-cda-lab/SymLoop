@@ -18,7 +18,7 @@ import java.util.stream.*;
  */
 public class OperatorTracker {
     static String[] operators;
-    static Vector<String[]> tests = new Vector< String[] >();
+    static Vector<String[]> tests = new Vector<String[]>();
     static boolean testing = false;
     static String outputs = "";
     static int current_test = 0;
@@ -72,28 +72,20 @@ public class OperatorTracker {
      * assess how well you algorithm is working.
      */
     public static boolean checkOutput(int current_test) {
-        String expected =tests.elementAt(current_test)[1];
+        String expected = tests.elementAt(current_test)[1];
         return outputs.equals(expected);
     }
 
-//    public static double checkOutputDouble(int current_test) {
-//        String expected = tests.elementAt(current_test)[1];
-//        if (outputs.equals(expected)) {
-//            return 1.0;
-//        } else {
-//            return 1.0 / BranchDistance.stringDifference(outputs, expected);
-////            return 1.0 / (1.0+Math.abs(outputs.length() - expected.length()));
-//        }
-//    }
-
     /**
      * Initialize some of the fields in this class.
+     *
      * @param o the list of operators.
      */
     public static void initialize(String[] o) {
         operators = o;
         readTests();
     }
+
     /**
      * Read the test cases from a file. In this case we are reading the test cases
      * from "tests.txt"
@@ -101,25 +93,18 @@ public class OperatorTracker {
     public static void readTests() {
         try (Stream<String> stream = new BufferedReader(
                 new InputStreamReader(OperatorTracker.class.getResourceAsStream("/tests.txt"))).lines()
-        )
-        {
+        ) {
             stream.forEach(s -> {
                 tests.add(s.split("->"));
             });
-//            System.out.println("Read tests:");
-//            for(String[] s : tests){
-//                for(String st : s) System.out.print(st + " ");
-//                System.out.println();
-//            }
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     /**
      * Initialize and hand over control to PatchingLab
+     *
      * @param operators The operators used in the current problem
      * @param eca       The current problem instance
      */
@@ -134,6 +119,7 @@ public class OperatorTracker {
      * returning true if it passes, false if it fails.
      * We also apply a timeout in case a test accidentally
      * enters an infinite loop
+     *
      * @param testIndex index of the test to run
      * @return whether the test passed or not
      */
