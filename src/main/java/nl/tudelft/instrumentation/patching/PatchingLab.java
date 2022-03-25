@@ -67,44 +67,62 @@ public class PatchingLab {
         return counter / (double) results.size();
     }
 
+    static double tarantulaLine(int pass, int fail, double totalfailed, double totalpassed){
+        if (fail != 0 || pass != 0) {
+            double failed = fail;
+            double passed = pass;
+            return (failed / totalfailed) / ((failed / totalfailed) + (passed / totalpassed));
+        }
+        return 1.0;
+    }
+    static double ochiaiLine(int pass, int fail, int total) {
+        // a11 count visited and faulty
+        // a10 count visited and passing
+        // a01 count nonvisited and faulty
+        // a00 count nonvisited and passing
+        double a11 = fail;
+        double a10 = pass;
+        double a01 = total - fail;
+        // double a00 = total - pass[i];
+        if (fail == 0 && pass == 0) {
+            return 0.0;
+        }
+        return a11 / Math.sqrt((a11 + a01) * (a11 + a10));
+    }
+
     static double[] tarantulations() {
         int amountOperators = OperatorTracker.operators.length;
         int[] pass = new int[amountOperators];
         int[] fail = new int[amountOperators];
         double[] scores = new double[amountOperators];
-        int totalpass = 0;
-        int totalfail = 0;
+        int nPassingTests = 0;
+        int nFailingTests = 0;
 
         int amountTests = OperatorTracker.tests.size();
         for (int i = 0; i < amountTests; i++) {
             boolean res = OperatorTracker.runTest(i);
             if (res) {
-                totalpass++;
+                nPassingTests++;
                 addArrays(pass, visited);
             } else {
-                totalfail++;
+                nFailingTests++;
                 addArrays(fail, visited);
             }
         }
-        if(totalfail == 0) {
+
+        if(nFailingTests == 0) {
             System.out.println("FOUND PATCH");
             System.out.println(Arrays.asList(currentOperators));
             System.exit(0);
         }
 
-        double totalfailed = totalfail;
-        double totalpassed = totalpass;
-        currentFitness = calculateFitness(totalpass, totalfail);
-        if(totalpass != 0) {
+        double totalfailed = nFailingTests;
+        double totalpassed = nPassingTests;
+        currentFitness = calculateFitness(nPassingTests, nFailingTests);
+        if(nPassingTests > 0) {
             for (int i = 0; i < amountOperators; i++) {
-                double score = 1.0;
-
-                if (fail[i] != 0 || pass[i] != 0) {
-                    double failed = fail[i];
-                    double passed = pass[i];
-                    score = (failed / totalfailed) / ((failed / totalfailed) + (passed / totalpassed));
-                }
-                scores[i] = score;
+                scores[i] = tarantulaLine(pass[i], fail[i], totalfailed, totalpassed);
+//                scores[i] = ochiaiLine(pass[i], fail[i], amountTests);
             }
         } else {
             for (int i = 0; i < amountOperators; i++) {
@@ -119,11 +137,8 @@ public class PatchingLab {
     }
 
     static double calculateFitness(int totalpass, int totalfailed) {
-//         double baseline = (0.1 * (double) (totalfailed+totalpass));
         // return 1.0 / ((0.1 * ((double) totalpass) + 10.0 * ((double) totalfailed)) - baseline);
-       // return 1.0 / Math.pow(totalfailed, 2);
        return totalpass;
-        // return totalpass;
     }
 
     static void addArrays(int[] a1, int[] a2) {
@@ -133,11 +148,12 @@ public class PatchingLab {
 
         for (int i = 0; i < a1.length; i++) {
             a1[i] += a2[i];
-
             // reset visited while you're already looping through it
             a2[i] = 0;
         }
     }
+
+
 
     static double[] calcSuspicious() {
         double[] hues = tarantulations();

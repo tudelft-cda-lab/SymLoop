@@ -63,10 +63,8 @@ public abstract class GeneticAlgorithm {
             throw new IllegalArgumentException("Sizes should be equal");
         }
         boolean susp = a.suspiciousness.isPresent() && b.suspiciousness.isPresent();
-        boolean differ = false;
         int cutOff = random.nextInt(a.operators.length);
         for (int i = cutOff; i < a.operators.length; i++) {
-            differ = differ || !a.operators[i].equals(b.operators[i]);
             String tmp = a.operators[i];
             a.operators[i] = b.operators[i];
             b.operators[i] = tmp;
@@ -76,10 +74,8 @@ public abstract class GeneticAlgorithm {
                 b.suspiciousness.get()[i] = tempsus;
             }
         }
-        if (differ) {
-            a.hasBeenModified();
-            b.hasBeenModified();
-        }
+        a.hasBeenModified();
+        b.hasBeenModified();
     }
 
 
@@ -93,11 +89,11 @@ public abstract class GeneticAlgorithm {
         for (double v : suspicious) {
             sum += v;
         }
-        double mutationRate = 3.0 / suspicious.length; //multiply the sum by number of operators on average that need to change.
+        double mutationRate = 4.0 / suspicious.length; //multiply the sum by number of operators on average that need to change.
         int mutated = 0;
         for (int i = 0; i < suspicious.length; i++) {
             double v = suspicious[i];
-            if (v > 0.1 && random.nextDouble() < mutationRate * v) {
+            if (v >= 0.5 && random.nextDouble() < mutationRate * v) {
                 c.operators[i] = randomOperatorNotSame(i, c.operators[i]);
 //                System.out.printf("mutating at %d: susp is %f \n", i, v);
                 mutated += 1;
