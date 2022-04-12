@@ -85,7 +85,7 @@ public class SymbolicExecutionLab {
 
     static int firstBranchLineNr = -1;
     static int inputInIndex = 0;
-    static String proccessedInput = "";
+    static String processedInput = "";
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -198,13 +198,14 @@ public class SymbolicExecutionLab {
         PathTracker.z3model = c.mkAnd(c.mkEq(z3var, value), PathTracker.z3model);
     }
 
+
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
         if(firstBranchLineNr == -1) {
             firstBranchLineNr = line_nr;
         }
         if(firstBranchLineNr==line_nr) {
             assert inputInIndex < currentTrace.size();
-            proccessedInput += currentTrace.get(inputInIndex);
+            processedInput += currentTrace.get(inputInIndex);
             inputInIndex++;
         }
 
@@ -212,7 +213,7 @@ public class SymbolicExecutionLab {
         currentLineNumber = line_nr;
         pathLength += 1;
         branchTracker.visit(line_nr, value);
-        String pathString = String.format("%d-%s", line_nr, proccessedInput);
+        String pathString = String.format("%d-%s", line_nr, processedInput);
         if (alreadySolvedBranches.add(pathString)){
             // Call the solver
             PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
@@ -279,7 +280,7 @@ public class SymbolicExecutionLab {
         pathLength = 0;
         currentLineNumber = 0;
         inputInIndex = 0;
-        proccessedInput = "";
+        processedInput = "";
     }
 
     static boolean isEmpty() {
