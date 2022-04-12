@@ -4,10 +4,6 @@ import java.util.*;
 import com.microsoft.z3.*;
 
 import nl.tudelft.instrumentation.fuzzing.BranchVisitedTracker;
-import nl.tudelft.instrumentation.fuzzing.DistanceTracker;
-
-import java.io.FileWriter;
-import java.io.IOException;
 
 /**
  * You should write your solution using this class.
@@ -75,6 +71,7 @@ public class SymbolicExecutionLab {
     static List<String> currentTrace;
     static int traceLength = 1;
     static PriorityQueue<NextTrace> nextTraces = new PriorityQueue<>();
+    static PriorityQueue<NextTrace> backLog = new PriorityQueue<>();
     static BranchVisitedTracker branchTracker = new BranchVisitedTracker();
     static Map<Integer, Integer> impossibleBranchesPathLengths = new HashMap<>();
     static ErrorTracker errorTracker = new ErrorTracker();
@@ -82,6 +79,13 @@ public class SymbolicExecutionLab {
 
     private static int currentLineNumber = 0;
     private static int pathLength = 0;
+
+    private static HashSet<String> alreadySolvedBranches = new HashSet<>();
+    private static HashSet<String> alreadyFoundTraces = new HashSet<>();
+
+    static int firstBranchLineNr = -1;
+    static int inputInIndex = 0;
+    static String proccessedInput = "";
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -195,11 +199,21 @@ public class SymbolicExecutionLab {
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
+        if(firstBranchLineNr == -1) {
+            firstBranchLineNr = line_nr;
+        }
+        if(firstBranchLineNr==line_nr) {
+            assert inputInIndex < currentTrace.size();
+            proccessedInput += currentTrace.get(inputInIndex);
+            inputInIndex++;
+        }
+
         Context c = PathTracker.ctx;
         currentLineNumber = line_nr;
         pathLength += 1;
         branchTracker.visit(line_nr, value);
-        if (!branchTracker.hasVisitedBoth(line_nr)) {
+        String pathString = String.format("%d-%s", line_nr, proccessedInput);
+        if (alreadySolvedBranches.add(pathString)){
             // Call the solver
             PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
         }
@@ -213,10 +227,15 @@ public class SymbolicExecutionLab {
         for (String s : new_inputs) {
             temp.add(s.replaceAll("\"", ""));
         }
-        System.out.printf("New satisfiable input: %s\n", temp);
+
         // Add a random input at the end to allow solving new paths
-        temp.add(newRandomInputChar());
-        nextTraces.add(new NextTrace(temp, currentLineNumber, pathLength));
+        String alreadyFound = String.join("", temp);
+        if(alreadyFoundTraces.add(alreadyFound)){
+            System.out.printf("New satisfiable input: %s\n", temp);
+            temp.add(newRandomInputChar());
+            add(new NextTrace(temp, currentLineNumber, pathLength));
+        }
+
     }
 
     static String newRandomInputChar() {
@@ -259,6 +278,35 @@ public class SymbolicExecutionLab {
         System.gc();
         pathLength = 0;
         currentLineNumber = 0;
+        inputInIndex = 0;
+        proccessedInput = "";
+    }
+
+    static boolean isEmpty() {
+        return nextTraces.isEmpty() && backLog.isEmpty();
+    }
+
+    static void add(NextTrace trace) {
+        if(branchTracker.hasVisitedBoth(trace.getLineNr())) {
+            backLog.add(trace);
+        } else {
+            nextTraces.add(trace);
+        }
+    }
+
+    static NextTrace getNext() {
+        assert !isEmpty();
+        if(nextTraces.isEmpty()) {
+            return backLog.poll();
+        } else {
+            NextTrace trace = nextTraces.poll();
+            if(branchTracker.hasVisitedBoth(trace.getLineNr())){
+                backLog.add(trace);
+                return getNext();
+            } else {
+                return trace;
+            }
+        }
     }
 
     static void run() {
@@ -280,11 +328,11 @@ public class SymbolicExecutionLab {
         while (!isFinished) {
             try {
                 reset();
-                if (nextTraces.isEmpty()) {
+                if (isEmpty()) {
                     System.out.println(errorTracker.getSet());
                     System.exit(0);
                 } else {
-                    NextTrace trace = nextTraces.poll();
+                    NextTrace trace = getNext();
                     printfYellow("now doing line: %d, pathLength: %d, %s\n", trace.getLineNr(), trace.pathLength(), trace.trace);
                     currentTrace = trace.trace;
                     PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
@@ -297,8 +345,8 @@ public class SymbolicExecutionLab {
                     }
                 }
                 // System.in.read();
-                System.out.printf("Visited: %d out of %d, #nextTraces: %d\n", branchTracker.numVisited(),
-                        branchTracker.totalBranches(), nextTraces.size());
+                System.out.printf("Visited: %d out of %d, #nextTraces: %d, #backlog: %d \n", branchTracker.numVisited(),
+                        branchTracker.totalBranches(), nextTraces.size(),backLog.size());
                 Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
