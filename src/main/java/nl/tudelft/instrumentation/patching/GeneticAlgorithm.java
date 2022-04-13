@@ -39,7 +39,8 @@ public abstract class GeneticAlgorithm {
             Candidate a = newPopulation.get(i);
             Candidate b = newPopulation.get(i + 1);
             if (random.nextDouble() < 0.3) {
-                crossover(a, b);
+                onePointCrossover(a, b);
+                //twoPointCrossover(a,b);
             }
             mutate(a);
             mutate(b);
@@ -58,13 +59,34 @@ public abstract class GeneticAlgorithm {
 
     }
 
-    public void crossover(Candidate a, Candidate b) {
+    public void onePointCrossover(Candidate a, Candidate b) {
         if (a.operators.length != b.operators.length) {
             throw new IllegalArgumentException("Sizes should be equal");
         }
         boolean susp = a.suspiciousness.isPresent() && b.suspiciousness.isPresent();
         int cutOff = random.nextInt(a.operators.length);
         for (int i = cutOff; i < a.operators.length; i++) {
+            String tmp = a.operators[i];
+            a.operators[i] = b.operators[i];
+            b.operators[i] = tmp;
+            if (susp) {
+                double tempsus = a.suspiciousness.get()[i];
+                a.suspiciousness.get()[i] = b.suspiciousness.get()[i];
+                b.suspiciousness.get()[i] = tempsus;
+            }
+        }
+        a.hasBeenModified();
+        b.hasBeenModified();
+    }
+
+    public void twoPointCrossover(Candidate a, Candidate b) {
+        if (a.operators.length != b.operators.length) {
+            throw new IllegalArgumentException("Sizes should be equal");
+        }
+        boolean susp = a.suspiciousness.isPresent() && b.suspiciousness.isPresent();
+        int cutOff1 = random.nextInt(a.operators.length);
+        int cutOff2 = random.nextInt(a.operators.length - cutOff1);
+        for (int i = cutOff1; i < cutOff1+cutOff2; i++) {
             String tmp = a.operators[i];
             a.operators[i] = b.operators[i];
             b.operators[i] = tmp;
