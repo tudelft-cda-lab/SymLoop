@@ -1,0 +1,15 @@
+version: '2'
+services:
+  lab:
+    container_name: aistr
+    image: clintoncao/aistr:latest
+    volumes:
+      - strdata:/home/str/
+    command: 'tail -F /dev/null'
+volumes:
+  strdata:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: $PWD/docker-volume
