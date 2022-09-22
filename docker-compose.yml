@@ -5,7 +5,7 @@ services:
     image: clintoncao/aistr:latest
     volumes:
       - strdata:/home/str/
-    command: 'tail -F /dev/null'
+    command: /bin/bash
 volumes:
   strdata:
     driver: local
