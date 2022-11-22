@@ -172,7 +172,15 @@ public class SymbolicExecutionLab {
         } else if (operator.equals("+")) {
             return new MyVar(PathTracker.ctx.mkAdd(left_var, right_var));
         } else if (operator.equals("%")) {
-            return new MyVar(PathTracker.ctx.mkMod(left_var, right_var));
+            ArithExpr mod = PathTracker.ctx.mkMod(left_var, right_var);
+            return new MyVar(
+                    PathTracker.ctx.mkITE(
+                        PathTracker.ctx.mkGe(left_var,
+                            (ArithExpr) PathTracker.ctx.mkInt(0)
+                            ),
+                        mod,
+                        PathTracker.ctx.mkSub(mod, right_var))
+            );
         } else if (operator.equals("/")) {
             return new MyVar(PathTracker.ctx.mkDiv(left_var, right_var));
         }
