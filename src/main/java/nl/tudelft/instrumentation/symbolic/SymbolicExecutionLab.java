@@ -243,7 +243,10 @@ public class SymbolicExecutionLab {
             // Call the solver
             PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
         }
-        BoolExpr branchCondition = c.mkEq(condition.z3var, c.mkBool(value));
+        BoolExpr branchCondition = (BoolExpr) condition.z3var;
+        if (!value) {
+            branchCondition = c.mkNot(branchCondition);
+        }
         PathTracker.z3branches = c.mkAnd(branchCondition, PathTracker.z3branches);
     }
 
