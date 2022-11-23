@@ -9,7 +9,7 @@ DATASET="./RERS"
 
 instrument () {
     echo "Instrumenting $1";
-    java -XX:+UseConcMarkSweepGC -XX:-UseGCOverheadLimit -Xmx8096m -cp target/aistr.jar nl.tudelft.instrumentation.Main --type=symbolic --file="$DATASET/Problem$1/Problem$1.java" > "instrumented/Problem$1.java"
+    java -XX:+UseG1GC -Xmx22g -cp target/aistr.jar nl.tudelft.instrumentation.Main --type=symbolic --file="$DATASET/Problem$1/Problem$1.java" > "instrumented/Problem$1.java"
     echo "Compiling $1";
     javac -cp target/aistr.jar:lib/com.microsoft.z3.jar:. Errors.java "instrumented/Problem$1.java"
 }
