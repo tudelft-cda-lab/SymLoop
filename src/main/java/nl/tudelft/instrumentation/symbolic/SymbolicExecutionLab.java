@@ -40,15 +40,19 @@ public class SymbolicExecutionLab {
     static class NextTrace implements Comparable<NextTrace> {
         List<String> trace;
         int linenr;
+        boolean value;
         int pathLength;
+        String from;
 
         static Comparator<NextTrace> comparator = Comparator.comparing(NextTrace::pathLength)
                 .thenComparing(NextTrace::getLineNr);
 
-        public NextTrace(List<String> trace, int linenr, int pathLength) {
+        public NextTrace(List<String> trace, int linenr, int pathLength, String from, boolean value) {
             this.trace = trace;
             this.linenr = linenr;
             this.pathLength = pathLength;
+            this.from = from;
+            this.value = value;
         }
 
         public int getLineNr() {
@@ -59,6 +63,11 @@ public class SymbolicExecutionLab {
             return pathLength;
         }
 
+
+        public boolean getConditionValue() {
+            return this.value;
+        }
+
         @Override
         public int compareTo(NextTrace other) {
             return comparator.compare(this, other);
@@ -66,18 +75,20 @@ public class SymbolicExecutionLab {
 
     }
 
-    static Random r = new Random();
+    static Random r = new Random(1);
     static Boolean isFinished = false;
     static List<String> currentTrace;
     static int traceLength = 1;
     static PriorityQueue<NextTrace> nextTraces = new PriorityQueue<>();
     static PriorityQueue<NextTrace> backLog = new PriorityQueue<>();
     static BranchVisitedTracker branchTracker = new BranchVisitedTracker();
+    static BranchVisitedTracker currentBranchTracker = new BranchVisitedTracker();
     static Map<Integer, Integer> impossibleBranchesPathLengths = new HashMap<>();
     static ErrorTracker errorTracker = new ErrorTracker();
     static long startTime = System.currentTimeMillis();
 
     private static int currentLineNumber = 0;
+    private static boolean currentValue;
     private static int pathLength = 0;
 
     private static HashSet<String> alreadySolvedBranches = new HashSet<>();
@@ -219,8 +230,10 @@ public class SymbolicExecutionLab {
 
         Context c = PathTracker.ctx;
         currentLineNumber = line_nr;
+        currentValue = value;
         pathLength += 1;
         branchTracker.visit(line_nr, value);
+        currentBranchTracker.visit(line_nr, value);
         String pathString = String.format("%d-%s", line_nr, processedInput);
         if (alreadySolvedBranches.add(pathString)){
             // Call the solver
@@ -230,7 +243,7 @@ public class SymbolicExecutionLab {
         PathTracker.z3branches = c.mkAnd(branchCondition, PathTracker.z3branches);
     }
 
-    static void newSatisfiableInput(LinkedList<String> new_inputs) {
+    static void newSatisfiableInput(LinkedList<String> new_inputs, String output) {
         // Hurray! found a new branch using these new inputs!
         LinkedList<String> temp = new LinkedList<String>();
         for (String s : new_inputs) {
@@ -242,7 +255,8 @@ public class SymbolicExecutionLab {
         if(alreadyFoundTraces.add(alreadyFound)){
             System.out.printf("New satisfiable input: %s\n", temp);
             temp.add(newRandomInputChar());
-            add(new NextTrace(temp, currentLineNumber, pathLength));
+            // temp.add("A");
+            add(new NextTrace(temp, currentLineNumber, pathLength, String.join(" ", currentTrace) + "\n" + path + "\n" + output, !currentValue));
         }
 
     }
@@ -289,6 +303,7 @@ public class SymbolicExecutionLab {
         currentLineNumber = 0;
         inputInIndex = 0;
         processedInput = "";
+        currentBranchTracker.clear();
     }
 
     static boolean isEmpty() {
@@ -320,7 +335,7 @@ public class SymbolicExecutionLab {
 
     static void run() {
         initialize(PathTracker.inputSymbols);
-        nextTraces.add(new NextTrace(currentTrace, currentLineNumber, pathLength));
+        nextTraces.add(new NextTrace(currentTrace, currentLineNumber, pathLength, "<initial>", false));
         startTime = System.currentTimeMillis();
         // Place here your code to guide your fuzzer with its search using Symbolic
         // Execution.
@@ -347,9 +362,10 @@ public class SymbolicExecutionLab {
                     PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
                     // Potential improvement: add a contraint that the currentTrace should not be a solution in the future.
                     // Checking if the solver is actually right
-                    if((!branchTracker.hasVisitedBoth(trace.getLineNr())) && trace.getLineNr() != 0){
-                        printfRed("SOLVER IS WRONG, did not discover the solvable branch\n");
-                        System.out.printf("TRUE: %b, FALSE: %b\n",branchTracker.hasVisited(trace.getLineNr(), true), branchTracker.hasVisited(trace.getLineNr(), false));
+                    if((!currentBranchTracker.hasVisited(trace.getLineNr(), trace.getConditionValue())) && trace.getLineNr() != 0){
+                        printfRed("SOLVER IS WRONG, did not discover the solvable branch, %s\n", trace.from);
+                        printfGreen(path);
+                        System.out.printf("%d TRUE: %b, FALSE: %b\n",trace.getLineNr(), branchTracker.hasVisited(trace.getLineNr(), true), branchTracker.hasVisited(trace.getLineNr(), false));
                         System.exit(-1);
                     }
                 }

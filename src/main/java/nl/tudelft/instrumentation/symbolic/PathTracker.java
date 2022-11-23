@@ -46,7 +46,7 @@ public class PathTracker {
      */
     public static void solve(BoolExpr new_branch, boolean printModel){
         Solver s = PathTracker.ctx.mkSolver();
-
+        String output = "";
         s.add(PathTracker.z3model);
         s.add(PathTracker.z3branches);
         s.add(new_branch);
@@ -61,13 +61,14 @@ public class PathTracker {
         }
 
         if(s.check() == Status.SATISFIABLE){
-            //System.out.println("satisfiable");
+            // System.out.println("satisfiable");
             Model m = s.getModel();
+            output += s.getModel();
             LinkedList<String> new_inputs = new LinkedList<String>();
             for(MyVar v : PathTracker.inputs){
                 new_inputs.add(m.evaluate(v.z3var, true).toString());
             }
-            SymbolicExecutionLab.newSatisfiableInput(new_inputs);
+            SymbolicExecutionLab.newSatisfiableInput(new_inputs, output);
         }
     }
 
