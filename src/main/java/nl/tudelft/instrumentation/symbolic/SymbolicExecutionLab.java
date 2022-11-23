@@ -98,6 +98,10 @@ public class SymbolicExecutionLab {
     static int inputInIndex = 0;
     static String processedInput = "";
 
+    static String path = "";
+
+    private static HashMap<String, Integer> nameCounts = new HashMap();
+
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         currentTrace = generateRandomTrace(inputSymbols);
@@ -111,7 +115,9 @@ public class SymbolicExecutionLab {
          * add similar steps to the functions below in order to
          * obtain a path constraint.
          */
-        Expr z3var = c.mkConst(c.mkSymbol(name + "_" + PathTracker.z3counter++), s);
+        Integer count = nameCounts.getOrDefault(name, 0);
+        nameCounts.put(name, count + 1);
+        Expr z3var = c.mkConst(c.mkSymbol(name + "_" + count), s);
         PathTracker.z3model = c.mkAnd(c.mkEq(z3var, value), PathTracker.z3model);
         return new MyVar(z3var, name);
     }
@@ -219,6 +225,7 @@ public class SymbolicExecutionLab {
 
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
+        path += String.format("%d:%b\n", line_nr, value);
         if(firstBranchLineNr == -1) {
             firstBranchLineNr = line_nr;
         }
@@ -298,12 +305,14 @@ public class SymbolicExecutionLab {
 
     static void reset() {
         PathTracker.reset();
+        nameCounts.clear();
         System.gc();
         pathLength = 0;
         currentLineNumber = 0;
         inputInIndex = 0;
         processedInput = "";
         currentBranchTracker.clear();
+        path = "";
     }
 
     static boolean isEmpty() {
