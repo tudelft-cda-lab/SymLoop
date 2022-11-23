@@ -26,7 +26,6 @@ Thumbs.db
 
 target/
 instrumented/
-Problem*.java
 scripts/lastmodified
 problems/
 instrumented1/instrumented.zip
