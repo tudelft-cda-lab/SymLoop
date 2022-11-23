@@ -98,7 +98,10 @@ public class SymbolicExecutionLab {
 
     static String path = "";
 
-    private static HashMap<String, Integer> nameCounts = new HashMap();
+    static HashMap<String, List<Expr>> variables = new HashMap<String, List<Expr>>();
+    static HashMap<String, Integer> lastVariables = new HashMap<String, Integer>();
+
+    private static HashMap<String, Integer> nameCounts = new HashMap<String, Integer>();
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -115,6 +118,10 @@ public class SymbolicExecutionLab {
          */
         Integer count = nameCounts.getOrDefault(name, 0);
         nameCounts.put(name, count + 1);
+        List<Expr> initial = new ArrayList<Expr>();
+        initial.add(value);
+        variables.put(name, initial);
+        lastVariables.put(name, 1);
         Expr z3var = c.mkConst(c.mkSymbol(name + "_" + count), s);
         PathTracker.z3model = c.mkAnd(c.mkEq(z3var, value), PathTracker.z3model);
         return new MyVar(z3var, name);
@@ -191,11 +198,10 @@ public class SymbolicExecutionLab {
             return new MyVar(
                     PathTracker.ctx.mkITE(
                             PathTracker.ctx.mkOr(
-                                PathTracker.ctx.mkGe(left_var,
-                                    (ArithExpr) PathTracker.ctx.mkInt(0)),
-                                PathTracker.ctx.mkEq(mod,
-                                    (ArithExpr) PathTracker.ctx.mkInt(0))
-                                ),
+                                    PathTracker.ctx.mkGe(left_var,
+                                            (ArithExpr) PathTracker.ctx.mkInt(0)),
+                                    PathTracker.ctx.mkEq(mod,
+                                            (ArithExpr) PathTracker.ctx.mkInt(0))),
 
                             mod,
                             PathTracker.ctx.mkSub(mod, right_var)));
@@ -219,11 +225,32 @@ public class SymbolicExecutionLab {
         // All variable assignments, use single static assignment
         Integer count = nameCounts.getOrDefault(name, 0);
         nameCounts.put(name, count + 1);
+        variables.get(name).add(value);
+
         Context c = PathTracker.ctx;
         Expr z3var = c.mkConst(c.mkSymbol(name + "_" + count), s);
         // Update variable Z3 in assignment
         var.z3var = z3var;
         PathTracker.z3model = c.mkAnd(c.mkEq(z3var, value), PathTracker.z3model);
+    }
+
+    static void onLoopDone() {
+        if (processedInput.length() > 1) {
+            for (String name : variables.keySet()) {
+                List<Expr> assigns = variables.get(name);
+                Integer lastLength = lastVariables.get(name);
+                if (lastLength < assigns.size()) {
+                    System.out.printf("%s: ", name);
+                    for (int i = lastLength; i < assigns.size(); i++) {
+                        Expr e = assigns.get(i);
+                        System.out.printf("%s, ", e.toString());
+                    }
+                    System.out.println();
+                    // System.exit(-1);
+                    lastVariables.put(name, assigns.size());
+                }
+            }
+        }
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
@@ -233,6 +260,7 @@ public class SymbolicExecutionLab {
         }
         if (firstBranchLineNr == line_nr) {
             assert inputInIndex < currentTrace.size();
+            onLoopDone();
             processedInput += currentTrace.get(inputInIndex);
             inputInIndex++;
         }
@@ -318,6 +346,8 @@ public class SymbolicExecutionLab {
         inputInIndex = 0;
         processedInput = "";
         currentBranchTracker.clear();
+        variables.clear();
+        lastVariables.clear();
         path = "";
     }
 
@@ -378,8 +408,6 @@ public class SymbolicExecutionLab {
                             trace.trace);
                     currentTrace = trace.trace;
                     PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-                    // Potential improvement: add a contraint that the currentTrace should not be a
-                    // solution in the future.
                     // Checking if the solver is actually right
                     if ((!currentBranchTracker.hasVisited(trace.getLineNr(), trace.getConditionValue()))
                             && trace.getLineNr() != 0) {
