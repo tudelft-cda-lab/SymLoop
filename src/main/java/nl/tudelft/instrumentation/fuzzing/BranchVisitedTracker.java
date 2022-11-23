@@ -39,6 +39,10 @@ public class BranchVisitedTracker {
         return n;
     }
 
+    public boolean visitedAll() {
+        return numVisited() == totalBranches();
+    }
+
     public Set<Integer> lines() {
         return visited.keySet();
     }
@@ -46,4 +50,16 @@ public class BranchVisitedTracker {
     public void clear() {
         visited.clear();
     }
+
+    public String formatMissing() {
+        String output = "";
+        for (Integer line : visited.keySet()) {
+            VisitedEnum v = visited.get(line);
+            if (v!=VisitedEnum.BOTH) {
+                output += String.format("%d:%b\n", line, !v.hasVisited(true));
+            }
+        }
+        return output;
+    }
+
 }

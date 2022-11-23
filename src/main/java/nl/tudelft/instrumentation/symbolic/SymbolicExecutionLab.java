@@ -392,13 +392,15 @@ public class SymbolicExecutionLab {
                     }
                 }
                 // System.in.read();
+                isFinished = branchTracker.visitedAll();
                 System.out.printf("Visited: %d out of %d, #nextTraces: %d, #backlog: %d \n", branchTracker.numVisited(),
                         branchTracker.totalBranches(), nextTraces.size(), backLog.size());
-                Thread.sleep(10);
+                Thread.sleep(0);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+        System.exit(0);
     }
 
     public static void printfGreen(String a, Object... args) {
