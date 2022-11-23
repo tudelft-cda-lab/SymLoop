@@ -190,8 +190,13 @@ public class SymbolicExecutionLab {
             ArithExpr mod = PathTracker.ctx.mkMod(left_var, right_var);
             return new MyVar(
                     PathTracker.ctx.mkITE(
-                            PathTracker.ctx.mkGe(left_var,
+                            PathTracker.ctx.mkOr(
+                                PathTracker.ctx.mkGe(left_var,
                                     (ArithExpr) PathTracker.ctx.mkInt(0)),
+                                PathTracker.ctx.mkEq(mod,
+                                    (ArithExpr) PathTracker.ctx.mkInt(0))
+                                ),
+
                             mod,
                             PathTracker.ctx.mkSub(mod, right_var)));
         } else if (operator.equals("/")) {
