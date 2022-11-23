@@ -13,7 +13,7 @@ public class ProblemSimpleLoop {
     public void calculateOutput(String input) {
         cf = true;
         if (cf && input.equals("i")) {
-            i++;
+            i += 1;
             cf = false;
         }
         if (cf && input.equals("p")) {
