@@ -1,5 +1,6 @@
 package nl.tudelft.instrumentation.symbolic;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -24,6 +25,8 @@ public class PathTracker {
     static String[] inputSymbols;
     // Longest a single testcase is allowed to run
     static final int timeoutMS = 1000000;
+
+    static int lastLength = -1;
 
     /**
      * Used to reset the constraints and everything else of z3 before running the next sequence.
@@ -69,6 +72,38 @@ public class PathTracker {
                 new_inputs.add(m.evaluate(v.z3var, true).toString());
             }
             SymbolicExecutionLab.newSatisfiableInput(new_inputs, output);
+        }
+    }
+
+    private static void simplify() {
+        Goal g = PathTracker.ctx.mkGoal(true, false, false);
+        g.add(PathTracker.z3model);
+        g.add(PathTracker.z3branches);
+
+        // ApplyResult ar = ctx.mkTactic("ctx-solver-simplify").apply(g);
+        ApplyResult ar = ctx.mkTactic("ctx-simplify").apply(g);
+        Goal[] subgoals = ar.getSubgoals();
+        BoolExpr[] formulas_0 = subgoals[0].getFormulas();
+        int count = 0;
+        for (BoolExpr b : formulas_0) {
+            if (!b.isConst()) {
+                count += 1;
+            }
+        }
+        if (count != PathTracker.lastLength) {
+            for (BoolExpr b : formulas_0) {
+                if (!b.isConst()) {
+                    System.out.println(b);
+                }
+            }
+            System.out.println(PathTracker.lastLength);
+            PathTracker.lastLength = count;
+            try {
+                System.in.read();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
     }
 
