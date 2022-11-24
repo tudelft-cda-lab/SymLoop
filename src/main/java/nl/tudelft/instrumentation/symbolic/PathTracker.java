@@ -47,7 +47,7 @@ public class PathTracker {
      * @param printModel boolean value that specifies whether the path constraint should
      *                   be printed in the terminal or not.
      */
-    public static void solve(BoolExpr new_branch, boolean printModel){
+    public static boolean solve(BoolExpr new_branch, boolean printModel, boolean isInput){
         Solver s = PathTracker.ctx.mkSolver();
         String output = "";
         s.add(PathTracker.z3model);
@@ -71,8 +71,12 @@ public class PathTracker {
             for(MyVar v : PathTracker.inputs){
                 new_inputs.add(m.evaluate(v.z3var, true).toString());
             }
-            SymbolicExecutionLab.newSatisfiableInput(new_inputs, output);
+            if (isInput) {
+                SymbolicExecutionLab.newSatisfiableInput(new_inputs, output);
+            }
+            return true;
         }
+        return false;
     }
 
     private static void simplify() {

@@ -137,7 +137,7 @@ public class SymbolicExecutionLab {
     }
 
     static void assignToVariable(String name, Expr value) {
-        if(variables.containsKey(name)) {
+        if (variables.containsKey(name)) {
             variables.get(name).add(value);
         } else {
             List<Expr> initial = new ArrayList<Expr>();
@@ -146,7 +146,6 @@ public class SymbolicExecutionLab {
             lastVariables.put(name, 1);
         }
     }
-
 
     static MyVar createInput(String name, Expr value, Sort s) {
         onLoopDone();
@@ -260,42 +259,29 @@ public class SymbolicExecutionLab {
 
     static void onLoopDone() {
         Context ctx = PathTracker.ctx;
-        System.out.printf("loopmodel: %d %s\n", inputInIndex, loopModel);
-        Expr extended = loopModel;
+        // System.out.printf("loopmodel: %d %s\n", inputInIndex, loopModel);
+        BoolExpr extended = loopModel;
         if (processedInput.length() > 1) {
             for (String name : variables.keySet()) {
                 List<Expr> assigns = variables.get(name);
                 Integer lastLength = lastVariables.get(name);
-                int added = assigns.size() - lastLength; 
+                int added = assigns.size() - lastLength;
                 if (added > 0) {
-                    System.out.printf("%s: ", name);
-                    // for (int i = lastLength-1; i < assigns.size(); i++) {
-                    for (int i = assigns.size() - 1; i >= lastLength-1; i--) {
+                    // Loop backwards to prevent repeated subsitution
+                    for (int i = assigns.size() - 1; i >= lastLength - 1; i--) {
                         Expr e = assigns.get(i);
-                        // System.out.printf("sort: %s\n",e.getSort());
-                        System.out.println(getVarName(name, i));
-                        extended = extended.substitute(
-                                ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i)), e.getSort()), 
-                                ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i+added)), e.getSort())
-                                // ctx.mkConst(ctx.mkSymbol("a_very_new_expression"), e.getSort())
-                                );
-                        // Expr e = e.substitute()
-                        System.out.printf("%s, ", e.toString());
-                        // System.out.printf("substituted: %s, ", s.toString());
+                        extended = (BoolExpr) extended.substitute(
+                                ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i)), e.getSort()),
+                                ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i + added)), e.getSort()));
                     }
-                    System.out.println();
-                    // System.exit(-1);
                     lastVariables.put(name, assigns.size());
                 }
             }
         }
 
-        // extended = extended.substitute(
-        //         ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i)), e.getSort()), 
-        //         ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i+added)), e.getSort())
-        //         // ctx.mkConst(ctx.mkSymbol("a_very_new_expression"), e.getSort())
-        //         );
-        System.out.printf("extended loopmodel: %s\n", extended);
+        if (PathTracker.solve(extended, false, false)) {
+            System.out.printf("loop detected %s\n", extended);
+        }
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
@@ -305,7 +291,7 @@ public class SymbolicExecutionLab {
         }
         if (firstBranchLineNr == line_nr) {
             assert inputInIndex < currentTrace.size();
-            System.out.printf("inputInIndex: %d\n", inputInIndex);
+            // System.out.printf("inputInIndex: %d\n", inputInIndex);
             // onLoopDone();
             processedInput += currentTrace.get(inputInIndex);
             inputInIndex++;
@@ -320,7 +306,7 @@ public class SymbolicExecutionLab {
         String pathString = String.format("%d-%s", line_nr, processedInput);
         if (alreadySolvedBranches.add(pathString)) {
             // Call the solver
-            PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false);
+            PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false, true);
         }
         BoolExpr branchCondition = (BoolExpr) condition.z3var;
         if (!value) {
