@@ -6,8 +6,8 @@ public class ProblemArray {
 
     private String[] inputs = { "A", "B", "C", "D" };
 
-    public int[] a = { 0, 1, 2, 3, 4 };
-    public int[] b = { 5, 6, 7 };
+    public int[] a = { 0, 1, 2};
+    public int[] b = { 5, 6 };
     public boolean cf = true;
     public boolean equal = false;
 
@@ -36,7 +36,7 @@ public class ProblemArray {
             equal = true;
             b = a;
         }
-        if (cf && input.equals("C") && equal && b[3] == 3) {
+        if (cf && input.equals("C") && equal && b[2] == 2) {
             // System.exit(1);
             cf = false;
         }
