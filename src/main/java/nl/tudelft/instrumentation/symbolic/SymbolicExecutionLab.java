@@ -137,11 +137,11 @@ public class SymbolicExecutionLab {
         PathTracker.inputs.add(input);
 
         // restrict inputs to the valid input symbols found in PathTracker.inputSymbols
-        BoolExpr temp = c.mkFalse();
+        BoolExpr[] temp = new BoolExpr[PathTracker.inputSymbols.length];
         for (int i = 0; i < PathTracker.inputSymbols.length; i++) {
-            temp = c.mkOr(temp, c.mkEq(c.mkString(PathTracker.inputSymbols[i]), intermediate));
+            temp[i] = c.mkEq(c.mkString(PathTracker.inputSymbols[i]), intermediate);
         }
-        PathTracker.z3model = c.mkAnd(temp, PathTracker.z3model);
+        PathTracker.z3model = c.mkAnd(c.mkOr(temp), PathTracker.z3model);
 
         return input;
     }
