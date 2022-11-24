@@ -103,9 +103,22 @@ public class SymbolicExecutionLab {
 
     private static HashMap<String, Integer> nameCounts = new HashMap<String, Integer>();
 
+    private static BoolExpr loopModel = PathTracker.ctx.mkTrue();
+
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         currentTrace = generateRandomTrace(inputSymbols);
+        loopModel = PathTracker.ctx.mkTrue();
+    }
+
+    static String createVarName(String name) {
+        Integer count = nameCounts.getOrDefault(name, 0);
+        nameCounts.put(name, count + 1);
+        return getVarName(name, count);
+    }
+
+    static String getVarName(String name, int index) {
+        return name + "_" + index;
     }
 
     static MyVar createVar(String name, Expr value, Sort s) {
@@ -116,22 +129,31 @@ public class SymbolicExecutionLab {
          * add similar steps to the functions below in order to
          * obtain a path constraint.
          */
-        Integer count = nameCounts.getOrDefault(name, 0);
-        nameCounts.put(name, count + 1);
-        List<Expr> initial = new ArrayList<Expr>();
-        initial.add(value);
-        variables.put(name, initial);
-        lastVariables.put(name, 1);
-        Expr z3var = c.mkConst(c.mkSymbol(name + "_" + count), s);
+        assignToVariable(name, value);
+        Expr z3var = c.mkConst(c.mkSymbol(createVarName(name)), s);
         PathTracker.z3model = c.mkAnd(c.mkEq(z3var, value), PathTracker.z3model);
+        loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
         return new MyVar(z3var, name);
     }
 
+    static void assignToVariable(String name, Expr value) {
+        if(variables.containsKey(name)) {
+            variables.get(name).add(value);
+        } else {
+            List<Expr> initial = new ArrayList<Expr>();
+            initial.add(value);
+            variables.put(name, initial);
+            lastVariables.put(name, 1);
+        }
+    }
+
+
     static MyVar createInput(String name, Expr value, Sort s) {
+        onLoopDone();
         // Create an input var, these should be free variables!
         // Do not add it to the model
         Context c = PathTracker.ctx;
-        Expr intermediate = c.mkConst(c.mkSymbol(name + "_" + PathTracker.z3counter++), s);
+        Expr intermediate = c.mkConst(c.mkSymbol(createVarName(name)), s);
         // intermediate = c.mkEq(intermediate, value);
         MyVar input = new MyVar(intermediate, name);
         PathTracker.inputs.add(input);
@@ -141,8 +163,12 @@ public class SymbolicExecutionLab {
         for (int i = 0; i < PathTracker.inputSymbols.length; i++) {
             temp[i] = c.mkEq(c.mkString(PathTracker.inputSymbols[i]), intermediate);
         }
-        PathTracker.z3model = c.mkAnd(c.mkOr(temp), PathTracker.z3model);
 
+        assignToVariable(name, intermediate);
+        PathTracker.z3model = c.mkAnd(c.mkOr(temp), PathTracker.z3model);
+        // loopModel = PathTracker.ctx.mkTrue();
+        // loopModel = c.mkAnd(c.mkOr(temp), loopModel);
+        loopModel = c.mkOr(temp);
         return input;
     }
 
@@ -223,27 +249,39 @@ public class SymbolicExecutionLab {
 
     static void assign(MyVar var, String name, Expr value, Sort s) {
         // All variable assignments, use single static assignment
-        Integer count = nameCounts.getOrDefault(name, 0);
-        nameCounts.put(name, count + 1);
-        variables.get(name).add(value);
-
         Context c = PathTracker.ctx;
-        Expr z3var = c.mkConst(c.mkSymbol(name + "_" + count), s);
+        Expr z3var = c.mkConst(c.mkSymbol(createVarName(name)), s);
         // Update variable Z3 in assignment
+        variables.get(name).add(value);
         var.z3var = z3var;
         PathTracker.z3model = c.mkAnd(c.mkEq(z3var, value), PathTracker.z3model);
+        loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
     }
 
     static void onLoopDone() {
+        Context ctx = PathTracker.ctx;
+        System.out.printf("loopmodel: %d %s\n", inputInIndex, loopModel);
+        Expr extended = loopModel;
         if (processedInput.length() > 1) {
             for (String name : variables.keySet()) {
                 List<Expr> assigns = variables.get(name);
                 Integer lastLength = lastVariables.get(name);
-                if (lastLength < assigns.size()) {
+                int added = assigns.size() - lastLength; 
+                if (added > 0) {
                     System.out.printf("%s: ", name);
-                    for (int i = lastLength; i < assigns.size(); i++) {
+                    // for (int i = lastLength-1; i < assigns.size(); i++) {
+                    for (int i = assigns.size() - 1; i >= lastLength-1; i--) {
                         Expr e = assigns.get(i);
+                        // System.out.printf("sort: %s\n",e.getSort());
+                        System.out.println(getVarName(name, i));
+                        extended = extended.substitute(
+                                ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i)), e.getSort()), 
+                                ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i+added)), e.getSort())
+                                // ctx.mkConst(ctx.mkSymbol("a_very_new_expression"), e.getSort())
+                                );
+                        // Expr e = e.substitute()
                         System.out.printf("%s, ", e.toString());
+                        // System.out.printf("substituted: %s, ", s.toString());
                     }
                     System.out.println();
                     // System.exit(-1);
@@ -251,6 +289,13 @@ public class SymbolicExecutionLab {
                 }
             }
         }
+
+        // extended = extended.substitute(
+        //         ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i)), e.getSort()), 
+        //         ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i+added)), e.getSort())
+        //         // ctx.mkConst(ctx.mkSymbol("a_very_new_expression"), e.getSort())
+        //         );
+        System.out.printf("extended loopmodel: %s\n", extended);
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
@@ -260,7 +305,8 @@ public class SymbolicExecutionLab {
         }
         if (firstBranchLineNr == line_nr) {
             assert inputInIndex < currentTrace.size();
-            onLoopDone();
+            System.out.printf("inputInIndex: %d\n", inputInIndex);
+            // onLoopDone();
             processedInput += currentTrace.get(inputInIndex);
             inputInIndex++;
         }
@@ -281,6 +327,7 @@ public class SymbolicExecutionLab {
             branchCondition = c.mkNot(branchCondition);
         }
         PathTracker.z3branches = c.mkAnd(branchCondition, PathTracker.z3branches);
+        loopModel = c.mkAnd(branchCondition, loopModel);
     }
 
     static void newSatisfiableInput(LinkedList<String> new_inputs, String output) {
@@ -348,6 +395,7 @@ public class SymbolicExecutionLab {
         currentBranchTracker.clear();
         variables.clear();
         lastVariables.clear();
+        loopModel = PathTracker.ctx.mkTrue();
         path = "";
     }
 
