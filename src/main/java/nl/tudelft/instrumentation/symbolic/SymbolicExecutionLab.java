@@ -140,12 +140,14 @@ public class SymbolicExecutionLab {
 
     static void assignToVariable(String name, Expr value) {
         if (variables.containsKey(name)) {
+            System.out.printf("Assign to %s = %s\n",name, value);
             variables.get(name).add(value);
         } else {
+            System.out.printf("New assign to %s = %s\n",name, value);
             List<Expr> initial = new ArrayList<Expr>();
             initial.add(value);
             variables.put(name, initial);
-            lastVariables.put(name, 1);
+            lastVariables.put(name, 0);
         }
     }
 
@@ -252,50 +254,106 @@ public class SymbolicExecutionLab {
         // All variable assignments, use single static assignment
         Context c = PathTracker.ctx;
         Expr z3var = c.mkConst(c.mkSymbol(createVarName(name)), s);
-        // Update variable Z3 in assignment
-        variables.get(name).add(value);
+        assignToVariable(name, value);
         var.z3var = z3var;
         PathTracker.z3model = c.mkAnd(c.mkEq(z3var, value), PathTracker.z3model);
         loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
     }
 
+    static class Replacement {
+        public final String name;
+        public final Sort sort;
+        public final int start;
+        public final int added;
+        public final int stop;
+
+        public Replacement(String name, Sort s, int start, int added, int stop) {
+            this.name = name;
+            this.sort = s;
+            this.start = start;
+            this.added = added;
+            this.stop = stop;
+        }
+
+        public BoolExpr applyTo(BoolExpr expr) {
+            return this.applyTo(expr, 0);
+        }
+
+        public BoolExpr applyTo(BoolExpr expr, int amount) {
+            // Loop backwards to prevent repeated subsitution
+            Context ctx = PathTracker.ctx;
+            for (int i = this.start; i >= this.stop; i--) {
+                int base = i + (this.added * amount);
+                expr = (BoolExpr) expr.substitute(
+                        ctx.mkConst(ctx.mkSymbol(getVarName(this.name, base)), this.sort),
+                        ctx.mkConst(ctx.mkSymbol(getVarName(this.name, base + this.added)), this.sort));
+
+            }
+            return expr;
+        }
+
+    }
+
     static void onLoopDone() {
-        if(skip){
+        System.out.println("onLoopDone");
+        if (skip) {
             return;
         }
-        Context ctx = PathTracker.ctx;
         // System.out.printf("loopmodel: %d %s\n", inputInIndex, loopModel);
         String output = "";
         boolean isLoop = false;
         BoolExpr extended = loopModel;
-        if (processedInput.length() > 1) {
+
+        // String, Name, I, I2, Sort;
+        List<Replacement> replacements = new ArrayList<Replacement>();
+
+        // if (processedInput.length() > 1) {
             for (String name : variables.keySet()) {
                 List<Expr> assigns = variables.get(name);
                 Integer lastLength = lastVariables.get(name);
                 int added = assigns.size() - lastLength;
+                System.out.printf("%s: %d, now: %d\n", name, lastLength, assigns.size());
                 if (added > 0) {
                     output += String.format("%s, ", name);
                     isLoop = true;
-                    // Loop backwards to prevent repeated subsitution
-                    for (int i = assigns.size() - 1; i >= lastLength - 1; i--) {
-                        Expr e = assigns.get(i);
-                        extended = (BoolExpr) extended.substitute(
-                                ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i)), e.getSort()),
-                                ctx.mkConst(PathTracker.ctx.mkSymbol(getVarName(name, i + added)), e.getSort()));
-                    }
+                    Replacement r = new Replacement(
+                            name, assigns.get(0).getSort(),
+                            assigns.size() - 1, added, lastLength);
+                    replacements.add(r);
+                    extended = r.applyTo(extended);
                     lastVariables.put(name, assigns.size());
                 }
             }
-        }
+        // }
 
-        if (isLoop && alreadyFoundLoops.add(processedInput) && PathTracker.solve(extended, false, false)) {
-            // System.out.printf("loop detected on '%s' for %s: %s\n\nEXTENDED: %s\n", processedInput, output, loopModel, extended);
-            System.out.printf("loop detected for %s: %s\n", output, processedInput);
+        if (isLoop && PathTracker.solve(extended, false, false) && alreadyFoundLoops.add(processedInput)) {
+            // System.out.printf("loop detected on '%s' for %s: %s\n\nEXTENDED: %s\n",
+            // processedInput, output, loopModel, extended);
+            printfYellow("loopmodel: %s\n", loopModel);
+            printfRed("loop detected for %s: on input '%s'\nextended: %s\n", output, processedInput, extended);
+            BoolExpr full = extended;
+            List<BoolExpr> l = new ArrayList<BoolExpr>();
+            for (int i = 1; i < 10; i += 1) {
+                l.add(extended);
+                for (Replacement r : replacements) {
+                    extended = r.applyTo(extended, i);
+                }
+                full = PathTracker.ctx.mkAnd(extended, full);
+                if(PathTracker.solve(full, false, false)) {
+                    printfRed("Loop till: %s %d", extended, i);
+                    // for (BoolExpr e: l) {
+                    //     System.out.printf("%s\n", e);
+                    // }
+                }
+            }
+            // System.out.printf("loopModel: %s\n", loopModel);
+            // System.exit(1);
+            // System.out.println("");
         }
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-        if(skip){
+        if (skip) {
             return;
         }
         path += String.format("%d:%b\n", line_nr, value);
@@ -456,6 +514,7 @@ public class SymbolicExecutionLab {
                             trace.trace);
                     currentTrace = trace.trace;
                     PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+                    onLoopDone();
                     // Checking if the solver is actually right
                     if ((!currentBranchTracker.hasVisited(trace.getLineNr(), trace.getConditionValue()))
                             && trace.getLineNr() != 0) {
@@ -507,7 +566,7 @@ public class SymbolicExecutionLab {
                     seconds);
 
         }
-        if(out.contains("Invalid")) {
+        if (out.contains("Invalid")) {
             skip = true;
             // System.out.println(out);
         }
