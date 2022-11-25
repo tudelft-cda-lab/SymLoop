@@ -140,7 +140,7 @@ public class SymbolicExecutionLab {
 
     static void assignToVariable(String name, Expr value) {
         if (variables.containsKey(name)) {
-            System.out.printf("Assign to %s = %s\n",name, value);
+            // System.out.printf("Assign to %s = %s\n",name, value);
             variables.get(name).add(value);
         } else {
             // System.out.printf("New assign to %s = %s\n",name, value);
