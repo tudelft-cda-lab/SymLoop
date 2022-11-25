@@ -143,7 +143,7 @@ public class SymbolicExecutionLab {
             System.out.printf("Assign to %s = %s\n",name, value);
             variables.get(name).add(value);
         } else {
-            System.out.printf("New assign to %s = %s\n",name, value);
+            // System.out.printf("New assign to %s = %s\n",name, value);
             List<Expr> initial = new ArrayList<Expr>();
             initial.add(value);
             variables.put(name, initial);
@@ -312,13 +312,13 @@ public class SymbolicExecutionLab {
                 List<Expr> assigns = variables.get(name);
                 Integer lastLength = lastVariables.get(name);
                 int added = assigns.size() - lastLength;
-                System.out.printf("%s: %d, now: %d\n", name, lastLength, assigns.size());
+                // System.out.printf("%s: %d, now: %d\n", name, lastLength, assigns.size());
                 if (added > 0) {
                     output += String.format("%s, ", name);
                     isLoop = true;
                     Replacement r = new Replacement(
                             name, assigns.get(0).getSort(),
-                            assigns.size() - 1, added, lastLength);
+                            assigns.size() - 1, added, lastLength-1);
                     replacements.add(r);
                     extended = r.applyTo(extended);
                     lastVariables.put(name, assigns.size());
@@ -329,8 +329,9 @@ public class SymbolicExecutionLab {
         if (isLoop && PathTracker.solve(extended, false, false) && alreadyFoundLoops.add(processedInput)) {
             // System.out.printf("loop detected on '%s' for %s: %s\n\nEXTENDED: %s\n",
             // processedInput, output, loopModel, extended);
-            printfYellow("loopmodel: %s\n", loopModel);
-            printfRed("loop detected for %s: on input '%s'\nextended: %s\n", output, processedInput, extended);
+            // printfYellow("loopmodel: %s\n", loopModel);
+            // printfRed("loop detected for %s: on input '%s'\nextended: %s\n", output, processedInput, extended);
+            printfRed("loop detected with vars %s: on input '%s'\n", output, processedInput);
             BoolExpr full = extended;
             List<BoolExpr> l = new ArrayList<BoolExpr>();
             for (int i = 1; i < 10; i += 1) {
@@ -338,16 +339,24 @@ public class SymbolicExecutionLab {
                 for (Replacement r : replacements) {
                     extended = r.applyTo(extended, i);
                 }
+                System.out.printf("%s\n", extended);
                 full = PathTracker.ctx.mkAnd(extended, full);
                 if(PathTracker.solve(full, false, false)) {
-                    printfRed("Loop till: %s %d", extended, i);
+                    printfRed("Loop till: %d", i);
                     // for (BoolExpr e: l) {
                     //     System.out.printf("%s\n", e);
                     // }
+                } else {
+                    printfGreen("loop ends after %d iterations\n", i);
+                    break;
                 }
+                System.out.println();
             }
             // System.out.printf("loopModel: %s\n", loopModel);
-            // System.exit(1);
+            if (processedInput.equals("i")) {
+                System.exit(1);
+            }
+
             // System.out.println("");
         }
     }

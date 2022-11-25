@@ -12,13 +12,13 @@ public class ProblemSimpleLoop {
 
     public void calculateOutput(String input) {
         cf = true;
-        if (cf && input.equals("i")) {
+        if (cf && input.equals("i") && i < 6) {
             i += 1;
             cf = false;
         }
         if (cf && input.equals("p")) {
             cf = false;
-            if (i > 10) {
+            if (i > 4) {
                 Errors.__VERIFIER_error(0);
             }
         }
