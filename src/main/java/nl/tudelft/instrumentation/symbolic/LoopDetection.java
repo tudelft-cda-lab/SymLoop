@@ -38,14 +38,16 @@ public class LoopDetection {
             }
             return expr;
         }
-
     }
 
-    private HashSet<String> alreadyFoundLoops = new HashSet<>();
+    private HashSet<String> foundLoops = new HashSet<>();
+    private HashSet<String> alreadyChecked = new HashSet<>();
     private HashMap<String, List<Expr>> variables = new HashMap<String, List<Expr>>();
     private HashMap<String, Integer> lastVariables = new HashMap<String, Integer>();
     private BoolExpr loopModel = PathTracker.ctx.mkFalse();
     private Context ctx = PathTracker.ctx;
+
+    private List<BoolExpr> loopModelList = new ArrayList<BoolExpr>();
 
     public LoopDetection() {
     }
@@ -54,6 +56,7 @@ public class LoopDetection {
         loopModel = PathTracker.ctx.mkFalse();
         variables.clear();
         lastVariables.clear();
+        loopModelList.clear();
     }
 
     void assignToVariable(String name, Expr value) {
@@ -71,9 +74,25 @@ public class LoopDetection {
 
     void nextInput(BoolExpr inputConstraint) {
         loopModel = inputConstraint;
+        loopModelList.clear();
+        addToLoopModel(inputConstraint);
+    }
+
+    void addToLoopModelList(BoolExpr condition) {
+        if ((!condition.isConst()) && condition.isAnd()) {
+            Expr[] args = condition.getArgs();
+            for (Expr arg : args) {
+                BoolExpr v = (BoolExpr) arg;
+                addToLoopModelList(v);
+            }
+
+        } else {
+            loopModelList.add(condition);
+        }
     }
 
     void addToLoopModel(BoolExpr condition) {
+        addToLoopModelList(condition);
         loopModel = ctx.mkAnd(condition, loopModel);
     }
 
@@ -82,11 +101,16 @@ public class LoopDetection {
         if (SymbolicExecutionLab.skip) {
             return;
         }
+        // loopModel = ctx.mkAnd(loopModelList.toArray(BoolExpr[]::new));
         String output = "";
         boolean isLoop = false;
         BoolExpr extended = loopModel;
+        // System.out.println("loopModel: " + loopModel);
 
         List<Replacement> replacements = new ArrayList<Replacement>();
+
+        // boolean[] needsUpdating = new boolean[loopModelList.size()];
+        HashSet<BoolExpr> needsUpdatingExpr = new HashSet<BoolExpr>();
 
         for (String name : variables.keySet()) {
             List<Expr> assigns = variables.get(name);
@@ -102,36 +126,66 @@ public class LoopDetection {
                 replacements.add(r);
                 extended = r.applyTo(extended);
                 lastVariables.put(name, assigns.size());
+                for (int i = 0; i < loopModelList.size(); i++) {
+                    BoolExpr e = loopModelList.get(i);
+                    BoolExpr applied = r.applyTo(e);
+                    if (!e.equals(applied)) {
+                        needsUpdatingExpr.add(e);
+                    }
+                }
             }
         }
+
         // }
 
         if (isLoop && PathTracker.solve(extended, false, false)
-                && alreadyFoundLoops.add(SymbolicExecutionLab.processedInput)) {
-            // System.out.printf("loop detected on '%s' for %s: %s\n\nEXTENDED: %s\n",
-            // processedInput, output, loopModel, extended);
-            // printfYellow("loopmodel: %s\n", loopModel);
-            // printfRed("loop detected for %s: on input '%s'\nextended: %s\n", output,
-            // processedInput, extended);
-            SymbolicExecutionLab.printfRed("loop detected with vars %s: on input '%s'\n", output,
-                    SymbolicExecutionLab.processedInput);
-            BoolExpr full = extended;
-            List<BoolExpr> l = new ArrayList<BoolExpr>();
-            for (int i = 1; i < 100; i += 1) {
-                l.add(extended);
+                && foundLoops.add(SymbolicExecutionLab.processedInput)) {
+
+            SymbolicExecutionLab.printfRed(
+                    "loop detected with vars %s: on input '%s'. %d / %d constraints need updating\n", output,
+                    SymbolicExecutionLab.processedInput,
+                    needsUpdatingExpr.size(), loopModelList.size());
+            List<BoolExpr> baseConstraints = new ArrayList<BoolExpr>();
+            for (BoolExpr c : needsUpdatingExpr) {
+                for (Replacement r : replacements) {
+                    c = r.applyTo(c);
+                }
+                baseConstraints.add(c);
+            }
+            BoolExpr base = ctx.mkAnd(baseConstraints.toArray(BoolExpr[]::new));
+            // SymbolicExecutionLab.printfGreen("loopModel: %s\n", loopModel);
+            // SymbolicExecutionLab.printfBlue("base: %s\n", base);
+            // SymbolicExecutionLab.printfGreen("extended: %s\n", extended);
+            System.out.printf("LEN: %d out of %d\n", baseConstraints.size(), loopModelList.size());
+            // BoolExpr full = extended;//ctx.mkAnd(loopModel, base);
+            extended = base;
+            // List<BoolExpr> constraints = new ArrayList<BoolExpr>();
+            Solver solver = ctx.mkSolver();
+            solver.add(PathTracker.z3model);
+            solver.add(PathTracker.z3branches);
+            solver.add(extended);
+            int nextSolve = 2;
+            for (int i = 1; i < 10000; i += 1) {
+                // constraints.add(extended);
                 for (Replacement r : replacements) {
                     extended = r.applyTo(extended, i);
                 }
                 // System.out.printf("%s\n", extended);
-                full = PathTracker.ctx.mkAnd(extended, full);
-                if (PathTracker.solve(full, false, false)) {
-                } else {
-                    SymbolicExecutionLab.printfGreen("loop ends after %d iterations\n", i);
-                    break;
+                // full = PathTracker.ctx.mkAnd(extended, full);
+                solver.add(extended);
+                // if (PathTracker.solve(full, false, false)) {
+                if (i >= nextSolve) {
+                    if (solver.check() == Status.SATISFIABLE) {
+                        nextSolve *= 2;
+                    } else {
+                        SymbolicExecutionLab.printfGreen("loop ends after %d iterations\n", i);
+                        System.exit(1);
+                        break;
+                    }
                 }
             }
 
-            for (String s : alreadyFoundLoops) {
+            for (String s : foundLoops) {
                 SymbolicExecutionLab.printfBlue("%s\n", s);
             }
         }

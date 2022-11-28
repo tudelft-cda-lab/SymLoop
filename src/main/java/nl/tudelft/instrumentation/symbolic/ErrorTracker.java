@@ -37,4 +37,9 @@ public class ErrorTracker {
     public Set<Integer> getSet() {
         return this.errors;
     }
+
+    public boolean isError(String line) {
+        Matcher matcher = pattern.matcher(line);
+        return matcher.find();
+    }
 }
