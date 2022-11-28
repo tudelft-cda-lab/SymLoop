@@ -4,7 +4,6 @@ package nl.tudelft.instrumentation.symbolic;
 import java.util.*;
 import com.microsoft.z3.*;
 
-
 public class LoopDetection {
 
     static class Replacement {
@@ -33,14 +32,14 @@ public class LoopDetection {
                 int base = i + (this.added * amount);
                 expr = (BoolExpr) expr.substitute(
                         ctx.mkConst(ctx.mkSymbol(SymbolicExecutionLab.getVarName(this.name, base)), this.sort),
-                        ctx.mkConst(ctx.mkSymbol(SymbolicExecutionLab.getVarName(this.name, base + this.added)), this.sort));
+                        ctx.mkConst(ctx.mkSymbol(SymbolicExecutionLab.getVarName(this.name, base + this.added)),
+                                this.sort));
 
             }
             return expr;
         }
 
     }
-
 
     private HashSet<String> alreadyFoundLoops = new HashSet<>();
     private HashMap<String, List<Expr>> variables = new HashMap<String, List<Expr>>();
@@ -74,14 +73,13 @@ public class LoopDetection {
         loopModel = inputConstraint;
     }
 
-
     void addToLoopModel(BoolExpr condition) {
         loopModel = ctx.mkAnd(condition, loopModel);
     }
 
     void onLoopDone() {
         // System.out.printf("loopmodel: %d %s\n", inputInIndex, loopModel);
-        if(SymbolicExecutionLab.skip) {
+        if (SymbolicExecutionLab.skip) {
             return;
         }
         String output = "";
@@ -90,31 +88,33 @@ public class LoopDetection {
 
         List<Replacement> replacements = new ArrayList<Replacement>();
 
-        // if (processedInput.length() > 1) {
-            for (String name : variables.keySet()) {
-                List<Expr> assigns = variables.get(name);
-                Integer lastLength = lastVariables.get(name);
-                int added = assigns.size() - lastLength;
-                // System.out.printf("%s: %d, now: %d\n", name, lastLength, assigns.size());
-                if (added > 0) {
-                    output += String.format("%s, ", name);
-                    isLoop = true;
-                    Replacement r = new Replacement(
-                            name, assigns.get(0).getSort(),
-                            assigns.size() - 1, added, lastLength-1);
-                    replacements.add(r);
-                    extended = r.applyTo(extended);
-                    lastVariables.put(name, assigns.size());
-                }
+        for (String name : variables.keySet()) {
+            List<Expr> assigns = variables.get(name);
+            Integer lastLength = lastVariables.get(name);
+            int added = assigns.size() - lastLength;
+            // System.out.printf("%s: %d, now: %d\n", name, lastLength, assigns.size());
+            if (added > 0) {
+                output += String.format("%s, ", name);
+                isLoop = true;
+                Replacement r = new Replacement(
+                        name, assigns.get(0).getSort(),
+                        assigns.size() - 1, added, lastLength - 1);
+                replacements.add(r);
+                extended = r.applyTo(extended);
+                lastVariables.put(name, assigns.size());
             }
+        }
         // }
 
-        if (isLoop && PathTracker.solve(extended, false, false) && alreadyFoundLoops.add(SymbolicExecutionLab.processedInput)) {
+        if (isLoop && PathTracker.solve(extended, false, false)
+                && alreadyFoundLoops.add(SymbolicExecutionLab.processedInput)) {
             // System.out.printf("loop detected on '%s' for %s: %s\n\nEXTENDED: %s\n",
             // processedInput, output, loopModel, extended);
             // printfYellow("loopmodel: %s\n", loopModel);
-            // printfRed("loop detected for %s: on input '%s'\nextended: %s\n", output, processedInput, extended);
-            SymbolicExecutionLab.printfRed("loop detected with vars %s: on input '%s'\n", output, SymbolicExecutionLab.processedInput);
+            // printfRed("loop detected for %s: on input '%s'\nextended: %s\n", output,
+            // processedInput, extended);
+            SymbolicExecutionLab.printfRed("loop detected with vars %s: on input '%s'\n", output,
+                    SymbolicExecutionLab.processedInput);
             BoolExpr full = extended;
             List<BoolExpr> l = new ArrayList<BoolExpr>();
             for (int i = 1; i < 100; i += 1) {
@@ -124,7 +124,7 @@ public class LoopDetection {
                 }
                 // System.out.printf("%s\n", extended);
                 full = PathTracker.ctx.mkAnd(extended, full);
-                if(PathTracker.solve(full, false, false)) {
+                if (PathTracker.solve(full, false, false)) {
                 } else {
                     SymbolicExecutionLab.printfGreen("loop ends after %d iterations\n", i);
                     break;
