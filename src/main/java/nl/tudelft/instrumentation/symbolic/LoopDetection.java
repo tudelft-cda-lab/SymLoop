@@ -72,6 +72,14 @@ public class LoopDetection {
         }
     }
 
+    boolean isConstant(Expr value) {
+        if (value.isNumeral()) {
+            // SymbolicExecutionLab.printfYellow("numeral %s\n", value);
+            return true;
+        }
+        return false;
+    }
+
     void nextInput(BoolExpr inputConstraint) {
         loopModel = inputConstraint;
         loopModelList.clear();
@@ -110,7 +118,8 @@ public class LoopDetection {
         List<Replacement> replacements = new ArrayList<Replacement>();
 
         // boolean[] needsUpdating = new boolean[loopModelList.size()];
-        HashSet<BoolExpr> needsUpdatingExpr = new HashSet<BoolExpr>();
+        List<Expr> constantVariables = new ArrayList<Expr>();
+        List<Expr> constantValues = new ArrayList<Expr>();
 
         for (String name : variables.keySet()) {
             List<Expr> assigns = variables.get(name);
@@ -120,19 +129,21 @@ public class LoopDetection {
             if (added > 0) {
                 output += String.format("%s, ", name);
                 isLoop = true;
+                Sort s = assigns.get(0).getSort();
                 Replacement r = new Replacement(
-                        name, assigns.get(0).getSort(),
+                        name, s,
                         assigns.size() - 1, added, lastLength - 1);
                 replacements.add(r);
                 extended = r.applyTo(extended);
-                lastVariables.put(name, assigns.size());
-                for (int i = 0; i < loopModelList.size(); i++) {
-                    BoolExpr e = loopModelList.get(i);
-                    BoolExpr applied = r.applyTo(e);
-                    if (!e.equals(applied)) {
-                        needsUpdatingExpr.add(e);
+                for (int i = r.start; i > r.stop; i--) {
+                    if (isConstant(assigns.get(i))) {
+                        // TODO: add to constant arrays
+                        constantVariables.add(ctx.mkConst(ctx.mkSymbol(SymbolicExecutionLab.getVarName(name, i)), s));
+                        constantValues.add(assigns.get(i));
                     }
                 }
+
+                lastVariables.put(name, assigns.size());
             }
         }
 
@@ -141,10 +152,25 @@ public class LoopDetection {
         if (isLoop && PathTracker.solve(extended, false, false)
                 && foundLoops.add(SymbolicExecutionLab.processedInput)) {
 
+            HashSet<BoolExpr> needsUpdatingExpr = new HashSet<BoolExpr>();
+            Expr[] constantVariablesArray = constantVariables.toArray(Expr[]::new);
+            Expr[] constantValueArray = constantValues.toArray(Expr[]::new);
+            for (Replacement r : replacements) {
+                for (int i = 0; i < loopModelList.size(); i++) {
+                    BoolExpr e = loopModelList.get(i);
+                    e = (BoolExpr) e.substitute(constantVariablesArray, constantValueArray);
+                    BoolExpr applied = r.applyTo(e);
+                    if (!e.equals(applied)) {
+                        needsUpdatingExpr.add(e);
+                    }
+                }
+            }
+
             SymbolicExecutionLab.printfRed(
                     "loop detected with vars %s: on input '%s'. %d / %d constraints need updating\n", output,
                     SymbolicExecutionLab.processedInput,
                     needsUpdatingExpr.size(), loopModelList.size());
+
             List<BoolExpr> baseConstraints = new ArrayList<BoolExpr>();
             for (BoolExpr c : needsUpdatingExpr) {
                 for (Replacement r : replacements) {
@@ -165,7 +191,7 @@ public class LoopDetection {
             solver.add(PathTracker.z3branches);
             solver.add(extended);
             int nextSolve = 2;
-            for (int i = 1; i < 10000; i += 1) {
+            for (int i = 1; i < 100; i += 1) {
                 // constraints.add(extended);
                 for (Replacement r : replacements) {
                     extended = r.applyTo(extended, i);
