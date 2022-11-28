@@ -256,7 +256,6 @@ public class SymbolicExecutionLab {
         if (firstBranchLineNr == line_nr) {
             assert inputInIndex < currentTrace.size();
             // System.out.printf("inputInIndex: %d\n", inputInIndex);
-            // onLoopDone();
             processedInput += currentTrace.get(inputInIndex);
             inputInIndex++;
         }
@@ -336,6 +335,7 @@ public class SymbolicExecutionLab {
 
     static void reset() {
         PathTracker.reset();
+        loopDetector.reset();
         nameCounts.clear();
         System.gc();
         pathLength = 0;

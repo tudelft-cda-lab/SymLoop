@@ -81,11 +81,13 @@ public class LoopDetection {
 
     void onLoopDone() {
         // System.out.printf("loopmodel: %d %s\n", inputInIndex, loopModel);
+        if(SymbolicExecutionLab.skip) {
+            return;
+        }
         String output = "";
         boolean isLoop = false;
         BoolExpr extended = loopModel;
 
-        // String, Name, I, I2, Sort;
         List<Replacement> replacements = new ArrayList<Replacement>();
 
         // if (processedInput.length() > 1) {
@@ -133,6 +135,5 @@ public class LoopDetection {
                 SymbolicExecutionLab.printfBlue("%s\n", s);
             }
         }
-
     }
 }
