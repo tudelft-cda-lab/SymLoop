@@ -18,6 +18,7 @@ public class PathTracker {
     public static int z3counter = 1; // used to give an ID to each variable.
     public static BoolExpr z3model= ctx.mkTrue();
     public static BoolExpr z3branches = ctx.mkTrue();
+    public static Solver solver = ctx.mkSolver();
 
     public static LinkedList<MyVar> inputs = new LinkedList<MyVar>();
     static ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
@@ -36,6 +37,18 @@ public class PathTracker {
         z3model    = ctx.mkTrue();
         z3branches = ctx.mkTrue();
         inputs.clear();
+        solver = ctx.mkSolver();
+    }
+
+
+    public static void addToBranches(BoolExpr expr) {
+        z3branches = ctx.mkAnd(expr, z3branches);
+        solver.add(expr);
+    }
+    
+    public static void addToModel(BoolExpr expr) {
+        z3model = ctx.mkAnd(expr, z3model);
+        solver.add(expr);
     }
 
     /**
@@ -48,10 +61,12 @@ public class PathTracker {
      *                   be printed in the terminal or not.
      */
     public static boolean solve(BoolExpr new_branch, boolean printModel, boolean isInput){
-        Solver s = PathTracker.ctx.mkSolver();
+        Solver s = solver;
+        // Solver s = ctx.mkSolver();
         String output = "";
-        s.add(PathTracker.z3model);
-        s.add(PathTracker.z3branches);
+        // s.add(PathTracker.z3model);
+        // s.add(PathTracker.z3branches);
+        s.push();
         s.add(new_branch);
 
         if(printModel){
@@ -74,7 +89,10 @@ public class PathTracker {
             if (isInput) {
                 SymbolicExecutionLab.newSatisfiableInput(new_inputs, output);
             }
+            s.pop();
             return true;
+        } else {
+            s.pop();
         }
         return false;
     }

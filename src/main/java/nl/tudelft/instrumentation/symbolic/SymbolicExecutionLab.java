@@ -129,7 +129,7 @@ public class SymbolicExecutionLab {
          */
         loopDetector.assignToVariable(name, value);
         Expr z3var = c.mkConst(c.mkSymbol(createVarName(name)), s);
-        PathTracker.z3model = c.mkAnd(c.mkEq(z3var, value), PathTracker.z3model);
+        PathTracker.addToModel(c.mkEq(z3var, value));
         // loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
         return new MyVar(z3var, name);
     }
@@ -152,7 +152,7 @@ public class SymbolicExecutionLab {
         }
 
         loopDetector.assignToVariable(name, intermediate);
-        PathTracker.z3model = c.mkAnd(c.mkOr(temp), PathTracker.z3model);
+        PathTracker.addToModel(c.mkOr(temp));
         // loopModel = PathTracker.ctx.mkTrue();
         // loopModel = c.mkAnd(c.mkOr(temp), loopModel);
         loopDetector.nextInput(c.mkOr(temp));
@@ -240,7 +240,7 @@ public class SymbolicExecutionLab {
         Expr z3var = c.mkConst(c.mkSymbol(createVarName(name)), s);
         loopDetector.assignToVariable(name, value);
         var.z3var = z3var;
-        PathTracker.z3model = c.mkAnd(c.mkEq(z3var, value), PathTracker.z3model);
+        PathTracker.addToModel(c.mkEq(z3var, value));
         loopDetector.addToLoopModel(c.mkEq(z3var, value));
     }
 
@@ -275,7 +275,7 @@ public class SymbolicExecutionLab {
         if (!value) {
             branchCondition = c.mkNot(branchCondition);
         }
-        PathTracker.z3branches = c.mkAnd(branchCondition, PathTracker.z3branches);
+        PathTracker.addToBranches(branchCondition);
         loopDetector.addToLoopModel(branchCondition);
     }
 
