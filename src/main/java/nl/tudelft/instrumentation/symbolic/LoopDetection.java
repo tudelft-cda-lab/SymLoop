@@ -41,6 +41,13 @@ public class LoopDetection {
             return PathTracker.ctx.mkConst(PathTracker.ctx.mkSymbol(SymbolicExecutionLab.getVarName(this.name, index)),
                     this.sort);
         }
+
+        public BoolExpr isSelfLoopExpr() {
+            int i = this.start;
+            Expr a = getExprFor(i);
+            Expr b = getExprFor(i + this.added);
+            return PathTracker.ctx.mkEq(a, b);
+        }
     }
 
     private HashSet<String> foundLoops = new HashSet<>();
@@ -154,6 +161,15 @@ public class LoopDetection {
 
         if (isLoop && PathTracker.solve(extended, false, false)
                 && foundLoops.add(SymbolicExecutionLab.processedInput)) {
+
+            BoolExpr all = ctx.mkTrue();
+            for (Replacement r : replacements) {
+                all = ctx.mkAnd(r.isSelfLoopExpr(), all);
+            }
+            if (PathTracker.solve(ctx.mkAnd(all, extended), false, false)) {
+                SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s\n", SymbolicExecutionLab.processedInput);
+                return;
+            }
 
             HashSet<BoolExpr> needsUpdatingExpr = new HashSet<BoolExpr>();
             Expr[] constantVariablesArray = constantVariables.toArray(Expr[]::new);
