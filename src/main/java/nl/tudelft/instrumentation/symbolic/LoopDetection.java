@@ -27,7 +27,6 @@ public class LoopDetection {
 
         public BoolExpr applyTo(BoolExpr expr, int amount) {
             // Loop backwards to prevent repeated subsitution
-            Context ctx = PathTracker.ctx;
             for (int i = this.start; i >= this.stop; i--) {
                 int base = i + (this.added * amount);
                 expr = (BoolExpr) expr.substitute(
@@ -38,7 +37,9 @@ public class LoopDetection {
         }
 
         private Expr getExprFor(int index) {
-            return PathTracker.ctx.mkConst(PathTracker.ctx.mkSymbol(SymbolicExecutionLab.getVarName(this.name, index)),
+            return PathTracker.ctx.mkConst(
+                    PathTracker.ctx.mkSymbol(
+                            SymbolicExecutionLab.getVarName(this.name, index)),
                     this.sort);
         }
 
