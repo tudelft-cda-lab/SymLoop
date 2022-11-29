@@ -36,7 +36,7 @@ public class LoopDetection {
             return expr;
         }
 
-        private Expr getExprFor(int index) {
+        public Expr getExprFor(int index) {
             return PathTracker.ctx.mkConst(
                     PathTracker.ctx.mkSymbol(
                             SymbolicExecutionLab.getVarName(this.name, index)),
@@ -48,6 +48,10 @@ public class LoopDetection {
             Expr a = getExprFor(i);
             Expr b = getExprFor(i + this.added);
             return PathTracker.ctx.mkEq(a, b);
+        }
+
+        public int getIndexAfter(int amount) {
+            return this.start + (this.added * amount);
         }
     }
 
@@ -115,6 +119,12 @@ public class LoopDetection {
         loopModel = ctx.mkAnd(condition, loopModel);
     }
 
+    void updateLastVariables() {
+        for (String name : variables.keySet()) {
+            lastVariables.put(name, variables.get(name).size());
+        }
+    }
+
     void onLoopDone() {
         // System.out.printf("loopmodel: %d %s\n", inputInIndex, loopModel);
         if (SymbolicExecutionLab.skip) {
@@ -153,10 +163,9 @@ public class LoopDetection {
                         constantValues.add(assigns.get(i));
                     }
                 }
-
-                lastVariables.put(name, assigns.size());
             }
         }
+        updateLastVariables();
 
         // }
 
@@ -233,6 +242,7 @@ public class LoopDetection {
                     }
                 }
             }
+            updateLastVariables();
 
             for (String s : foundLoops) {
                 SymbolicExecutionLab.printfBlue("%s\n", s);
