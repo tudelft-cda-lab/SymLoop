@@ -51,7 +51,7 @@ public class LoopDetection {
         }
     }
 
-    private HashSet<String> foundLoops = new HashSet<>();
+    private List<String> foundLoops = new ArrayList<>();
     private HashSet<String> alreadyChecked = new HashSet<>();
     private HashMap<String, List<Expr>> variables = new HashMap<String, List<Expr>>();
     private HashMap<String, Integer> lastVariables = new HashMap<String, Integer>();
@@ -160,8 +160,11 @@ public class LoopDetection {
 
         // }
 
-        if (isLoop && PathTracker.solve(extended, false, false)
-                && foundLoops.add(SymbolicExecutionLab.processedInput)) {
+        if (isLoop && alreadyChecked.add(SymbolicExecutionLab.processedInput)
+                && PathTracker.solve(extended, false, false)
+                && !foundLoops.contains(SymbolicExecutionLab.processedInput)) {
+            foundLoops.add(SymbolicExecutionLab.processedInput);
+            foundLoops.sort(String::compareTo);
 
             BoolExpr all = ctx.mkTrue();
             for (Replacement r : replacements) {
