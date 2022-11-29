@@ -125,10 +125,10 @@ public class LoopDetection {
         }
     }
 
-    void onLoopDone() {
+    boolean onLoopDone() {
         // System.out.printf("loopmodel: %d %s\n", inputInIndex, loopModel);
         if (SymbolicExecutionLab.skip) {
-            return;
+            return false;
         }
         // loopModel = ctx.mkAnd(loopModelList.toArray(BoolExpr[]::new));
         String output = "";
@@ -181,7 +181,7 @@ public class LoopDetection {
             }
             if (PathTracker.solve(ctx.mkAnd(all, extended), false, false)) {
                 SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s\n", SymbolicExecutionLab.processedInput);
-                return;
+                return false;
             }
 
             HashSet<BoolExpr> needsUpdatingExpr = new HashSet<BoolExpr>();
@@ -248,5 +248,6 @@ public class LoopDetection {
                 SymbolicExecutionLab.printfBlue("%s\n", s);
             }
         }
+        return true;
     }
 }

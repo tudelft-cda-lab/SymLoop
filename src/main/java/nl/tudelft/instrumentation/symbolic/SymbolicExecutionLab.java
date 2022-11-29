@@ -136,7 +136,7 @@ public class SymbolicExecutionLab {
 
 
     static MyVar createInput(String name, Expr value, Sort s) {
-        loopDetector.onLoopDone();
+        skip = skip || !loopDetector.onLoopDone();
         // Create an input var, these should be free variables!
         // Do not add it to the model
         Context c = PathTracker.ctx;
