@@ -31,12 +31,15 @@ public class LoopDetection {
             for (int i = this.start; i >= this.stop; i--) {
                 int base = i + (this.added * amount);
                 expr = (BoolExpr) expr.substitute(
-                        ctx.mkConst(ctx.mkSymbol(SymbolicExecutionLab.getVarName(this.name, base)), this.sort),
-                        ctx.mkConst(ctx.mkSymbol(SymbolicExecutionLab.getVarName(this.name, base + this.added)),
-                                this.sort));
-
+                        getExprFor(base),
+                        getExprFor(base + this.added));
             }
             return expr;
+        }
+
+        private Expr getExprFor(int index) {
+            return PathTracker.ctx.mkConst(PathTracker.ctx.mkSymbol(SymbolicExecutionLab.getVarName(this.name, index)),
+                    this.sort);
         }
     }
 
