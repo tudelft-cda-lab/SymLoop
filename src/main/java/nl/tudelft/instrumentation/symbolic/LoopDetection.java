@@ -68,10 +68,9 @@ public class LoopDetection {
     public LoopDetection() {
     }
 
-
     public boolean isLooping(String input) {
-        for(String loop : selfLoops) {
-            if(input.startsWith(loop)){
+        for (String loop : selfLoops) {
+            if (input.startsWith(loop)) {
                 return true;
             }
         }
