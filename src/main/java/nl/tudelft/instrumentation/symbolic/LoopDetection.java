@@ -56,6 +56,7 @@ public class LoopDetection {
     }
 
     private List<String> foundLoops = new ArrayList<>();
+    private List<String> selfLoops = new ArrayList<>();
     private HashSet<String> alreadyChecked = new HashSet<>();
     private HashMap<String, List<Expr>> variables = new HashMap<String, List<Expr>>();
     private HashMap<String, Integer> lastVariables = new HashMap<String, Integer>();
@@ -65,6 +66,16 @@ public class LoopDetection {
     private List<BoolExpr> loopModelList = new ArrayList<BoolExpr>();
 
     public LoopDetection() {
+    }
+
+
+    public boolean isLooping(String input) {
+        for(String loop : selfLoops) {
+            if(input.startsWith(loop)){
+                return true;
+            }
+        }
+        return false;
     }
 
     public void reset() {
@@ -88,11 +99,7 @@ public class LoopDetection {
     }
 
     boolean isConstant(Expr value) {
-        if (value.isNumeral()) {
-            // SymbolicExecutionLab.printfYellow("numeral %s\n", value);
-            return true;
-        }
-        return false;
+        return value.isNumeral();
     }
 
     void nextInput(BoolExpr inputConstraint) {
@@ -181,6 +188,7 @@ public class LoopDetection {
             }
             if (PathTracker.solve(ctx.mkAnd(all, extended), false, false)) {
                 SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s\n", SymbolicExecutionLab.processedInput);
+                selfLoops.add(SymbolicExecutionLab.processedInput);
                 return false;
             }
 

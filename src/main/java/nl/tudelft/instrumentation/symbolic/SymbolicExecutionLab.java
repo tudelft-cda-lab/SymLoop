@@ -100,9 +100,7 @@ public class SymbolicExecutionLab {
     static boolean skip = false;
     static LoopDetection loopDetector = new LoopDetection();
 
-
     private static HashMap<String, Integer> nameCounts = new HashMap<String, Integer>();
-
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -133,7 +131,6 @@ public class SymbolicExecutionLab {
         // loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
         return new MyVar(z3var, name);
     }
-
 
     static MyVar createInput(String name, Expr value, Sort s) {
         skip = skip || !loopDetector.onLoopDone();
@@ -244,7 +241,6 @@ public class SymbolicExecutionLab {
         loopDetector.addToLoopModel(c.mkEq(z3var, value));
     }
 
-
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
         if (skip) {
             return;
@@ -292,8 +288,13 @@ public class SymbolicExecutionLab {
             System.out.printf("New satisfiable input: %s\n", temp);
             temp.add(newRandomInputChar());
             // temp.add("A");
-            add(new NextTrace(temp, currentLineNumber, pathLength,
-                    String.join(" ", currentTrace) + "\n" + path + "\n" + output, !currentValue));
+            String newInput = String.join("", temp);
+            if (!loopDetector.isLooping(newInput)) {
+                add(new NextTrace(temp, currentLineNumber, pathLength,
+                        String.join(" ", currentTrace) + "\n" + path + "\n" + output, !currentValue));
+            } else {
+                printfGreen("PART OF LOOP: %s\n",newInput);
+            }
         }
 
     }
@@ -462,7 +463,7 @@ public class SymbolicExecutionLab {
         }
         if (out.contains("Invalid")) {
             skip = true;
-            if(!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {
+            if (!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {
                 System.out.println(out);
             }
         }
