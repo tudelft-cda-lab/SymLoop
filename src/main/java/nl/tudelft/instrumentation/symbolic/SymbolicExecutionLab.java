@@ -133,7 +133,7 @@ public class SymbolicExecutionLab {
     }
 
     static MyVar createInput(String name, Expr value, Sort s) {
-        skip = skip || !loopDetector.onLoopDone();
+        skip = skip || !loopDetector.isLoopDone();
         // Create an input var, these should be free variables!
         // Do not add it to the model
         Context c = PathTracker.ctx;
@@ -405,7 +405,7 @@ public class SymbolicExecutionLab {
                             trace.trace);
                     currentTrace = trace.trace;
                     PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-                    loopDetector.onLoopDone();
+                    loopDetector.isLoopDone();
                     // Checking if the solver is actually right
                     if ((!currentBranchTracker.hasVisited(trace.getLineNr(), trace.getConditionValue()))
                             && trace.getLineNr() != 0) {

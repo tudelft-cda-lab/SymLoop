@@ -2,6 +2,8 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
 import com.microsoft.z3.*;
 
 public class LoopDetection {
@@ -52,6 +54,10 @@ public class LoopDetection {
 
         public int getIndexAfter(int amount) {
             return this.start + (this.added * amount);
+        }
+
+        public String getName() {
+            return name;
         }
     }
 
@@ -131,31 +137,37 @@ public class LoopDetection {
         }
     }
 
-    boolean onLoopDone() {
-        // System.out.printf("loopmodel: %d %s\n", inputInIndex, loopModel);
+
+    boolean isSelfLoop(List<Replacement> replacements, BoolExpr extended) {
+        BoolExpr all = ctx.mkTrue();
+        for (Replacement r : replacements) {
+            all = ctx.mkAnd(r.isSelfLoopExpr(), all);
+        }
+        if (PathTracker.solve(ctx.mkAnd(all, extended), false, false)) {
+            SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s\n", SymbolicExecutionLab.processedInput);
+            selfLoops.add(SymbolicExecutionLab.processedInput);
+            return true;
+        }
+        return false;
+    }
+
+
+    boolean isLoopDone() {
         if (SymbolicExecutionLab.skip) {
             return false;
         }
-        // loopModel = ctx.mkAnd(loopModelList.toArray(BoolExpr[]::new));
-        String output = "";
-        boolean isLoop = false;
         BoolExpr extended = loopModel;
-        // System.out.println("loopModel: " + loopModel);
-
         List<Replacement> replacements = new ArrayList<Replacement>();
 
-        // boolean[] needsUpdating = new boolean[loopModelList.size()];
         List<Expr> constantVariables = new ArrayList<Expr>();
         List<Expr> constantValues = new ArrayList<Expr>();
 
         for (String name : variables.keySet()) {
             List<Expr> assigns = variables.get(name);
-            Integer lastLength = lastVariables.get(name);
+            int lastLength = lastVariables.get(name);
             int added = assigns.size() - lastLength;
             // System.out.printf("%s: %d, now: %d\n", name, lastLength, assigns.size());
             if (added > 0) {
-                output += String.format("%s, ", name);
-                isLoop = true;
                 Sort s = assigns.get(0).getSort();
                 Replacement r = new Replacement(
                         name, s,
@@ -172,54 +184,39 @@ public class LoopDetection {
         }
         updateLastVariables();
 
-        // }
-
-        if (isLoop && alreadyChecked.add(SymbolicExecutionLab.processedInput)
+        if (replacements.size() > 0 && alreadyChecked.add(SymbolicExecutionLab.processedInput)
                 && PathTracker.solve(extended, false, false)
                 && !foundLoops.contains(SymbolicExecutionLab.processedInput)) {
             foundLoops.add(SymbolicExecutionLab.processedInput);
             foundLoops.sort(String::compareTo);
 
-            BoolExpr all = ctx.mkTrue();
-            for (Replacement r : replacements) {
-                all = ctx.mkAnd(r.isSelfLoopExpr(), all);
-            }
-            if (PathTracker.solve(ctx.mkAnd(all, extended), false, false)) {
-                SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s\n", SymbolicExecutionLab.processedInput);
-                selfLoops.add(SymbolicExecutionLab.processedInput);
+            if (isSelfLoop(replacements, extended)) {
                 return false;
             }
 
-            HashSet<BoolExpr> needsUpdatingExpr = new HashSet<BoolExpr>();
             Expr[] constantVariablesArray = constantVariables.toArray(Expr[]::new);
             Expr[] constantValueArray = constantValues.toArray(Expr[]::new);
-            for (Replacement r : replacements) {
-                for (int i = 0; i < loopModelList.size(); i++) {
-                    BoolExpr e = loopModelList.get(i);
-                    e = (BoolExpr) e.substitute(constantVariablesArray, constantValueArray);
-                    BoolExpr applied = r.applyTo(e);
-                    if (!e.equals(applied)) {
-                        needsUpdatingExpr.add(e);
-                    }
+
+            Set<BoolExpr> baseConstraints = loopModelList.stream().map(e -> {
+                BoolExpr n = (BoolExpr) e.substitute(constantVariablesArray, constantValueArray);
+                for (Replacement r : replacements) {
+                    n = r.applyTo(n);
                 }
-            }
+                if (!n.equals(e)) {
+                    return n;
+                } else {
+                    return null;
+                }
+            }).filter(Objects::nonNull).collect(Collectors.toSet());
+            BoolExpr base = ctx.mkAnd(baseConstraints.toArray(BoolExpr[]::new));
+
+            String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
 
             SymbolicExecutionLab.printfRed(
                     "loop detected with vars %s: on input '%s'. %d / %d constraints need updating\n", output,
                     SymbolicExecutionLab.processedInput,
-                    needsUpdatingExpr.size(), loopModelList.size());
+                    baseConstraints.size(), loopModelList.size());
 
-            List<BoolExpr> baseConstraints = new ArrayList<BoolExpr>();
-            for (BoolExpr c : needsUpdatingExpr) {
-                for (Replacement r : replacements) {
-                    c = r.applyTo(c);
-                }
-                baseConstraints.add(c);
-            }
-            BoolExpr base = ctx.mkAnd(baseConstraints.toArray(BoolExpr[]::new));
-            // SymbolicExecutionLab.printfGreen("loopModel: %s\n", loopModel);
-            // SymbolicExecutionLab.printfBlue("base: %s\n", base);
-            // SymbolicExecutionLab.printfGreen("extended: %s\n", extended);
             System.out.printf("LEN: %d out of %d\n", baseConstraints.size(), loopModelList.size());
             // BoolExpr full = extended;//ctx.mkAnd(loopModel, base);
             extended = base;
