@@ -164,7 +164,6 @@ public class LoopDetection {
                 extended = r.applyTo(extended);
                 for (int i = r.start; i > r.stop; i--) {
                     if (isConstant(assigns.get(i))) {
-                        // TODO: add to constant arrays
                         constantVariables.add(ctx.mkConst(ctx.mkSymbol(SymbolicExecutionLab.getVarName(name, i)), s));
                         constantValues.add(assigns.get(i));
                     }
