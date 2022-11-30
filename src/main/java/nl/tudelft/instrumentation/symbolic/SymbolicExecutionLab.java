@@ -1,6 +1,14 @@
 package nl.tudelft.instrumentation.symbolic;
 
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.*;
+
+import com.google.common.graph.EndpointPair;
+import com.google.common.graph.GraphBuilder;
+import com.google.common.graph.MutableGraph;
 import com.microsoft.z3.*;
 
 import nl.tudelft.instrumentation.fuzzing.BranchVisitedTracker;
@@ -98,9 +106,14 @@ public class SymbolicExecutionLab {
 
     static String path = "";
     static boolean skip = false;
+    static boolean changed = false;
     static LoopDetection loopDetector = new LoopDetection();
 
     private static HashMap<String, Integer> nameCounts = new HashMap<String, Integer>();
+
+    private static MutableGraph<String> graph = GraphBuilder.directed().allowsSelfLoops(true).build();
+
+    private static String pathString = "Start";
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -241,6 +254,22 @@ public class SymbolicExecutionLab {
         loopDetector.addToLoopModel(c.mkEq(z3var, value));
     }
 
+    static void saveGraph() {
+        if (changed) {
+            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("graph.dot")))) {
+                out.write("digraph {\nrankdir=TB\n");
+                for (EndpointPair<String> e : graph.edges()) {
+                    out.write(e.source() + " -> " + e.target());
+                    out.newLine();
+                }
+                out.write("}\n");
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
         if (skip) {
             return;
@@ -256,13 +285,18 @@ public class SymbolicExecutionLab {
             inputInIndex++;
         }
 
-        Context c = PathTracker.ctx;
+        String newPathString = String.format("%s_%d", processedInput, line_nr);
+        changed = graph.putEdge(String.valueOf(currentLineNumber), String.valueOf(line_nr)) || changed;
+
         currentLineNumber = line_nr;
         currentValue = value;
         pathLength += 1;
         branchTracker.visit(line_nr, value);
         currentBranchTracker.visit(line_nr, value);
-        String pathString = String.format("%d-%s", line_nr, processedInput);
+        pathString = newPathString;
+
+
+        Context c = PathTracker.ctx;
         if (alreadySolvedBranches.add(pathString)) {
             // Call the solver
             PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false, true);
@@ -285,7 +319,7 @@ public class SymbolicExecutionLab {
         // Add a random input at the end to allow solving new paths
         String alreadyFound = String.join("", temp);
         if (alreadyFoundTraces.add(alreadyFound)) {
-            System.out.printf("New satisfiable input: %s\n", temp);
+            // System.out.printf("New satisfiable input: %s\n", temp);
             temp.add(newRandomInputChar());
             // temp.add("A");
             String newInput = String.join("", temp);
@@ -293,7 +327,7 @@ public class SymbolicExecutionLab {
                 add(new NextTrace(temp, currentLineNumber, pathLength,
                         String.join(" ", currentTrace) + "\n" + path + "\n" + output, !currentValue));
             } else {
-                printfGreen("PART OF LOOP: %s\n",newInput);
+                printfGreen("PART OF LOOP: %s\n", newInput);
             }
         }
 
@@ -337,6 +371,7 @@ public class SymbolicExecutionLab {
     static void reset() {
         PathTracker.reset();
         loopDetector.reset();
+        pathString = "Start";
         nameCounts.clear();
         System.gc();
         pathLength = 0;
@@ -345,6 +380,7 @@ public class SymbolicExecutionLab {
         processedInput = "";
         currentBranchTracker.clear();
         skip = false;
+        changed = false;
         path = "";
     }
 
@@ -416,6 +452,7 @@ public class SymbolicExecutionLab {
                                 branchTracker.hasVisited(trace.getLineNr(), false));
                         System.exit(-1);
                     }
+                    saveGraph();
                 }
                 // System.in.read();
                 isFinished = branchTracker.visitedAll();
