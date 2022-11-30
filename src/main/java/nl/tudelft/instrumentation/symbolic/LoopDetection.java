@@ -2,8 +2,10 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Streams;
 import com.microsoft.z3.*;
 
 public class LoopDetection {
@@ -150,6 +152,42 @@ public class LoopDetection {
         return false;
     }
 
+    private Set<BoolExpr> getConstants(List<Replacement> replacements) {
+        List<Expr> constantVariables = new ArrayList<Expr>();
+        List<Expr> constantValues = new ArrayList<Expr>();
+        for (Entry<String, List<Expr>> entry : variables.entrySet()) {
+            List<Expr> assigns = entry.getValue();
+            String name = entry.getKey();
+            int lastLength = lastVariables.get(name);
+            Sort s = assigns.get(0).getSort();
+            for (int i = lastLength - 1; i < assigns.size(); i++) {
+                Expr e = assigns.get(i);
+                if (isConstant(e)) {
+                    constantVariables.add(ctx.mkConst(ctx.mkSymbol(SymbolicExecutionLab.getVarName(name, i)), s));
+                    constantValues.add(e);
+                }
+            }
+        }
+
+        Expr[] constantVariablesArray = constantVariables.toArray(Expr[]::new);
+        Expr[] constantValueArray = constantValues.toArray(Expr[]::new);
+
+        Set<BoolExpr> baseConstraints = loopModelList.stream().map(e -> {
+            return (BoolExpr) e.substitute(constantVariablesArray, constantValueArray);
+        }).map(e -> {
+            BoolExpr n = e;
+            for (Replacement r : replacements) {
+                n = r.applyTo(n);
+            }
+            if (!n.equals(e)) {
+                return n;
+            } else {
+                return null;
+            }
+        }).filter(Objects::nonNull).collect(Collectors.toSet());
+        return baseConstraints;
+    }
+
     boolean isLoopDone() {
         if (SymbolicExecutionLab.skip) {
             return false;
@@ -157,14 +195,10 @@ public class LoopDetection {
         BoolExpr extended = loopModel;
         List<Replacement> replacements = new ArrayList<Replacement>();
 
-        List<Expr> constantVariables = new ArrayList<Expr>();
-        List<Expr> constantValues = new ArrayList<Expr>();
-
         for (String name : variables.keySet()) {
             List<Expr> assigns = variables.get(name);
             int lastLength = lastVariables.get(name);
             int added = assigns.size() - lastLength;
-            // System.out.printf("%s: %d, now: %d\n", name, lastLength, assigns.size());
             if (added > 0) {
                 Sort s = assigns.get(0).getSort();
                 Replacement r = new Replacement(
@@ -172,12 +206,6 @@ public class LoopDetection {
                         assigns.size() - 1, added, lastLength - 1);
                 replacements.add(r);
                 extended = r.applyTo(extended);
-                for (int i = r.start; i > r.stop; i--) {
-                    if (isConstant(assigns.get(i))) {
-                        constantVariables.add(ctx.mkConst(ctx.mkSymbol(SymbolicExecutionLab.getVarName(name, i)), s));
-                        constantValues.add(assigns.get(i));
-                    }
-                }
             }
         }
         updateLastVariables();
@@ -192,22 +220,7 @@ public class LoopDetection {
                 return false;
             }
 
-            Expr[] constantVariablesArray = constantVariables.toArray(Expr[]::new);
-            Expr[] constantValueArray = constantValues.toArray(Expr[]::new);
-
-            Set<BoolExpr> baseConstraints = loopModelList.stream().map(e -> {
-                return (BoolExpr) e.substitute(constantVariablesArray, constantValueArray);
-            }).map(e -> {
-                BoolExpr n = e;
-                for (Replacement r : replacements) {
-                    n = r.applyTo(n);
-                }
-                if (!n.equals(e)) {
-                    return n;
-                } else {
-                    return null;
-                }
-            }).filter(Objects::nonNull).collect(Collectors.toSet());
+            Set<BoolExpr> baseConstraints = getConstants(replacements);
             BoolExpr base = ctx.mkAnd(baseConstraints.toArray(BoolExpr[]::new));
 
             String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
