@@ -112,6 +112,7 @@ public class SymbolicExecutionLab {
     private static HashMap<String, Integer> nameCounts = new HashMap<String, Integer>();
 
     private static MutableGraph<String> graph = GraphBuilder.directed().allowsSelfLoops(true).build();
+    private static Map<String, String> edges = new HashMap<String, String>();
 
     private static String pathString = "Start";
 
@@ -259,7 +260,8 @@ public class SymbolicExecutionLab {
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("graph.dot")))) {
                 out.write("digraph {\nrankdir=TB\n");
                 for (EndpointPair<String> e : graph.edges()) {
-                    out.write(e.source() + " -> " + e.target());
+                    out.write(String.format("%s-> %s [ label=\"%s\"];\n", e.source(), e.target(),
+                            edges.get(e.source() + e.target()).replace("\"", "'")));
                     out.newLine();
                 }
                 out.write("}\n");
@@ -286,7 +288,12 @@ public class SymbolicExecutionLab {
         }
 
         String newPathString = String.format("%s_%d", processedInput, line_nr);
-        changed = graph.putEdge(String.valueOf(currentLineNumber), String.valueOf(line_nr)) || changed;
+        String from = String.valueOf(currentLineNumber);
+        String to = String.valueOf(line_nr);
+        if (graph.putEdge(from, to)) {
+            changed = true;
+            edges.put(from + to, condition.z3var.toString());
+        }
 
         currentLineNumber = line_nr;
         currentValue = value;
@@ -294,7 +301,6 @@ public class SymbolicExecutionLab {
         branchTracker.visit(line_nr, value);
         currentBranchTracker.visit(line_nr, value);
         pathString = newPathString;
-
 
         Context c = PathTracker.ctx;
         if (alreadySolvedBranches.add(pathString)) {
