@@ -1,6 +1,0 @@
-iA,iB,iC->oXoYoZ
-iA,iB,iC->oXoYoZ
-iA,iB,iC->oXoYoZ
-iA,iB,iC->oXoYoZ
-iA,iB,iC->oXoYoZ
-iA,iB,iC->oXoYoZ
