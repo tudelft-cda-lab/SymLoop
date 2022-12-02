@@ -81,7 +81,7 @@ public class PathTracker {
         if(s.check() == Status.SATISFIABLE){
             // System.out.println("satisfiable");
             Model m = s.getModel();
-            output += s.getModel();
+            output += m;
             LinkedList<String> new_inputs = new LinkedList<String>();
             for(MyVar v : PathTracker.inputs){
                 new_inputs.add(m.evaluate(v.z3var, true).toString());
