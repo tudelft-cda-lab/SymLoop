@@ -12,8 +12,6 @@ public class LoopDetection {
     private List<String> foundLoops = new ArrayList<>();
     private List<String> selfLoops = new ArrayList<>();
     private HashSet<String> alreadyChecked = new HashSet<>();
-    // private HashMap<String, List<Expr>> variables = new HashMap<String, List<Expr>>();
-    // private HashMap<String, List<Integer>> lastVariables = new HashMap<String, List<Integer>>();
     private Context ctx = PathTracker.ctx;
 
 
@@ -32,7 +30,6 @@ public class LoopDetection {
     }
 
     public void reset() {
-        System.out.println("RESET");
         history.reset();
     }
 
@@ -130,8 +127,6 @@ public class LoopDetection {
                 return false;
             }
 
-            // BoolExpr base = history.getConstraint(lastNSaves);
-
             String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
 
             SymbolicExecutionLab.printfRed(
@@ -145,24 +140,17 @@ public class LoopDetection {
             solver.add(PathTracker.z3model);
             solver.add(PathTracker.z3branches);
             solver.add(extended);
-            int nextSolve = 1;
             for (int i = 1; i < 100; i += 1) {
-                // constraints.add(extended);
                 for (Replacement r : replacements) {
                     extended = r.applyTo(extended, i);
                 }
-                // System.out.printf("%s\n", extended);
-                // full = PathTracker.ctx.mkAnd(extended, full);
                 solver.add(extended);
-                // if (PathTracker.solve(full, false, false)) {
-                if (i >= nextSolve) {
-                    if (solver.check() == Status.SATISFIABLE) {
-                        nextSolve += 1;
-                    } else {
-                        SymbolicExecutionLab.printfGreen("loop ends after %d iterations on model %s\n", i, extended);
-                        System.exit(1);
-                        break;
-                    }
+                Status status = solver.check();
+                if (status == Status.UNSATISFIABLE) {
+                    SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status, i, extended);
+                } else if (status == Status.UNKNOWN){
+                    SymbolicExecutionLab.printfRed("status: %s\n", status);
+                    System.exit(1);
                 }
             }
 

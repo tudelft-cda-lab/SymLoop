@@ -19,7 +19,6 @@ public class ConstraintHistory {
 
     private HashMap<String, List<Expr>> variables = new HashMap<>();
     private HashMap<String, List<Integer>> lastVariables = new HashMap<>();
-    // private List<BoolExpr> loopModel = new ArrayList<>();
     private final Context ctx = PathTracker.ctx;
 
     private List<List<BoolExpr>> loopModelList = new ArrayList<>();
@@ -30,7 +29,6 @@ public class ConstraintHistory {
     }
 
     public ConstraintHistory() {
-
     }
 
     public BoolExpr mkAnd(List<BoolExpr> exprs) {
@@ -38,7 +36,6 @@ public class ConstraintHistory {
     }
 
     public BoolExpr getConstraint(int lastNSaves) {
-        SymbolicExecutionLab.printfRed("%d, %d\n", lastNSaves, loopModelList.size());
         assert lastNSaves <= loopModelList.size();
         List<BoolExpr> expressions = new ArrayList<>();
         int amountOfSaves = loopModelList.size();
@@ -55,7 +52,6 @@ public class ConstraintHistory {
     }
 
     public void save() {
-        // loopModel.add(PathTracker.ctx.mkFalse());
         loopModelList.add(new ArrayList<>());
         for (String name : variables.keySet()) {
             lastVariables.get(name).add(variables.get(name).size());
@@ -84,17 +80,13 @@ public class ConstraintHistory {
         variables.clear();
         lastVariables.clear();
         loopModelList.clear();
-        this.numberOfSaves=0;
-        // loopModel.clear();
-        // loopModel.add(PathTracker.ctx.mkTrue());
+        this.numberOfSaves = 0;
     }
 
     void assignToVariable(String name, Expr value) {
         if (this.variables.containsKey(name)) {
-            // System.out.printf("Assign to %s = %s\n",name, value);
             this.variables.get(name).add(value);
         } else {
-            // System.out.printf("New assign to %s = %s\n",name, value);
             List<Expr> initial = new ArrayList<Expr>();
             initial.add(value);
             this.variables.put(name, initial);
