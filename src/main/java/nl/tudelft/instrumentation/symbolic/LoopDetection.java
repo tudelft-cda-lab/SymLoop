@@ -148,8 +148,9 @@ public class LoopDetection {
                 Status status = solver.check();
                 if (status == Status.UNSATISFIABLE) {
                     SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status, i, extended);
+                    return true;
                 } else if (status == Status.UNKNOWN){
-                    SymbolicExecutionLab.printfRed("status: %s\n", status);
+                    SymbolicExecutionLab.printfRed("Solver exited with status: %s\n", status);
                     System.exit(1);
                 }
             }
