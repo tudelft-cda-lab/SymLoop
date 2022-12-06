@@ -11,4 +11,4 @@ lastmodified=$(cat scripts/lastmodified)
 #fi
 echo $modified > scripts/lastmodified
 
-java -XX:-UseGCOverheadLimit -Xmx4G -cp target/aistr.jar:lib/com.microsoft.z3.jar:./instrumented:. Problem$1
+java -ea -XX:-UseGCOverheadLimit -Xmx4G -cp target/aistr.jar:lib/com.microsoft.z3.jar:./instrumented:. Problem$1
