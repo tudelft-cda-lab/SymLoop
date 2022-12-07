@@ -25,9 +25,10 @@ public class PathTracker {
     static CallableTraceRunner<Void> problem;
     static String[] inputSymbols;
     // Longest a single testcase is allowed to run
-    static final int timeoutMS = 1000000;
+    static final int timeoutMS = 10000000;
 
     static int lastLength = -1;
+    static boolean printModel = false;
 
     /**
      * Used to reset the constraints and everything else of z3 before running the next sequence.
@@ -38,6 +39,7 @@ public class PathTracker {
         z3branches = ctx.mkTrue();
         inputs.clear();
         solver = ctx.mkSolver();
+        printModel = false;
     }
 
 
@@ -69,16 +71,18 @@ public class PathTracker {
         s.push();
         s.add(new_branch);
 
-        if(printModel){
+        if(PathTracker.printModel){
             System.out.print("Model: ");
             System.out.println(PathTracker.z3model);
             System.out.print("Branches: ");
             System.out.println(PathTracker.z3branches);
             System.out.print("New branch: ");
             System.out.println(new_branch);
+            PathTracker.printModel = false;
         }
 
         if(s.check() == Status.SATISFIABLE){
+            System.out.println("SAT" + new_branch);
             // System.out.println("satisfiable");
             Model m = s.getModel();
             output += m;
@@ -92,6 +96,7 @@ public class PathTracker {
             s.pop();
             return true;
         } else {
+            System.out.println("UNSAT" + new_branch);
             s.pop();
         }
         return false;

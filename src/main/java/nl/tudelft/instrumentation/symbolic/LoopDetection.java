@@ -98,23 +98,23 @@ public class LoopDetection {
     boolean isIterationLooping() {
         history.save();
         // Due to saving first, the last save is empty, so we go back 2 saves.
-        int lastNSaves = 2;
+        int lastNSaves = 1;
         if (history.getNumberOfSaves() < lastNSaves) {
             // Not enough data to detect loops
             history.save();
             return false;
         }
-        int MAX_LOOP_DETECTION_DEPTH = 2;
-        int depth = Math.min(MAX_LOOP_DETECTION_DEPTH + 2, history.getNumberOfSaves());
+        int MAX_LOOP_DETECTION_DEPTH = 1;
+        int depth = Math.min(MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
 
-        for (; lastNSaves < depth; lastNSaves++) {
+        for (; lastNSaves <= depth; lastNSaves++) {
             List<Replacement> replacements = history.getReplacementsForLastSaves(lastNSaves);
             BoolExpr loopModel = history.getConstraint(lastNSaves);
             BoolExpr extended = Replacement.applyAllTo(replacements, loopModel);
 
             // If already checked or there is no loop
             if (replacements.size() == 0
-                    || !alreadyChecked.add(lastNSaves + '-' + SymbolicExecutionLab.processedInput)
+                    // || !alreadyChecked.add(lastNSaves + '-' + SymbolicExecutionLab.processedInput)
                     || !PathTracker.solve(extended, false, false)) {
                 continue;
             }
@@ -136,38 +136,84 @@ public class LoopDetection {
 
             extended = history.getExtendedConstraint(lastNSaves, replacements);
             if (isFiniteLoop(extended, replacements)) {
-                return true;
+                return false;
             }
 
             for (String s : foundLoops) {
                 SymbolicExecutionLab.printfBlue("%s\n", s);
             }
-            selfLoops.add(SymbolicExecutionLab.processedInput);
-            return true;
+            // selfLoops.add(SymbolicExecutionLab.processedInput);
+            return false;
         }
         return false;
     }
 
     boolean isFiniteLoop(BoolExpr extended, List<Replacement> replacements) {
+        final int AMOUNT = 5;
         Solver solver = ctx.mkSolver();
         solver.add(PathTracker.z3model);
         solver.add(PathTracker.z3branches);
         solver.add(extended);
-        for (int i = 1; i < 100; i += 1) {
+        List<BoolExpr> loop = new ArrayList<>();
+        loop.add(extended);
+        for (int i = 1; i < AMOUNT; i += 1) {
             for (Replacement r : replacements) {
                 extended = r.applyTo(extended, i);
             }
             solver.add(extended);
+            loop.add(extended);
             Status status = solver.check();
             if (status == Status.UNSATISFIABLE) {
                 SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status,
                         i, extended);
-                return false;
+                return true;
             } else if (status == Status.UNKNOWN) {
                 SymbolicExecutionLab.printfRed("Solver exited with status: %s\n", status);
                 System.exit(1);
             }
         }
-        return true;
+
+        List<BoolExpr> onLoop = new ArrayList<>();
+        Expr n = ctx.mkConst("n", ctx.getIntSort());
+        for (int i = 0; i < AMOUNT; i += 1) {
+            List<BoolExpr> thisIteration = new ArrayList<>();
+            for (Replacement r : replacements) {
+                thisIteration.add(ctx.mkEq(r.getExprAfter(i), r.getExprAfter(AMOUNT + 1)));
+                if (i != 0) {
+                    this.history.assignToVariable(r.getName(), null);
+                }
+            }
+            thisIteration.add(ctx.mkEq(n, ctx.mkInt(i)));
+            onLoop.add(history.mkAnd(thisIteration));
+        }
+        for (Replacement r : replacements) {
+            String name = r.getName();
+            String newName = SymbolicExecutionLab.getVarName(name, r.getIndexAfter(0));
+            while (SymbolicExecutionLab.nameCounts.get(name) != r.getIndexAfter(AMOUNT + 1) + 1) {
+                newName = SymbolicExecutionLab.createVarName(name);
+            }
+            // for(String name: SymbolicExecutionLab.vars.keySet()) {
+            // System.out.printf("%s: %s\n", name,
+            // SymbolicExecutionLab.vars.get(name).z3var);
+            MyVar v = SymbolicExecutionLab.vars.get(name);
+            SymbolicExecutionLab.assign(v, name, ctx.mkConst(ctx.mkSymbol(newName), v.z3var.getSort()),
+                    v.z3var.getSort());
+            // }
+        }
+        BoolExpr oneOfTheLoop = history.mkOr(onLoop);
+        System.out.println(oneOfTheLoop);
+        history.save();
+        history.resetNumberOfSave();
+        solver.add(oneOfTheLoop);
+        solver.add(ctx.mkEq(ctx.mkConst(ctx.mkSymbol("my_i_16"), ctx.getIntSort()), ctx.mkInt(10)));
+        assert solver.check() == Status.SATISFIABLE;
+        Model model = solver.getModel();
+        // System.out.println(solver.getModel());
+        System.out.println(model.evaluate(n, true));
+        PathTracker.addToBranches(oneOfTheLoop);
+        PathTracker.addToBranches(history.mkAnd(loop));
+        PathTracker.printModel = true;
+        // TODO replace all the occurences of the current variable in MYVARS
+        return false;
     }
 }

@@ -109,12 +109,14 @@ public class SymbolicExecutionLab {
     static boolean changed = false;
     static LoopDetection loopDetector = new LoopDetection();
 
-    private static HashMap<String, Integer> nameCounts = new HashMap<String, Integer>();
+    static HashMap<String, Integer> nameCounts = new HashMap<String, Integer>();
 
     private static MutableGraph<String> graph = GraphBuilder.directed().allowsSelfLoops(true).build();
     private static Map<String, String> edges = new HashMap<String, String>();
 
     private static String pathString = "Start";
+    
+    public static HashMap<String, MyVar> vars = new HashMap<>();
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -123,6 +125,7 @@ public class SymbolicExecutionLab {
 
     static String createVarName(String name) {
         Integer count = nameCounts.getOrDefault(name, 0);
+        System.out.printf("createVarName: %s, %d\n", name, count);
         nameCounts.put(name, count + 1);
         return getVarName(name, count);
     }
@@ -143,7 +146,9 @@ public class SymbolicExecutionLab {
         Expr z3var = c.mkConst(c.mkSymbol(createVarName(name)), s);
         PathTracker.addToModel(c.mkEq(z3var, value));
         // loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
-        return new MyVar(z3var, name);
+        MyVar myVar = new MyVar(z3var, name);
+        vars.put(name, myVar);
+        return myVar;
     }
 
     static MyVar createInput(String name, Expr value, Sort s) {
@@ -154,6 +159,7 @@ public class SymbolicExecutionLab {
         Expr intermediate = c.mkConst(c.mkSymbol(createVarName(name)), s);
         // intermediate = c.mkEq(intermediate, value);
         MyVar input = new MyVar(intermediate, name);
+        vars.put(name, input);
         PathTracker.inputs.add(input);
 
         // restrict inputs to the valid input symbols found in PathTracker.inputSymbols
@@ -325,7 +331,7 @@ public class SymbolicExecutionLab {
         // Add a random input at the end to allow solving new paths
         String alreadyFound = String.join("", temp);
         if (alreadyFoundTraces.add(alreadyFound)) {
-            // System.out.printf("New satisfiable input: %s\n", temp);
+            System.out.printf("New satisfiable input: %s\n", temp);
             temp.add(newRandomInputChar());
             // temp.add("A");
             String newInput = String.join("", temp);

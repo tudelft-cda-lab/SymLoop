@@ -25,6 +25,10 @@ public class ConstraintHistory {
         return ctx.mkAnd(exprs.toArray(BoolExpr[]::new));
     }
 
+    public BoolExpr mkOr(List<BoolExpr> exprs) {
+        return ctx.mkOr(exprs.toArray(BoolExpr[]::new));
+    }
+
     public BoolExpr getExtendedConstraint(int lastNSaves, List<Replacement> replacements) {
         assert lastNSaves <= loopModelList.size();
         List<BoolExpr> expressions = new ArrayList<>();
@@ -68,6 +72,10 @@ public class ConstraintHistory {
             lastVariables.get(name).add(variables.get(name).size());
         }
         this.numberOfSaves++;
+    }
+
+    public void resetNumberOfSave() {
+        numberOfSaves = 0;
     }
 
     public List<Replacement> getReplacementsForLastSaves(int amountOfSaves) {

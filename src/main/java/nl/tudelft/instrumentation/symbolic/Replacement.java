@@ -43,7 +43,7 @@ class Replacement {
         return expr;
     }
 
-    public Expr getExprFor(int index) {
+    private Expr getExprFor(int index) {
         return PathTracker.ctx.mkConst(
                 PathTracker.ctx.mkSymbol(
                         SymbolicExecutionLab.getVarName(this.name, index)),
@@ -51,14 +51,15 @@ class Replacement {
     }
 
     public BoolExpr isSelfLoopExpr() {
-        int i = this.start;
-        Expr a = getExprFor(i);
-        Expr b = getExprFor(i + this.added);
-        return PathTracker.ctx.mkEq(a, b);
+        return PathTracker.ctx.mkEq(getExprAfter(0), getExprAfter(1));
     }
 
     public int getIndexAfter(int amount) {
         return this.start + (this.added * amount);
+    }
+
+    public Expr getExprAfter(int index) {
+        return getExprFor(getIndexAfter(index));
     }
 
     public String getName() {
