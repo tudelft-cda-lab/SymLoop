@@ -2,7 +2,6 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
@@ -54,8 +53,6 @@ public class LoopDetection {
             all = ctx.mkAnd(r.isSelfLoopExpr(), all);
         }
         if (PathTracker.solve(ctx.mkAnd(all, extended), false, false)) {
-            SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s\n", SymbolicExecutionLab.processedInput);
-            selfLoops.add(SymbolicExecutionLab.processedInput);
             return true;
         }
         return false;
@@ -103,63 +100,73 @@ public class LoopDetection {
             return false;
         }
         history.save();
+        // Due to saving first, the last save is empty, so we go back 2 saves.
         int lastNSaves = 2;
         if (history.getNumberOfSaves() < lastNSaves) {
             history.save();
             return true;
         }
         int MAX_LOOP_DETECTION_DEPTH = 2;
+        int depth = Math.min(MAX_LOOP_DETECTION_DEPTH + 2, history.getNumberOfSaves());
 
-        for (; lastNSaves < history.getNumberOfSaves() && lastNSaves <= MAX_LOOP_DETECTION_DEPTH+1; lastNSaves++) {
-            BoolExpr loopModel = history.getConstraint(lastNSaves);
-            BoolExpr extended = loopModel;
+        for (; lastNSaves < depth; lastNSaves++) {
             List<Replacement> replacements = history.getReplacementsForLastSaves(lastNSaves);
+            BoolExpr loopModel = history.getConstraint(lastNSaves);
+            BoolExpr extended = Replacement.applyAllTo(replacements, loopModel);
 
-            for (Replacement r : replacements) {
-                extended = r.applyTo(extended);
+            // If already checked or there is no loop
+            if (replacements.size() == 0
+                    || !alreadyChecked.add(lastNSaves + '-' + SymbolicExecutionLab.processedInput)
+                    || !PathTracker.solve(extended, false, false)) {
+                continue;
             }
 
-            if (replacements.size() > 0 && alreadyChecked.add(lastNSaves+'-'+SymbolicExecutionLab.processedInput)
-                    && PathTracker.solve(extended, false, false)
-                    && !foundLoops.contains(SymbolicExecutionLab.processedInput)) {
-                foundLoops.add(SymbolicExecutionLab.processedInput);
-                foundLoops.sort(String::compareTo);
+            extended = history.getExtendedConstraint(lastNSaves, replacements);
+            foundLoops.add(SymbolicExecutionLab.processedInput);
+            foundLoops.sort(String::compareTo);
 
-                if (isSelfLoop(replacements, extended)) {
-                    return false;
+            if (isSelfLoop(replacements, extended)) {
+                SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s\n", SymbolicExecutionLab.processedInput);
+                selfLoops.add(SymbolicExecutionLab.processedInput);
+                return false;
+            }
+
+            String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
+
+            SymbolicExecutionLab.printfRed(
+                    "loop detected over %d iterations with vars %s: on input '%s'. \n", lastNSaves - 1, output,
+                    SymbolicExecutionLab.processedInput);
+            // SymbolicExecutionLab.printfBlue("loopModel: %s\n", loopModel);
+
+            Solver solver = ctx.mkSolver();
+            solver.add(PathTracker.z3model);
+            solver.add(PathTracker.z3branches);
+            solver.add(extended);
+            for (int i = 1; i < 100; i += 1) {
+                System.out.println(i);
+                for (Replacement r : replacements) {
+                    extended = r.applyTo(extended, i);
                 }
-
-                String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
-
-                SymbolicExecutionLab.printfRed(
-                        "loop detected over %d iterations with vars %s: on input '%s'. \n", lastNSaves -1, output,
-                        SymbolicExecutionLab.processedInput);
-                // SymbolicExecutionLab.printfBlue("loopModel: %s\n", loopModel);
-
-                Solver solver = ctx.mkSolver();
-                solver.add(PathTracker.z3model);
-                solver.add(PathTracker.z3branches);
+                if (i == 2) {
+                    System.out.println("extended" + extended);
+                }
                 solver.add(extended);
-                for (int i = 1; i < 100; i += 1) {
-                    for (Replacement r : replacements) {
-                        extended = r.applyTo(extended, i);
-                    }
-                    solver.add(extended);
-                    Status status = solver.check();
-                    if (status == Status.UNSATISFIABLE) {
-                        SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status,
-                                i, extended);
-                        return true;
-                    } else if (status == Status.UNKNOWN) {
-                        SymbolicExecutionLab.printfRed("Solver exited with status: %s\n", status);
-                        System.exit(1);
-                    }
-                }
-
-                for (String s : foundLoops) {
-                    SymbolicExecutionLab.printfBlue("%s\n", s);
+                Status status = solver.check();
+                if (status == Status.UNSATISFIABLE) {
+                    SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status,
+                            i, extended);
+                    return true;
+                } else if (status == Status.UNKNOWN) {
+                    SymbolicExecutionLab.printfRed("Solver exited with status: %s\n", status);
+                    System.exit(1);
                 }
             }
+
+            for (String s : foundLoops) {
+                SymbolicExecutionLab.printfBlue("%s\n", s);
+            }
+            selfLoops.add(SymbolicExecutionLab.processedInput);
+            return false;
         }
         return true;
     }

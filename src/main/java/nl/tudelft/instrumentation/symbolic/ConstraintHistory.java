@@ -7,16 +7,6 @@ import com.microsoft.z3.*;
 
 public class ConstraintHistory {
 
-    static class Variable {
-        public final String name;
-        public final Sort sort;
-
-        public Variable(String name, Sort sort) {
-            this.name = name;
-            this.sort = sort;
-        }
-    }
-
     private HashMap<String, List<Expr>> variables = new HashMap<>();
     private HashMap<String, List<Integer>> lastVariables = new HashMap<>();
     private final Context ctx = PathTracker.ctx;
@@ -33,6 +23,27 @@ public class ConstraintHistory {
 
     public BoolExpr mkAnd(List<BoolExpr> exprs) {
         return ctx.mkAnd(exprs.toArray(BoolExpr[]::new));
+    }
+
+    public BoolExpr getExtendedConstraint(int lastNSaves, List<Replacement> replacements) {
+        assert lastNSaves <= loopModelList.size();
+        List<BoolExpr> expressions = new ArrayList<>();
+        int amountOfSaves = loopModelList.size();
+        for (int i = amountOfSaves - lastNSaves; i < amountOfSaves; i++) {
+            List<BoolExpr> allConstraints = loopModelList.get(i);
+            List<BoolExpr> filtered = new ArrayList<>();
+            for (BoolExpr e : allConstraints) {
+                BoolExpr changed = e;
+                for (Replacement r : replacements) {
+                    changed = r.applyTo(changed);
+                }
+                if (!e.equals(changed)) {
+                    filtered.add(changed);
+                }
+            }
+            expressions.add(mkAnd(filtered));
+        }
+        return mkAnd(expressions);
     }
 
     public BoolExpr getConstraint(int lastNSaves) {
