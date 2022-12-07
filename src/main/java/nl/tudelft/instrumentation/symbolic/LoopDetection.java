@@ -205,7 +205,6 @@ public class LoopDetection {
         history.save();
         history.resetNumberOfSave();
         solver.add(oneOfTheLoop);
-        solver.add(ctx.mkEq(ctx.mkConst(ctx.mkSymbol("my_i_16"), ctx.getIntSort()), ctx.mkInt(10)));
         assert solver.check() == Status.SATISFIABLE;
         Model model = solver.getModel();
         // System.out.println(solver.getModel());
