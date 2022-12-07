@@ -9,6 +9,7 @@ CUSTOM_DATASET="./custom_problems"
 # mvn clean package
 
 instrument () {
+    echo $1
     FILE="$DATASET/Problem$1/Problem$1.java"
     if [ -f "$FILE" ]; then
       echo "Normal problem: $1"
@@ -23,11 +24,12 @@ instrument () {
 }
 
 if [ -z $1 ]; then
-  for i in {1..9}; do
-    instrument $i
+  for i in $(ls $CUSTOM_DATASET); do
+    temp=${i#Problem}
+    instrument ${temp%.java} &
   done
-  for i in {11..19}; do
-    instrument $i
+  for i in $(ls $DATASET); do
+    instrument ${i#Problem}
   done
 else
   # mvn clean package
