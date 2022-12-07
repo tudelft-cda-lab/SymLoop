@@ -95,16 +95,14 @@ public class LoopDetection {
     // return baseConstraints;
     // }
 
-    boolean isLoopDone() {
-        if (SymbolicExecutionLab.skip) {
-            return false;
-        }
+    boolean isIterationLooping() {
         history.save();
         // Due to saving first, the last save is empty, so we go back 2 saves.
         int lastNSaves = 2;
         if (history.getNumberOfSaves() < lastNSaves) {
+            // Not enough data to detect loops
             history.save();
-            return true;
+            return false;
         }
         int MAX_LOOP_DETECTION_DEPTH = 2;
         int depth = Math.min(MAX_LOOP_DETECTION_DEPTH + 2, history.getNumberOfSaves());
@@ -121,14 +119,13 @@ public class LoopDetection {
                 continue;
             }
 
-            extended = history.getExtendedConstraint(lastNSaves, replacements);
             foundLoops.add(SymbolicExecutionLab.processedInput);
             foundLoops.sort(String::compareTo);
 
             if (isSelfLoop(replacements, extended)) {
                 SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s\n", SymbolicExecutionLab.processedInput);
                 selfLoops.add(SymbolicExecutionLab.processedInput);
-                return false;
+                return true;
             }
 
             String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
@@ -136,37 +133,40 @@ public class LoopDetection {
             SymbolicExecutionLab.printfRed(
                     "loop detected over %d iterations with vars %s: on input '%s'. \n", lastNSaves - 1, output,
                     SymbolicExecutionLab.processedInput);
-            // SymbolicExecutionLab.printfBlue("loopModel: %s\n", loopModel);
 
-            Solver solver = ctx.mkSolver();
-            solver.add(PathTracker.z3model);
-            solver.add(PathTracker.z3branches);
-            solver.add(extended);
-            for (int i = 1; i < 100; i += 1) {
-                System.out.println(i);
-                for (Replacement r : replacements) {
-                    extended = r.applyTo(extended, i);
-                }
-                if (i == 2) {
-                    System.out.println("extended" + extended);
-                }
-                solver.add(extended);
-                Status status = solver.check();
-                if (status == Status.UNSATISFIABLE) {
-                    SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status,
-                            i, extended);
-                    return true;
-                } else if (status == Status.UNKNOWN) {
-                    SymbolicExecutionLab.printfRed("Solver exited with status: %s\n", status);
-                    System.exit(1);
-                }
+            extended = history.getExtendedConstraint(lastNSaves, replacements);
+            if (isFiniteLoop(extended, replacements)) {
+                return true;
             }
 
             for (String s : foundLoops) {
                 SymbolicExecutionLab.printfBlue("%s\n", s);
             }
             selfLoops.add(SymbolicExecutionLab.processedInput);
-            return false;
+            return true;
+        }
+        return false;
+    }
+
+    boolean isFiniteLoop(BoolExpr extended, List<Replacement> replacements) {
+        Solver solver = ctx.mkSolver();
+        solver.add(PathTracker.z3model);
+        solver.add(PathTracker.z3branches);
+        solver.add(extended);
+        for (int i = 1; i < 100; i += 1) {
+            for (Replacement r : replacements) {
+                extended = r.applyTo(extended, i);
+            }
+            solver.add(extended);
+            Status status = solver.check();
+            if (status == Status.UNSATISFIABLE) {
+                SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status,
+                        i, extended);
+                return false;
+            } else if (status == Status.UNKNOWN) {
+                SymbolicExecutionLab.printfRed("Solver exited with status: %s\n", status);
+                System.exit(1);
+            }
         }
         return true;
     }
