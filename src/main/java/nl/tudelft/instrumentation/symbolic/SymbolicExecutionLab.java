@@ -172,7 +172,7 @@ public class SymbolicExecutionLab {
         PathTracker.addToModel(c.mkOr(temp));
         // loopModel = PathTracker.ctx.mkTrue();
         // loopModel = c.mkAnd(c.mkOr(temp), loopModel);
-        loopDetector.nextInput(c.mkOr(temp));
+        loopDetector.nextInput(c.mkOr(temp), name);
         return input;
     }
 
@@ -460,8 +460,8 @@ public class SymbolicExecutionLab {
                         printfRed("SOLVER IS WRONG, did not discover the solvable branch, %s\n", trace.from);
                         printfGreen(path);
                         System.out.printf("%d TRUE: %b, FALSE: %b\n", trace.getLineNr(),
-                                branchTracker.hasVisited(trace.getLineNr(), true),
-                                branchTracker.hasVisited(trace.getLineNr(), false));
+                                currentBranchTracker.hasVisited(trace.getLineNr(), true),
+                                currentBranchTracker.hasVisited(trace.getLineNr(), false));
                         System.exit(-1);
                     }
                     saveGraph();

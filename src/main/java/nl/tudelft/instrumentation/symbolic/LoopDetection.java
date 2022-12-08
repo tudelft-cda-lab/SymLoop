@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
+import com.microsoft.z3.Optimize.Handle;
 
 public class LoopDetection {
 
@@ -12,6 +13,7 @@ public class LoopDetection {
     private List<String> selfLoops = new ArrayList<>();
     private HashSet<String> alreadyChecked = new HashSet<>();
     private Context ctx = PathTracker.ctx;
+    private String inputName = "unknown";
 
     private ConstraintHistory history = new ConstraintHistory();
 
@@ -21,6 +23,7 @@ public class LoopDetection {
     public boolean isLooping(String input) {
         for (String loop : selfLoops) {
             if (input.startsWith(loop)) {
+                System.out.printf("loop: %s\n", loop);
                 return true;
             }
         }
@@ -29,6 +32,7 @@ public class LoopDetection {
 
     public void reset() {
         history.reset();
+        PathTracker.loopIterations.clear();
     }
 
     void assignToVariable(String name, Expr value) {
@@ -39,7 +43,8 @@ public class LoopDetection {
         return value.isNumeral();
     }
 
-    void nextInput(BoolExpr inputConstraint) {
+    void nextInput(BoolExpr inputConstraint, String name) {
+        inputName = name;
         history.nextInput(inputConstraint);
     }
 
@@ -53,6 +58,7 @@ public class LoopDetection {
             all = ctx.mkAnd(r.isSelfLoopExpr(), all);
         }
         if (PathTracker.solve(ctx.mkAnd(all, extended), false, false)) {
+            System.out.println(all);
             return true;
         }
         return false;
@@ -104,7 +110,7 @@ public class LoopDetection {
             history.save();
             return false;
         }
-        int MAX_LOOP_DETECTION_DEPTH = 1;
+        int MAX_LOOP_DETECTION_DEPTH = 2;
         int depth = Math.min(MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
 
         for (; lastNSaves <= depth; lastNSaves++) {
@@ -114,7 +120,8 @@ public class LoopDetection {
 
             // If already checked or there is no loop
             if (replacements.size() == 0
-                    // || !alreadyChecked.add(lastNSaves + '-' + SymbolicExecutionLab.processedInput)
+                    // || !alreadyChecked.add(lastNSaves + '-' +
+                    // SymbolicExecutionLab.processedInput)
                     || !PathTracker.solve(extended, false, false)) {
                 continue;
             }
@@ -153,6 +160,9 @@ public class LoopDetection {
         Solver solver = ctx.mkSolver();
         solver.add(PathTracker.z3model);
         solver.add(PathTracker.z3branches);
+
+            // ct
+        // ctx.mkSolver(ctx.mkOptimize())
         solver.add(extended);
         List<BoolExpr> loop = new ArrayList<>();
         loop.add(extended);
@@ -173,9 +183,13 @@ public class LoopDetection {
             }
         }
 
+        if(PathTracker.loopIterations.size() >= 1) {
+            return false;
+        }
+
         List<BoolExpr> onLoop = new ArrayList<>();
-        Expr n = ctx.mkConst("n", ctx.getIntSort());
-        for (int i = 0; i < AMOUNT; i += 1) {
+        ArithExpr n = (ArithExpr) ctx.mkConst("n", ctx.getIntSort());
+        for (int i = 1; i < AMOUNT; i += 1) {
             List<BoolExpr> thisIteration = new ArrayList<>();
             for (Replacement r : replacements) {
                 thisIteration.add(ctx.mkEq(r.getExprAfter(i), r.getExprAfter(AMOUNT + 1)));
@@ -186,6 +200,8 @@ public class LoopDetection {
             thisIteration.add(ctx.mkEq(n, ctx.mkInt(i)));
             onLoop.add(history.mkAnd(thisIteration));
         }
+        boolean onlyOneInputVariable = false;
+        MyVar myNVar = new MyVar(n);
         for (Replacement r : replacements) {
             String name = r.getName();
             String newName = SymbolicExecutionLab.getVarName(name, r.getIndexAfter(0));
@@ -199,7 +215,20 @@ public class LoopDetection {
             SymbolicExecutionLab.assign(v, name, ctx.mkConst(ctx.mkSymbol(newName), v.z3var.getSort()),
                     v.z3var.getSort());
             // }
+            //
+            if (r.name.equals(inputName)) {
+                assert !onlyOneInputVariable;
+                onlyOneInputVariable = true;
+                PathTracker.loopIterations.put(myNVar, r);
+            }
         }
+
+        // Optimize o = ctx.mkOptimize();
+        // Handle h = o.MkMinimize(n);
+        PathTracker.solver.MkMinimize(n);
+
+        // PathTracker.solver.check();
+        PathTracker.inputs.add(myNVar);
         BoolExpr oneOfTheLoop = history.mkOr(onLoop);
         System.out.println(oneOfTheLoop);
         history.save();
