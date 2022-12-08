@@ -115,7 +115,7 @@ public class SymbolicExecutionLab {
     private static Map<String, String> edges = new HashMap<String, String>();
 
     private static String pathString = "Start";
-    
+
     public static HashMap<String, MyVar> vars = new HashMap<>();
 
     static void initialize(String[] inputSymbols) {
@@ -125,7 +125,7 @@ public class SymbolicExecutionLab {
 
     static String createVarName(String name) {
         Integer count = nameCounts.getOrDefault(name, 0);
-        System.out.printf("createVarName: %s, %d\n", name, count);
+        // System.out.printf("createVarName: %s, %d\n", name, count);
         nameCounts.put(name, count + 1);
         return getVarName(name, count);
     }
@@ -279,9 +279,6 @@ public class SymbolicExecutionLab {
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-        if (skip) {
-            return;
-        }
         path += String.format("%d:%b\n", line_nr, value);
         if (firstBranchLineNr == -1) {
             firstBranchLineNr = line_nr;
@@ -291,6 +288,9 @@ public class SymbolicExecutionLab {
             // System.out.printf("inputInIndex: %d\n", inputInIndex);
             processedInput += currentTrace.get(inputInIndex);
             inputInIndex++;
+        }
+        if (skip) {
+            return;
         }
 
         String newPathString = String.format("%s_%d", processedInput, line_nr);
@@ -506,7 +506,7 @@ public class SymbolicExecutionLab {
             // ANSI_GREEN, errorTracker.amount(), ANSI_RESET);
             long current = System.currentTimeMillis();
             long seconds = (current - startTime) / 1000;
-            printfGreen("Found new error, current amount is\t%d\t. in \t%d\t seconds\n", errorTracker.amount(),
+            printfGreen("Found new error %s, current amount is\t%d\t. in \t%d\t seconds\n", out, errorTracker.amount(),
                     seconds);
 
         }

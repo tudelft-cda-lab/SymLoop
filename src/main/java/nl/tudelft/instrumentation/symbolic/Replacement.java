@@ -1,6 +1,7 @@
 
 package nl.tudelft.instrumentation.symbolic;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.microsoft.z3.*;
@@ -24,14 +25,21 @@ class Replacement {
         return this.applyTo(expr, 0);
     }
 
-
     public static BoolExpr applyAllTo(List<Replacement> replacements, BoolExpr e) {
         for (Replacement r : replacements) {
             e = r.applyTo(e);
         }
         return e;
     }
- 
+
+    public List<Expr> getAllExprs(int amount) {
+        List<Expr> exprs = new ArrayList<>();
+        for (int a = getIndexAfter(0)+1; a <= getIndexAfter(amount); a++) {
+            exprs.add(getExprFor(a));
+        }
+        return exprs;
+    }
+
     public BoolExpr applyTo(BoolExpr expr, int amount) {
         // Loop backwards to prevent repeated subsitution
         for (int i = this.start; i >= this.stop; i--) {

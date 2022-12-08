@@ -95,8 +95,6 @@ public class PathTracker {
         }
 
         if (s.Check() == Status.SATISFIABLE) {
-            System.out.println("SAT" + new_branch);
-            // System.out.println("satisfiable");
             Model m = s.getModel();
             output += m;
             LinkedList<String> new_inputs = new LinkedList<String>();
@@ -104,16 +102,13 @@ public class PathTracker {
                 if (loopIterations.containsKey(v)) {
                     Replacement r = loopIterations.get(v);
                     String amountAsString = m.evaluate(v.z3var, true).toString();
-                    System.out.printf("loopVar: %s\n", amountAsString);
+                    SymbolicExecutionLab.printfBlue("loopVar %s: %s\n", v.z3var, amountAsString);
                     int amount = Integer.parseInt(amountAsString);
-                    for (int i = 1; i < amount+1; i++) {
-                        Expr e = r.getExprAfter(i);
+                    for (Expr e : r.getAllExprs(amount)) {
                         String value = m.evaluate(e, true).toString();
-                        System.out.printf("%s = %s\n", e, value);
                         new_inputs.add(value);
                     }
-                    System.out.println("inLoop");
-                    // System.exit(1);
+                    ;
                 } else {
                     new_inputs.add(m.evaluate(v.z3var, true).toString());
                 }
@@ -124,7 +119,6 @@ public class PathTracker {
             s.Pop();
             return true;
         } else {
-            System.out.println("UNSAT" + new_branch);
             s.Pop();
         }
         return false;

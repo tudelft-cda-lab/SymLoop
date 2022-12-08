@@ -16,6 +16,7 @@ public class LoopDetection {
     private String inputName = "unknown";
 
     private ConstraintHistory history = new ConstraintHistory();
+    private int currentLoopNumber = 0;
 
     public LoopDetection() {
     }
@@ -33,6 +34,7 @@ public class LoopDetection {
     public void reset() {
         history.reset();
         PathTracker.loopIterations.clear();
+        currentLoopNumber = 0;
     }
 
     void assignToVariable(String name, Expr value) {
@@ -130,7 +132,8 @@ public class LoopDetection {
             foundLoops.sort(String::compareTo);
 
             if (isSelfLoop(replacements, extended)) {
-                SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s\n", SymbolicExecutionLab.processedInput);
+                SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
+                        SymbolicExecutionLab.processedInput, lastNSaves - 1);
                 selfLoops.add(SymbolicExecutionLab.processedInput);
                 return true;
             }
@@ -149,20 +152,17 @@ public class LoopDetection {
             for (String s : foundLoops) {
                 SymbolicExecutionLab.printfBlue("%s\n", s);
             }
-            // selfLoops.add(SymbolicExecutionLab.processedInput);
             return false;
         }
         return false;
     }
 
     boolean isFiniteLoop(BoolExpr extended, List<Replacement> replacements) {
-        final int AMOUNT = 5;
+        final int AMOUNT = 50;
         Solver solver = ctx.mkSolver();
         solver.add(PathTracker.z3model);
         solver.add(PathTracker.z3branches);
 
-            // ct
-        // ctx.mkSolver(ctx.mkOptimize())
         solver.add(extended);
         List<BoolExpr> loop = new ArrayList<>();
         loop.add(extended);
@@ -183,19 +183,18 @@ public class LoopDetection {
             }
         }
 
-        if(PathTracker.loopIterations.size() >= 1) {
+        // TODO: only do this if the current loop is the same pattern
+        // If there is already a loop at play
+        if (PathTracker.loopIterations.size() >= 1) {
             return false;
         }
 
         List<BoolExpr> onLoop = new ArrayList<>();
-        ArithExpr n = (ArithExpr) ctx.mkConst("n", ctx.getIntSort());
-        for (int i = 1; i < AMOUNT; i += 1) {
+        ArithExpr n = (ArithExpr) ctx.mkConst("custom_loop_number_" + (currentLoopNumber++), ctx.getIntSort());
+        for (int i = 0; i < AMOUNT; i += 1) {
             List<BoolExpr> thisIteration = new ArrayList<>();
             for (Replacement r : replacements) {
                 thisIteration.add(ctx.mkEq(r.getExprAfter(i), r.getExprAfter(AMOUNT + 1)));
-                if (i != 0) {
-                    this.history.assignToVariable(r.getName(), null);
-                }
             }
             thisIteration.add(ctx.mkEq(n, ctx.mkInt(i)));
             onLoop.add(history.mkAnd(thisIteration));
@@ -207,6 +206,7 @@ public class LoopDetection {
             String newName = SymbolicExecutionLab.getVarName(name, r.getIndexAfter(0));
             while (SymbolicExecutionLab.nameCounts.get(name) != r.getIndexAfter(AMOUNT + 1) + 1) {
                 newName = SymbolicExecutionLab.createVarName(name);
+                this.history.assignToVariable(name, null);
             }
             // for(String name: SymbolicExecutionLab.vars.keySet()) {
             // System.out.printf("%s: %s\n", name,
@@ -230,14 +230,10 @@ public class LoopDetection {
         // PathTracker.solver.check();
         PathTracker.inputs.add(myNVar);
         BoolExpr oneOfTheLoop = history.mkOr(onLoop);
-        System.out.println(oneOfTheLoop);
         history.save();
         history.resetNumberOfSave();
         solver.add(oneOfTheLoop);
         assert solver.check() == Status.SATISFIABLE;
-        Model model = solver.getModel();
-        // System.out.println(solver.getModel());
-        System.out.println(model.evaluate(n, true));
         PathTracker.addToBranches(oneOfTheLoop);
         PathTracker.addToBranches(history.mkAnd(loop));
         PathTracker.printModel = true;
