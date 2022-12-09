@@ -335,7 +335,7 @@ public class SymbolicExecutionLab {
             temp.add(newRandomInputChar());
             // temp.add("A");
             String newInput = String.join("", temp);
-            if (!loopDetector.isLooping(newInput)) {
+            if (!loopDetector.isSelfLooping(newInput)) {
                 add(new NextTrace(temp, currentLineNumber, pathLength,
                         String.join(" ", currentTrace) + "\n" + path + "\n" + output, !currentValue));
             } else {
@@ -506,7 +506,7 @@ public class SymbolicExecutionLab {
             // ANSI_GREEN, errorTracker.amount(), ANSI_RESET);
             long current = System.currentTimeMillis();
             long seconds = (current - startTime) / 1000;
-            printfGreen("Found new error %s, current amount is\t%d\t. in \t%d\t seconds\n", out, errorTracker.amount(),
+            printfGreen("Found new error '%s', current amount is\t%d\t. in \t%d\t seconds\n", out, errorTracker.amount(),
                     seconds);
 
         }

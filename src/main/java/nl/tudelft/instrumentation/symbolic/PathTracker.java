@@ -35,7 +35,6 @@ public class PathTracker {
     static final int timeoutMS = 10000000;
 
     static int lastLength = -1;
-    static boolean printModel = false;
 
     /**
      * Used to reset the constraints and everything else of z3 before running the
@@ -47,7 +46,6 @@ public class PathTracker {
         z3branches = ctx.mkTrue();
         inputs.clear();
         solver = ctx.mkOptimize();
-        printModel = false;
     }
 
     public static void addToBranches(BoolExpr expr) {
@@ -84,14 +82,13 @@ public class PathTracker {
         s.Push();
         s.Add(new_branch);
 
-        if (PathTracker.printModel) {
+        if (printModel) {
             System.out.print("Model: ");
             System.out.println(PathTracker.z3model);
             System.out.print("Branches: ");
             System.out.println(PathTracker.z3branches);
             System.out.print("New branch: ");
             System.out.println(new_branch);
-            PathTracker.printModel = false;
         }
 
         if (s.Check() == Status.SATISFIABLE) {

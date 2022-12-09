@@ -2,10 +2,11 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
-import com.microsoft.z3.Optimize.Handle;
 
 public class LoopDetection {
 
@@ -17,24 +18,33 @@ public class LoopDetection {
 
     private ConstraintHistory history = new ConstraintHistory();
     private int currentLoopNumber = 0;
+    private Set<Pattern> selfLoopPatterns = new HashSet<>();
+    private Set<Pattern> loopPatterns = new HashSet<>();
+    private Pattern currentPattern;
 
     public LoopDetection() {
     }
 
-    public boolean isLooping(String input) {
-        for (String loop : selfLoops) {
-            if (input.startsWith(loop)) {
-                System.out.printf("loop: %s\n", loop);
+    public boolean isLooping(String input, Iterable<Pattern> patterns) {
+        for (Pattern p : patterns) {
+            Matcher m = p.matcher(input);
+            if (m.find()) {
+                // System.out.printf("loop: %s\n", loop);
                 return true;
             }
         }
         return false;
     }
 
+    public boolean isSelfLooping(String input) {
+        return isLooping(input, selfLoopPatterns);
+    }
+
     public void reset() {
         history.reset();
         PathTracker.loopIterations.clear();
         currentLoopNumber = 0;
+        currentPattern = null;
     }
 
     void assignToVariable(String name, Expr value) {
@@ -102,8 +112,48 @@ public class LoopDetection {
     // }).filter(Objects::nonNull).collect(Collectors.toSet());
     // return baseConstraints;
     // }
+    //
+    //
+    Pattern getSelfLoopPattern(String input, int lastN) {
+        int loopIndex = input.length() - lastN;
+        String basePart = input.substring(0, loopIndex);
+        String loopPart = input.substring(loopIndex);
+        String regex = String.format("^%s(%s)+", basePart, loopPart);
+        System.out.printf("%d, %d:'%s' + '%s', '%s'\n", lastN, loopIndex, basePart, loopPart, regex);
+        if (lastN > 1) {
+            // String end = "(<)?";
+            // String end = "((<)(-)?)?";
+            // String end = "(((<)(-)?)?)";
+            String end = "";
+            List<String> s = new ArrayList<>();
+            for (int i = 1; i < lastN; i++) {
+                s.add(loopPart.substring(0, i));
+            }
+            end = String.format("(%s)?", String.join("|", s));
+            System.out.println(end);
+            regex += end;
+        }
+        Pattern p = Pattern.compile(regex);
+        Matcher m = p.matcher(input);
+        assert m.find();
+        return p;
+    }
+
+    // String getRegexFor(String input, int lastN, int max_amount) {
+    // int loopIndex = input.length() - lastN;
+    // String basePart = input.substring(0, loopIndex);
+    // String loopPart = input.substring(loopIndex);
+    // String regex = String.format("%s(%s){0,%d}", basePart, loopPart, max_amount);
+    // System.out.printf("%d, %d:'%s' + '%s', '%s'\n", lastN, loopIndex, basePart,
+    // loopPart, regex);
+    // Pattern p = Pattern.compile(regex);
+    // System.exit(1);
+    // return "";
+    // // ,max_amount)
+    // }
 
     boolean isIterationLooping() {
+        final String INPUT = SymbolicExecutionLab.processedInput;
         history.save();
         // Due to saving first, the last save is empty, so we go back 2 saves.
         int lastNSaves = 1;
@@ -112,7 +162,17 @@ public class LoopDetection {
             history.save();
             return false;
         }
-        int MAX_LOOP_DETECTION_DEPTH = 2;
+
+        if (currentPattern != null) {
+            System.out.println(INPUT);
+            Matcher m = currentPattern.matcher(INPUT);
+            boolean isFullMatch = m.find() && (m.end() == INPUT.length());
+            if (isFullMatch) {
+                System.out.printf("Still part of current pattern '%s'\n", currentPattern);
+                return false;
+            }
+        }
+        int MAX_LOOP_DETECTION_DEPTH = 3;
         int depth = Math.min(MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
 
         for (; lastNSaves <= depth; lastNSaves++) {
@@ -135,6 +195,7 @@ public class LoopDetection {
                 SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
                         SymbolicExecutionLab.processedInput, lastNSaves - 1);
                 selfLoops.add(SymbolicExecutionLab.processedInput);
+                selfLoopPatterns.add(getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1));
                 return true;
             }
 
@@ -151,6 +212,21 @@ public class LoopDetection {
 
             for (String s : foundLoops) {
                 SymbolicExecutionLab.printfBlue("%s\n", s);
+            }
+            currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1);
+            if (!isLooping(INPUT, loopPatterns)) {
+                loopPatterns.add(currentPattern);
+            }
+            List<Pattern> s = new ArrayList<>(loopPatterns);
+            Collections.sort(s, Comparator.comparing(Pattern::toString));
+            for (Pattern p : s) {
+                SymbolicExecutionLab.printfBlue("loop: %s\n", p);
+            }
+
+            s = new ArrayList<>(selfLoopPatterns);
+            Collections.sort(s, Comparator.comparing(Pattern::toString));
+            for (Pattern p : s) {
+                SymbolicExecutionLab.printfBlue("selfloop: %s\n", p);
             }
             return false;
         }
@@ -185,9 +261,6 @@ public class LoopDetection {
 
         // TODO: only do this if the current loop is the same pattern
         // If there is already a loop at play
-        if (PathTracker.loopIterations.size() >= 1) {
-            return false;
-        }
 
         List<BoolExpr> onLoop = new ArrayList<>();
         ArithExpr n = (ArithExpr) ctx.mkConst("custom_loop_number_" + (currentLoopNumber++), ctx.getIntSort());
@@ -236,7 +309,6 @@ public class LoopDetection {
         assert solver.check() == Status.SATISFIABLE;
         PathTracker.addToBranches(oneOfTheLoop);
         PathTracker.addToBranches(history.mkAnd(loop));
-        PathTracker.printModel = true;
         // TODO replace all the occurences of the current variable in MYVARS
         return false;
     }
