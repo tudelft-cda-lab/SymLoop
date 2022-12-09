@@ -28,7 +28,7 @@ public class LoopDetection {
     public boolean isLooping(String input, Iterable<Pattern> patterns) {
         for (Pattern p : patterns) {
             Matcher m = p.matcher(input);
-            if (m.find()) {
+            if (m.matches()) {
                 // System.out.printf("loop: %s\n", loop);
                 return true;
             }
@@ -127,7 +127,7 @@ public class LoopDetection {
             String end = "";
             List<String> s = new ArrayList<>();
             for (int i = 1; i < lastN; i++) {
-                s.add(loopPart.substring(0, i));
+                s.add(String.format("(%s)", loopPart.substring(0, i)));
             }
             end = String.format("(%s)?", String.join("|", s));
             System.out.println(end);
@@ -135,7 +135,7 @@ public class LoopDetection {
         }
         Pattern p = Pattern.compile(regex);
         Matcher m = p.matcher(input);
-        assert m.find();
+        assert m.matches();
         return p;
     }
 
@@ -166,13 +166,18 @@ public class LoopDetection {
         if (currentPattern != null) {
             System.out.println(INPUT);
             Matcher m = currentPattern.matcher(INPUT);
-            boolean isFullMatch = m.find() && (m.end() == INPUT.length());
+            boolean isFullMatch = m.matches();
             if (isFullMatch) {
                 System.out.printf("Still part of current pattern '%s'\n", currentPattern);
                 return false;
+            } else {
+                System.out.printf("Not part of current pattern '%s' %d\n", currentPattern, INPUT.length());
             }
         }
-        int MAX_LOOP_DETECTION_DEPTH = 3;
+        if (isSelfLooping(INPUT)) {
+            return true;
+        }
+        int MAX_LOOP_DETECTION_DEPTH = 4;
         int depth = Math.min(MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
 
         for (; lastNSaves <= depth; lastNSaves++) {
@@ -309,7 +314,7 @@ public class LoopDetection {
         assert solver.check() == Status.SATISFIABLE;
         PathTracker.addToBranches(oneOfTheLoop);
         PathTracker.addToBranches(history.mkAnd(loop));
-        // TODO replace all the occurences of the current variable in MYVARS
+        System.out.println("new input over" + currentPattern);
         return false;
     }
 }
