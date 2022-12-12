@@ -10,6 +10,9 @@ import com.microsoft.z3.*;
 
 public class LoopDetection {
 
+    private static final int LOOP_UNROLLING_AMOUNT = 100;
+    private static final int MAX_LOOP_DETECTION_DEPTH = 3;
+
     private List<String> foundLoops = new ArrayList<>();
     private List<String> selfLoops = new ArrayList<>();
     private HashSet<String> alreadyChecked = new HashSet<>();
@@ -177,7 +180,6 @@ public class LoopDetection {
         if (isSelfLooping(INPUT)) {
             return true;
         }
-        int MAX_LOOP_DETECTION_DEPTH = 4;
         int depth = Math.min(MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
 
         for (; lastNSaves <= depth; lastNSaves++) {
@@ -239,7 +241,6 @@ public class LoopDetection {
     }
 
     boolean isFiniteLoop(BoolExpr extended, List<Replacement> replacements) {
-        final int AMOUNT = 50;
         Solver solver = ctx.mkSolver();
         solver.add(PathTracker.z3model);
         solver.add(PathTracker.z3branches);
@@ -247,7 +248,7 @@ public class LoopDetection {
         solver.add(extended);
         List<BoolExpr> loop = new ArrayList<>();
         loop.add(extended);
-        for (int i = 1; i < AMOUNT; i += 1) {
+        for (int i = 1; i < LOOP_UNROLLING_AMOUNT; i += 1) {
             for (Replacement r : replacements) {
                 extended = r.applyTo(extended, i);
             }
@@ -264,36 +265,28 @@ public class LoopDetection {
             }
         }
 
-        // TODO: only do this if the current loop is the same pattern
-        // If there is already a loop at play
-
         List<BoolExpr> onLoop = new ArrayList<>();
-        ArithExpr n = (ArithExpr) ctx.mkConst("custom_loop_number_" + (currentLoopNumber++), ctx.getIntSort());
-        for (int i = 0; i < AMOUNT; i += 1) {
+        ArithExpr numberOfTimesTheLoopExecutes = (ArithExpr) ctx.mkConst("custom_loop_number_" + (currentLoopNumber++), ctx.getIntSort());
+        for (int i = 0; i < LOOP_UNROLLING_AMOUNT; i += 1) {
             List<BoolExpr> thisIteration = new ArrayList<>();
             for (Replacement r : replacements) {
-                thisIteration.add(ctx.mkEq(r.getExprAfter(i), r.getExprAfter(AMOUNT + 1)));
+                thisIteration.add(ctx.mkEq(r.getExprAfter(i), r.getExprAfter(LOOP_UNROLLING_AMOUNT + 1)));
             }
-            thisIteration.add(ctx.mkEq(n, ctx.mkInt(i)));
+            thisIteration.add(ctx.mkEq(numberOfTimesTheLoopExecutes, ctx.mkInt(i)));
             onLoop.add(history.mkAnd(thisIteration));
         }
         boolean onlyOneInputVariable = false;
-        MyVar myNVar = new MyVar(n);
+        MyVar myNVar = new MyVar(numberOfTimesTheLoopExecutes);
         for (Replacement r : replacements) {
-            String name = r.getName();
-            String newName = SymbolicExecutionLab.getVarName(name, r.getIndexAfter(0));
-            while (SymbolicExecutionLab.nameCounts.get(name) != r.getIndexAfter(AMOUNT + 1) + 1) {
-                newName = SymbolicExecutionLab.createVarName(name);
-                this.history.assignToVariable(name, null);
+            String varName = r.getName();
+            String newName = SymbolicExecutionLab.getVarName(varName, r.getIndexAfter(0));
+            while (SymbolicExecutionLab.nameCounts.get(varName) < r.getIndexAfter(LOOP_UNROLLING_AMOUNT + 1) + 1) {
+                newName = SymbolicExecutionLab.createVarName(varName);
+                this.history.assignToVariable(varName, null);
             }
-            // for(String name: SymbolicExecutionLab.vars.keySet()) {
-            // System.out.printf("%s: %s\n", name,
-            // SymbolicExecutionLab.vars.get(name).z3var);
-            MyVar v = SymbolicExecutionLab.vars.get(name);
-            SymbolicExecutionLab.assign(v, name, ctx.mkConst(ctx.mkSymbol(newName), v.z3var.getSort()),
+            MyVar v = SymbolicExecutionLab.vars.get(varName);
+            SymbolicExecutionLab.assign(v, varName, ctx.mkConst(ctx.mkSymbol(newName), v.z3var.getSort()),
                     v.z3var.getSort());
-            // }
-            //
             if (r.name.equals(inputName)) {
                 assert !onlyOneInputVariable;
                 onlyOneInputVariable = true;
@@ -301,8 +294,7 @@ public class LoopDetection {
             }
         }
 
-        PathTracker.solver.minimize(n);
-        // PathTracker.solver.check();
+        PathTracker.solver.minimize(numberOfTimesTheLoopExecutes);
         PathTracker.inputs.add(myNVar);
         BoolExpr oneOfTheLoop = history.mkOr(onLoop);
         history.save();
@@ -311,7 +303,7 @@ public class LoopDetection {
         assert solver.check() == Status.SATISFIABLE;
         PathTracker.addToBranches(oneOfTheLoop);
         PathTracker.addToBranches(history.mkAnd(loop));
-        System.out.println("new input over" + currentPattern);
+        System.out.println("new input over: " + currentPattern);
         return false;
     }
 }
