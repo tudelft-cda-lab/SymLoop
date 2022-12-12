@@ -9,18 +9,18 @@ public class ErrorTracker {
     private Set<Integer> errors = new HashSet<Integer>();;
     static Pattern pattern = Pattern.compile("Invalid input: error_(\\d+)");
 
-
     public ErrorTracker() {
     }
 
     public boolean add(String line) {
-        Matcher matcher = pattern.matcher(line);
-        if (matcher.find()) {
-            return this.errors.add(Integer.parseInt(matcher.group(1)));
-        } else {
+        Integer error = getError(line);
+        if (error == null) {
             return false;
+        } else {
+            return this.errors.add(error);
         }
     }
+
     public boolean add(int error) {
         if (this.errors.contains(error)) {
             return false;
@@ -36,6 +36,15 @@ public class ErrorTracker {
 
     public Set<Integer> getSet() {
         return this.errors;
+    }
+
+    public Integer getError(String line) {
+        Matcher matcher = pattern.matcher(line);
+        if (matcher.find()) {
+            int error = Integer.parseInt(matcher.group(1));
+            return error;
+        }
+        return null;
     }
 
     public boolean isError(String line) {

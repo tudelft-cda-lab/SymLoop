@@ -23,7 +23,7 @@ public class PathTracker {
     public static int z3counter = 1; // used to give an ID to each variable.
     public static BoolExpr z3model = ctx.mkTrue();
     public static BoolExpr z3branches = ctx.mkTrue();
-    public static Optimize solver = ctx.mkOptimize();
+    public static OptimizingSolver solver = new OptimizingSolver();
 
     static HashMap<MyVar, Replacement> loopIterations = new HashMap<>();
 
@@ -45,17 +45,17 @@ public class PathTracker {
         z3model = ctx.mkTrue();
         z3branches = ctx.mkTrue();
         inputs.clear();
-        solver = ctx.mkOptimize();
+        solver.reset();
     }
 
     public static void addToBranches(BoolExpr expr) {
         z3branches = ctx.mkAnd(expr, z3branches);
-        solver.Add(expr);
+        solver.add(expr);
     }
 
     public static void addToModel(BoolExpr expr) {
         z3model = ctx.mkAnd(expr, z3model);
-        solver.Add(expr);
+        solver.add(expr);
     }
 
     /**
@@ -73,14 +73,14 @@ public class PathTracker {
      *                   be printed in the terminal or not.
      */
     public static boolean solve(BoolExpr new_branch, boolean printModel, boolean isInput) {
-        Optimize s = solver;
+        SolverInterface s = solver;
         // Solver s = ctx.mkSolver();
         String output = "";
         // s.add(PathTracker.z3model);
         // s.add(PathTracker.z3branches);
         // s.push();
-        s.Push();
-        s.Add(new_branch);
+        s.push();
+        s.add(new_branch);
 
         if (printModel) {
             System.out.print("Model: ");
@@ -91,7 +91,7 @@ public class PathTracker {
             System.out.println(new_branch);
         }
 
-        if (s.Check() == Status.SATISFIABLE) {
+        if (s.check() == Status.SATISFIABLE) {
             Model m = s.getModel();
             output += m;
             LinkedList<String> new_inputs = new LinkedList<String>();
@@ -113,10 +113,10 @@ public class PathTracker {
             if (isInput) {
                 SymbolicExecutionLab.newSatisfiableInput(new_inputs, output);
             }
-            s.Pop();
+            s.pop();
             return true;
         } else {
-            s.Pop();
+            s.pop();
         }
         return false;
     }

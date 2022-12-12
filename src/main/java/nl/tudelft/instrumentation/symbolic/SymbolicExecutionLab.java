@@ -151,8 +151,26 @@ public class SymbolicExecutionLab {
         return myVar;
     }
 
+    private static String input = "";
+    private static String output = "";
+    private static List<String> fullTrace = new ArrayList<>();
+    private static List<String> fullTraces = new ArrayList<>();
+    private static boolean invalid;
+
+    static void addToFullTrace() {
+        if (!input.isEmpty() && !invalid) {
+            fullTrace.add(String.format("%s/%s", input, output));
+        }
+    }
+
     static MyVar createInput(String name, Expr value, Sort s) {
-        skip = skip || loopDetector.isIterationLooping();
+        if (!skip && loopDetector.isIterationLooping()) {
+            printfRed("STOPPING AT %s\n", processedInput);
+            skip = true;
+        }
+        addToFullTrace();
+        input = value.toString().replaceAll("\"", "");
+        output = "";
         // Create an input var, these should be free variables!
         // Do not add it to the model
         Context c = PathTracker.ctx;
@@ -261,6 +279,18 @@ public class SymbolicExecutionLab {
         loopDetector.addToLoopModel(c.mkEq(z3var, value));
     }
 
+    static void saveTraces() {
+        try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("traces.dat")))) {
+            out.write(String.format("%d %d\n", fullTraces.size(), PathTracker.inputSymbols.length));
+            for (String t : fullTraces) {
+                out.write(t);
+            }
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     static void saveGraph() {
         if (changed) {
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("graph.dot")))) {
@@ -289,9 +319,6 @@ public class SymbolicExecutionLab {
             processedInput += currentTrace.get(inputInIndex);
             inputInIndex++;
         }
-        if (skip) {
-            return;
-        }
 
         String newPathString = String.format("%s_%d", processedInput, line_nr);
         String from = String.valueOf(currentLineNumber);
@@ -307,7 +334,9 @@ public class SymbolicExecutionLab {
         branchTracker.visit(line_nr, value);
         currentBranchTracker.visit(line_nr, value);
         pathString = newPathString;
-
+        if (skip) {
+            return;
+        }
         Context c = PathTracker.ctx;
         if (alreadySolvedBranches.add(pathString)) {
             // Call the solver
@@ -394,6 +423,12 @@ public class SymbolicExecutionLab {
         skip = false;
         changed = false;
         path = "";
+        invalid = false;
+
+        /// OUTPUT generation
+        output = "";
+        input = "";
+        fullTrace.clear();
     }
 
     static boolean isEmpty() {
@@ -464,6 +499,9 @@ public class SymbolicExecutionLab {
                                 currentBranchTracker.hasVisited(trace.getLineNr(), false));
                         System.exit(-1);
                     }
+                    addToFullTrace();
+                    fullTraces.add(String.format("1 %d %s\n", fullTrace.size(), String.join(" ", fullTrace)));
+                    saveTraces();
                     saveGraph();
                 }
                 // System.in.read();
@@ -506,7 +544,8 @@ public class SymbolicExecutionLab {
             // ANSI_GREEN, errorTracker.amount(), ANSI_RESET);
             long current = System.currentTimeMillis();
             long seconds = (current - startTime) / 1000;
-            printfGreen("Found new error '%s', current amount is\t%d\t. in \t%d\t seconds\n", out, errorTracker.amount(),
+            printfGreen("Found new error '%s', current amount is\t%d\t. in \t%d\t seconds\n", out,
+                    errorTracker.amount(),
                     seconds);
 
         }
@@ -515,6 +554,10 @@ public class SymbolicExecutionLab {
             if (!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {
                 System.out.println(out);
             }
+            invalid = true;
+            output += "INVALID";
+        } else {
+            output += out.strip();
         }
     }
 

@@ -28,7 +28,7 @@ public class LoopDetection {
     public boolean isLooping(String input, Iterable<Pattern> patterns) {
         for (Pattern p : patterns) {
             Matcher m = p.matcher(input);
-            if (m.matches()) {
+            if (m.find()) {
                 // System.out.printf("loop: %s\n", loop);
                 return true;
             }
@@ -301,10 +301,7 @@ public class LoopDetection {
             }
         }
 
-        // Optimize o = ctx.mkOptimize();
-        // Handle h = o.MkMinimize(n);
-        PathTracker.solver.MkMinimize(n);
-
+        PathTracker.solver.minimize(n);
         // PathTracker.solver.check();
         PathTracker.inputs.add(myNVar);
         BoolExpr oneOfTheLoop = history.mkOr(onLoop);
