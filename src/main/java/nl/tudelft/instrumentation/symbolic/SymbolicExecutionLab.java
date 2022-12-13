@@ -190,6 +190,7 @@ public class SymbolicExecutionLab {
                             mod,
                             PathTracker.ctx.mkSub(mod, right_var)));
         } else if (operator.equals("/")) {
+            // TODO fix this to make it work for integer division in ProblemDivision
             return new MyVar(PathTracker.ctx.mkDiv(left_var, right_var));
         }
         throw new IllegalArgumentException(String.format("binary int expression: %s not implement", operator));
