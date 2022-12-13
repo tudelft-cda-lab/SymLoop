@@ -161,6 +161,7 @@ public class SymbolicExecutionLab {
 
     static MyVar createIntExpr(IntExpr left_var, IntExpr right_var, String operator) {
         // Any binary expression (+, -, /, etc)
+        Context ctx = PathTracker.ctx;
         if (operator.equals("==")) {
             return new MyVar(PathTracker.ctx.mkEq(left_var, right_var));
         } else if (operator.equals("<=")) {
@@ -190,10 +191,28 @@ public class SymbolicExecutionLab {
                             mod,
                             PathTracker.ctx.mkSub(mod, right_var)));
         } else if (operator.equals("/")) {
-            // TODO fix this to make it work for integer division in ProblemDivision
-            return new MyVar(PathTracker.ctx.mkDiv(left_var, right_var));
+            return new MyVar(ctx.mkMul(
+                    ctx.mkDiv(
+                            mkAbs(ctx, left_var),
+                            mkAbs(ctx, right_var)),
+                    mkSign(ctx, left_var),
+                    mkSign(ctx, right_var)));
         }
         throw new IllegalArgumentException(String.format("binary int expression: %s not implement", operator));
+    }
+
+    static ArithExpr mkAbs(Context ctx, ArithExpr a) {
+        return (ArithExpr) ctx.mkITE(ctx.mkGe(a, ctx.mkInt(0)), a, ctx.mkUnaryMinus(a));
+    }
+
+    static ArithExpr mkSign(Context ctx, ArithExpr a) {
+        return (ArithExpr) ctx.mkITE(
+                ctx.mkEq(a, ctx.mkInt(0)),
+                ctx.mkInt(0),
+                ctx.mkITE(
+                        ctx.mkGt(a, ctx.mkInt(0)),
+                        ctx.mkInt(1),
+                        ctx.mkInt(-1)));
     }
 
     static MyVar createStringExpr(SeqExpr left_var, SeqExpr right_var, String operator) {
@@ -274,7 +293,9 @@ public class SymbolicExecutionLab {
             return;
         }
         Context c = PathTracker.ctx;
-        if (currentTrace.size() - 1 <= processedInput.length() && alreadySolvedBranches.add(pathString)) {
+        if (
+        // currentTrace.size() <= processedInput.length() &&
+        alreadySolvedBranches.add(pathString)) {
             // Call the solver
             PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false, true);
         }
@@ -285,7 +306,6 @@ public class SymbolicExecutionLab {
         PathTracker.addToBranches(branchCondition);
         loopDetector.addToLoopModel(branchCondition);
     }
-
 
     static void newSatisfiableInput(LinkedList<String> new_inputs, String output) {
         // Hurray! found a new branch using these new inputs!
