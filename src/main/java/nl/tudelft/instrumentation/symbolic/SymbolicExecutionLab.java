@@ -433,9 +433,10 @@ public class SymbolicExecutionLab {
                 }
                 // System.in.read();
                 isFinished = branchTracker.visitedAll();
-                System.out.printf("Visited: %d out of %d, #errors: %d, #nextTraces: %d, #backlog: %d \n",
+                System.out.printf("Visited: %d out of %d, #errors: %d, #nextTraces: %d, #backlog: %d, %s\n",
                         branchTracker.numVisited(),
-                        branchTracker.totalBranches(), errorTracker.amount(), nextTraces.size(), backLog.size());
+                        branchTracker.totalBranches(), errorTracker.amount(), nextTraces.size(), backLog.size(),
+                        errorTracker);
                 Thread.sleep(0);
             } catch (InterruptedException e) {
                 e.printStackTrace();

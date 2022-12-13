@@ -3,10 +3,11 @@ package nl.tudelft.instrumentation.symbolic;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ErrorTracker {
 
-    private Set<Integer> errors = new HashSet<Integer>();;
+    private SortedSet<Integer> errors = new TreeSet<Integer>();;
     static Pattern pattern = Pattern.compile("Invalid input: error_(\\d+)");
 
     public ErrorTracker() {
@@ -50,5 +51,10 @@ public class ErrorTracker {
     public boolean isError(String line) {
         Matcher matcher = pattern.matcher(line);
         return matcher.find();
+    }
+
+    public String toString() {
+        return String.format("Errors: %s",
+                String.join(", ", errors.stream().map(e -> e.toString()).collect(Collectors.toList())));
     }
 }
