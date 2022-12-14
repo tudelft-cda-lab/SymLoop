@@ -12,13 +12,15 @@ OPTIMIZATION="-O1"
 
 
 prepare () {
+    OLD=$PWD
     OUT=klee/problem$1
     mkdir -p $OUT
     echo "Copying $1";
     cp "RERS/Problem$1/Problem$1.c" $OUT/
     echo "Modifying $1";
     sed -i 's/^.*extern void __VERIFIER_error(int);/#include <klee\/klee.h>\
-        void __VERIFIER_error(int i) { fprintf(stderr, "error_%d", i); fflush(stderr); assert(0); }/' "$OUT/Problem$1.c"
+        void __VERIFIER_error(int i) { fprintf(stderr, "error_%d\\n", i); fflush(stderr); assert(0); }/' "$OUT/Problem$1.c"
+    # Remove any output
     sed -i '/printf("/d' "$OUT/Problem$1.c"
     sed -i -z 's/while(1)\n.*if\(([^\n]*)\)[^}]*}/int length = 20;int program[length];klee_make_symbolic(program, sizeof(program), "program");for (int i = 0; i < length; ++i) {int input = program[i];if(\1){return 0;}calculate_output(input);}/' "$OUT/Problem$1.c"
     sed -i 's/^.*fprintf(stderr, "Invalid input:.*/exit(0);/' "$OUT/Problem$1.c"
@@ -26,24 +28,35 @@ prepare () {
     $CLANG_LOC/clang $OPTIMIZATION -I $KLEE_INCLUDE -emit-llvm -g -c  "$OUT/Problem$1.c" -o "$OUT/Problem$1.bc"
     cd $OUT
 
-    $KLEE_BIN/klee --optimize -posix-runtime -libc=uclibc -max-time=1min "Problem$1.bc"
+    rm -f start.txt && touch start.txt
+    # $KLEE_BIN/klee --optimize -posix-runtime -libc=uclibc -max-time=1min "Problem$1.bc"
+    $KLEE_BIN/klee --only-output-states-covering-new --use-merge --emit-all-errors --optimize -posix-runtime -libc=uclibc -max-time=10s "Problem$1.bc"
 
     echo "SUMMARY"
     $KLEE_BIN/klee-stats ../
     $CLANG_LOC/clang $OPTIMIZATION -I "$KLEE_INCLUDE" -L "$KLEE_LIBRARY" "Problem$1.c" -o "Problem$1-test.bc" -lkleeRuntest
+    cat klee-last/info
 
-    rm -f errors.txt
+    # rm -f errors.txt
+    OUTFILE=out.txt
     pwd
-    for f in $(ls -tr ./klee-last/ | grep ktest);
-    do
-        ERR=$(KTEST_FILE="klee-last/$f" "./Problem$1-test.bc" 2> out.txt 1> /dev/null)
-        ERR=$(cat out.txt | grep Assertion)
-        if [[ ! -z $ERR ]]; then
-            stat --printf="%Y $f " "./klee-last/$f" | tee -a errors.txt
-            echo "$ERR" | grep -o -i -E "error_[0-9]+" | tee -a errors.txt
-        fi
-    done;
-    cat errors.txt | sort -s -t" " -u -k3,3 | sort > sorted.txt
+    # export -f get_output
+    # ls -tr ./klee-last/ | grep ktest | xargs -L1 -I @ -P 10 bash -c 'get_output "@"'
+    cd $OLD
+    pwd
+    python3 ./scripts/analyze_klee.py "$OUT/klee-last" "$OUT/./Problem$1-test.bc" "$OUT/start.txt"
+    # for f in $(ls -tr ./klee-last/ | grep ktest);
+    # do
+    #     ERR=$(KTEST_FILE="klee-last/$f" "./Problem$1-test.bc" 2> $OUTFILE 1> /dev/null)
+    #     if [[ $? -ne 0 ]]; then
+    #         ERR=$(cat $OUTFILE | grep Assertion)
+    #         if [[ ! -z $ERR ]]; then
+    #             stat --printf="%Y $f " "./klee-last/$f" | tee -a errors.txt
+    #             echo "$ERR" | grep -o -i -E "error_[0-9]+" | tee -a errors.txt
+    #         fi
+    #     fi
+    # done;
+    # cat errors.txt | sort -s -t" " -u -k3,3 | sort > sorted.txt
 
     # mkdir -p $OUT/$1/tests $OUT/$1/findings
     # sed -n "s/^.*inputs\[\] = {\s*\(\S*\)}.*$/\1/p" "$OUT/Problem$1.c" | xargs -n 1 -d , | xargs -I % sh -c "echo % > $OUT/$1/tests/%.txt && echo >> $OUT/$1/tests/%.txt"
