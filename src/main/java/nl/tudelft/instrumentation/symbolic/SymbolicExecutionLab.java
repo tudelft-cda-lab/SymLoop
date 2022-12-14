@@ -433,34 +433,29 @@ public class SymbolicExecutionLab {
         startTime = System.currentTimeMillis();
 
         while (!isFinished) {
-            try {
-                reset();
-                if (isEmpty()) {
-                    System.out.println(errorTracker.getSet());
-                    System.exit(0);
-                } else {
-                    NextTrace trace = getNext();
-                    printfYellow("now doing line: %d, %b, %s\n", trace.getLineNr(), trace.getConditionValue(),
-                            trace.trace);
-                    currentTrace = trace.trace;
-                    PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-                    loopDetector.isIterationLooping();
-                    checkIfSolverIsRight(trace);
-                    addToFullTrace();
-                    fullTraces.add(String.format("1 %d %s\n", fullTrace.size(), String.join(" ", fullTrace)));
-                    saveTraces();
-                    saveGraph();
-                }
-                // System.in.read();
-                isFinished = branchTracker.visitedAll();
-                System.out.printf("Visited: %d out of %d, #errors: %d, #nextTraces: %d, #backlog: %d, %s\n",
-                        branchTracker.numVisited(),
-                        branchTracker.totalBranches(), errorTracker.amount(), nextTraces.size(), backLog.size(),
-                        errorTracker);
-                Thread.sleep(0);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            reset();
+            if (isEmpty()) {
+                System.out.println(errorTracker.getSet());
+                System.exit(0);
+            } else {
+                NextTrace trace = getNext();
+                printfYellow("now doing line: %d, %b, %s\n", trace.getLineNr(), trace.getConditionValue(),
+                        trace.trace);
+                currentTrace = trace.trace;
+                PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+                loopDetector.isIterationLooping();
+                checkIfSolverIsRight(trace);
+                addToFullTrace();
+                fullTraces.add(String.format("1 %d %s\n", fullTrace.size(), String.join(" ", fullTrace)));
+                saveTraces();
+                saveGraph();
             }
+            // System.in.read();
+            isFinished = branchTracker.visitedAll();
+            System.out.printf("Visited: %d out of %d, #errors: %d, #nextTraces: %d, #backlog: %d, %s\n",
+                    branchTracker.numVisited(),
+                    branchTracker.totalBranches(), errorTracker.amount(), nextTraces.size(), backLog.size(),
+                    errorTracker);
         }
         System.exit(0);
     }
