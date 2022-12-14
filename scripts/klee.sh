@@ -1,27 +1,31 @@
 #!/bin/bash
-# set -e
-cd /home/str/JavaInstrumentation
+set -e
+# cd /home/str/JavaInstrumentation
 OUT=klee
 mkdir -p $OUT
+KLEE_LOC=""
 
 
 prepare () {
     OUT=klee/problem$1
     mkdir -p $OUT
     echo "Copying $1";
-    cp "../RERS/Problem$1/Problem$1.c" $OUT/
+    cp "RERS/Problem$1/Problem$1.c" $OUT/
     echo "Modifying $1";
     sed -i 's/^.*extern void __VERIFIER_error(int);/#include <klee\/klee.h>\
 void __VERIFIER_error(int i) { fprintf(stderr, "error_%d ", i); assert(0); }/' "$OUT/Problem$1.c"
     sed -i -z 's/while(1)\n.*if\(([^\n]*)\)[^}]*}/int length = 20;int program[length];klee_make_symbolic(program, sizeof(program), "program");for (int i = 0; i < length; ++i) {int input = program[i];if(\1){return 0;}calculate_output(input);}/' "$OUT/Problem$1.c"
-    clang-6.0 -I "/home/str/klee/include" -emit-llvm -g -c  "$OUT/Problem$1.c" -o "$OUT/Problem$1.bc"
+    export LD_LIBRARY_PATH=/home/bram/projects/klee/build/lib/:$LD_LIBRARY_PATH
+    # clang-11 -I "/home/bram/projects/klee/include" -emit-llvm -g -c  "$OUT/Problem$1.c" -o "$OUT/Problem$1.bc"
+    ~/projects/klee_deps/llvm-110-build_O_ND_NA/bin/clang-11 -O0 -I "/home/bram/Documents/projects/klee/include" -emit-llvm -g -c  "$OUT/Problem$1.c" -o "$OUT/Problem$1.bc"
     cd $OUT
     # /home/str/klee/build/bin/klee "Problem$1.bc"
     # /home/str/klee/build/bin/klee -max-time=10min "Problem$1.bc"
-    /home/str/klee/build/bin/klee-stats .
+    klee -posix-runtime -libc=uclibc -max-time=1min "Problem$1.bc"
+    # /home/str/klee/build/bin/klee-stats .
     echo "SUMMARY"
-    /home/str/klee/build/bin/klee-stats ../
-    export LD_LIBRARY_PATH=/home/str/klee/build/lib/:$LD_LIBRARY_PATH
+    klee-stats ../
+    # export LD_LIBRARY_PATH=/home/str/klee/build/lib/:$LD_LIBRARY_PATH
     clang-6.0 -I "/home/str/klee/include" -L "/home/str/klee/build/lib" "Problem$1.c" -o "Problem$1-test.bc" -lkleeRuntest
     rm errors.txt
     for f in $(ls -tr ./klee-last/ | grep ktest);
