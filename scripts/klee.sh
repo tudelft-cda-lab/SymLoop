@@ -1,9 +1,14 @@
 #!/bin/bash
-set -e
+# set -e
 # cd /home/str/JavaInstrumentation
 OUT=klee
 mkdir -p $OUT
-KLEE_LOC=""
+KLEE_BASE="$HOME/projects/klee"
+KLEE_BIN="$KLEE_BASE/build/bin"
+KLEE_INCLUDE="$KLEE_BASE/include/"
+KLEE_LIBRARY="$KLEE_BASE/build/lib/"
+CLANG_LOC="$HOME/klee_deps/llvm-110-install_O_D_A/bin"
+OPTIMIZATION="-O1"
 
 
 prepare () {
@@ -13,27 +18,24 @@ prepare () {
     cp "RERS/Problem$1/Problem$1.c" $OUT/
     echo "Modifying $1";
     sed -i 's/^.*extern void __VERIFIER_error(int);/#include <klee\/klee.h>\
-void __VERIFIER_error(int i) { fprintf(stderr, "error_%d ", i); assert(0); }/' "$OUT/Problem$1.c"
+        void __VERIFIER_error(int i) { fprintf(stderr, "error_%d", i); fflush(stderr); assert(0); }/' "$OUT/Problem$1.c"
+    sed -i '/printf("/d' "$OUT/Problem$1.c"
     sed -i -z 's/while(1)\n.*if\(([^\n]*)\)[^}]*}/int length = 20;int program[length];klee_make_symbolic(program, sizeof(program), "program");for (int i = 0; i < length; ++i) {int input = program[i];if(\1){return 0;}calculate_output(input);}/' "$OUT/Problem$1.c"
-    export LD_LIBRARY_PATH=/home/bram/projects/klee/build/lib/:$LD_LIBRARY_PATH
-    # clang-11 -I "/home/bram/projects/klee/include" -emit-llvm -g -c  "$OUT/Problem$1.c" -o "$OUT/Problem$1.bc"
-    ~/projects/klee_deps/llvm-110-build_O_ND_NA/bin/clang-11 -O0 -I "/home/bram/Documents/projects/klee/include" -emit-llvm -g -c  "$OUT/Problem$1.c" -o "$OUT/Problem$1.bc"
+    sed -i 's/^.*fprintf(stderr, "Invalid input:.*/exit(0);/' "$OUT/Problem$1.c"
+    export LD_LIBRARY_PATH=$KLEE_LIBRARY:$LD_LIBRARY_PATH
+    $CLANG_LOC/clang $OPTIMIZATION -I $KLEE_INCLUDE -emit-llvm -g -c  "$OUT/Problem$1.c" -o "$OUT/Problem$1.bc"
     cd $OUT
-    # /home/str/klee/build/bin/klee "Problem$1.bc"
-    # /home/str/klee/build/bin/klee -max-time=10min "Problem$1.bc"
-    klee -posix-runtime -libc=uclibc -max-time=1min "Problem$1.bc"
-    # /home/str/klee/build/bin/klee-stats .
+
+    $KLEE_BIN/klee --optimize -posix-runtime -libc=uclibc -max-time=1min "Problem$1.bc"
+
     echo "SUMMARY"
-    klee-stats ../
-    # export LD_LIBRARY_PATH=/home/str/klee/build/lib/:$LD_LIBRARY_PATH
-    clang-6.0 -I "/home/str/klee/include" -L "/home/str/klee/build/lib" "Problem$1.c" -o "Problem$1-test.bc" -lkleeRuntest
-    rm errors.txt
+    $KLEE_BIN/klee-stats ../
+    $CLANG_LOC/clang $OPTIMIZATION -I "$KLEE_INCLUDE" -L "$KLEE_LIBRARY" "Problem$1.c" -o "Problem$1-test.bc" -lkleeRuntest
+
+    rm -f errors.txt
+    pwd
     for f in $(ls -tr ./klee-last/ | grep ktest);
     do
-        # cat $f | $OUT/Problem$1 2>> $OUT/$1/errors.txt 1> /dev/null
-        # /home/str/klee/build/bin/ktest-tool $f
-        # echo "$f" >> "errors.txt"
-        # stat --printf="%Y $f " "./klee-last/$f"
         ERR=$(KTEST_FILE="klee-last/$f" "./Problem$1-test.bc" 2> out.txt 1> /dev/null)
         ERR=$(cat out.txt | grep Assertion)
         if [[ ! -z $ERR ]]; then
@@ -42,6 +44,7 @@ void __VERIFIER_error(int i) { fprintf(stderr, "error_%d ", i); assert(0); }/' "
         fi
     done;
     cat errors.txt | sort -s -t" " -u -k3,3 | sort > sorted.txt
+
     # mkdir -p $OUT/$1/tests $OUT/$1/findings
     # sed -n "s/^.*inputs\[\] = {\s*\(\S*\)}.*$/\1/p" "$OUT/Problem$1.c" | xargs -n 1 -d , | xargs -I % sh -c "echo % > $OUT/$1/tests/%.txt && echo >> $OUT/$1/tests/%.txt"
     # echo "Compiling $1";
