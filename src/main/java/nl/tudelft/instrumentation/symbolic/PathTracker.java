@@ -20,7 +20,6 @@ public class PathTracker {
     };
     public static Context ctx = new Context(cfg);
 
-    public static int z3counter = 1; // used to give an ID to each variable.
     public static BoolExpr z3model = ctx.mkTrue();
     public static BoolExpr z3branches = ctx.mkTrue();
     public static OptimizingSolver solver = new OptimizingSolver();
@@ -39,7 +38,6 @@ public class PathTracker {
      * next sequence.
      */
     public static void reset() {
-        z3counter = 1;
         z3model = ctx.mkTrue();
         z3branches = ctx.mkTrue();
         inputs.clear();
@@ -355,7 +353,7 @@ public class PathTracker {
             handler.get();
         } catch (CancellationException e) {
             System.out.println("TIMEOUT!");
-            System.exit(-1);
+            // System.exit(-1);
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
             System.exit(-1);
