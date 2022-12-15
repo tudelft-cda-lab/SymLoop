@@ -450,7 +450,9 @@ public class SymbolicExecutionLab {
                         trace.trace);
                 currentTrace = trace.trace;
                 PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-                loopDetector.isIterationLooping();
+                if(!skip) {
+                    loopDetector.isIterationLooping();
+                }
                 checkIfSolverIsRight(trace);
                 addToFullTrace();
                 fullTraces.add(String.format("1 %d %s\n", fullTrace.size(), String.join(" ", fullTrace)));
@@ -509,6 +511,7 @@ public class SymbolicExecutionLab {
 
         }
         if (out.contains("Invalid")) {
+            System.out.println(out);
             skip = true;
             if (!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {
                 System.out.println(out);
