@@ -10,9 +10,6 @@ import com.microsoft.z3.*;
 
 public class LoopDetection {
 
-    private static final int LOOP_UNROLLING_AMOUNT = 20;
-    private static final int MAX_LOOP_DETECTION_DEPTH = 1;
-
     private SortedSet<String> foundLoops = new TreeSet<>();
     private SortedSet<String> selfLoops = new TreeSet<>();
     private Context ctx = PathTracker.ctx;
@@ -121,7 +118,7 @@ public class LoopDetection {
         if (isSelfLooping(INPUT)) {
             return true;
         }
-        int depth = Math.min(MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
+        int depth = Math.min(Settings.getInstance().MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
 
         for (; lastNSaves <= depth; lastNSaves++) {
             List<Replacement> replacements = history.getReplacementsForLastSaves(lastNSaves);
@@ -185,6 +182,7 @@ public class LoopDetection {
     }
 
     boolean isFiniteLoop(BoolExpr extended, List<Replacement> replacements) {
+        final int LOOP_UNROLLING_AMOUNT = Settings.getInstance().LOOP_UNROLLING_AMOUNT;
         Solver solver = ctx.mkSolver();
         solver.add(PathTracker.z3model);
         solver.add(PathTracker.z3branches);

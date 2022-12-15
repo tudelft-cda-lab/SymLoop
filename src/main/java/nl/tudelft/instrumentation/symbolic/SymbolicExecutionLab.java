@@ -18,10 +18,10 @@ import nl.tudelft.instrumentation.fuzzing.BranchVisitedTracker;
  */
 public class SymbolicExecutionLab {
 
+    static final int INITIAL_TRACE_LENGTH = 1;
     static Random r = new Random(1);
     static Boolean isFinished = false;
     static List<String> currentTrace;
-    static int traceLength = 1;
     static PriorityQueue<NextTrace> nextTraces = new PriorityQueue<>();
     static PriorityQueue<NextTrace> backLog = new PriorityQueue<>();
     static BranchVisitedTracker branchTracker = new BranchVisitedTracker();
@@ -56,7 +56,12 @@ public class SymbolicExecutionLab {
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
-        currentTrace = generateRandomTrace(inputSymbols);
+        String[] initial = Settings.getInstance().INITIAL_TRACE;
+        if (initial == null) {
+            currentTrace = generateRandomTrace(inputSymbols);
+        } else {
+            currentTrace = Arrays.asList(initial);
+        }
     }
 
     static String createVarName(String name) {
@@ -317,7 +322,7 @@ public class SymbolicExecutionLab {
         // Add a random input at the end to allow solving new paths
         String alreadyFound = String.join("", temp);
         if (alreadyFoundTraces.add(alreadyFound)) {
-            System.out.printf("New satisfiable input: %s\n", temp);
+            // System.out.printf("New satisfiable input: %s\n", temp);
             temp.add(newRandomInputChar());
             // temp.add("A");
             String newInput = String.join("", temp);
@@ -360,7 +365,7 @@ public class SymbolicExecutionLab {
      */
     static List<String> generateRandomTrace(String[] symbols) {
         ArrayList<String> trace = new ArrayList<>();
-        for (int i = 0; i < traceLength; i++) {
+        for (int i = 0; i < INITIAL_TRACE_LENGTH; i++) {
             trace.add(symbols[r.nextInt(symbols.length)]);
         }
         return trace;
@@ -427,7 +432,8 @@ public class SymbolicExecutionLab {
         }
     }
 
-    static void run() {
+    static void run(String[] args) {
+        Settings settings = Settings.create(args);
         initialize(PathTracker.inputSymbols);
         nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
         startTime = System.currentTimeMillis();

@@ -18,7 +18,7 @@ instrument () {
       FILE="$CUSTOM_DATASET/Problem$1.java"
     fi
     echo "Instrumenting $1";
-    java -XX:+UseG1GC -Xmx22g -cp target/aistr.jar nl.tudelft.instrumentation.Main --type=symbolic --file="$FILE" > "instrumented/Problem$1.java"
+    java -XX:+UseG1GC -Xmx16g -cp target/aistr.jar nl.tudelft.instrumentation.Main --type=symbolic --file="$FILE" > "instrumented/Problem$1.java"
     echo "Compiling $1";
     javac -cp target/aistr.jar:lib/com.microsoft.z3.jar:. Errors.java "instrumented/Problem$1.java"
 }

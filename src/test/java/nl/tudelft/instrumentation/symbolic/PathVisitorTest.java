@@ -523,7 +523,7 @@ public class PathVisitorTest {
 
     @Test
     public void testInstrumentationShouldCreateRunCall(){
-        String runCall = "PathTracker.run(eca.inputs, eca);";
+        String runCall = "PathTracker.run(args, eca.inputs, eca);";
 
         StringBuilder builder = new StringBuilder();
         builder.append("public class Test {\n")

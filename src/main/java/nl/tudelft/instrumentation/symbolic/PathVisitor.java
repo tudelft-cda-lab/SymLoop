@@ -337,7 +337,7 @@ public class PathVisitor extends ModifierVisitor<Object> {
     public Node visit(ExpressionStmt node, Object arg) {
         // This is to modify the main method to follow a particular structure.
         if (node.toString().contains("eca =")) {
-            Statement staticStatement = StaticJavaParser.parseStatement(pathFile + ".run(eca.inputs, eca);");
+            Statement staticStatement = StaticJavaParser.parseStatement(pathFile + ".run(args, eca.inputs, eca);");
             this.addCodeAfter(node, staticStatement, arg);
         }
 

@@ -332,10 +332,10 @@ public class PathTracker {
      * @param eca The current problem instance
      * @param s   the input symbols of the problem
      */
-    public static void run(String[] s, CallableTraceRunner<Void> eca) {
+    public static void run(String[] args, String[] s, CallableTraceRunner<Void> eca) {
         problem = eca;
         inputSymbols = s;
-        SymbolicExecutionLab.run();
+        SymbolicExecutionLab.run(args);
     }
 
     /**

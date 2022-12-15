@@ -14,6 +14,8 @@ public class ConstraintHistory {
     private List<List<BoolExpr>> loopModelList = new ArrayList<>();
     private int numberOfSaves = 0;
 
+    private HashSet<String> existing = new HashSet<>();
+
     public int getNumberOfSaves() {
         return numberOfSaves;
     }
@@ -72,6 +74,7 @@ public class ConstraintHistory {
             lastVariables.get(name).add(variables.get(name).size());
         }
         this.numberOfSaves++;
+        // existing.clear();
     }
 
     public void resetNumberOfSave() {
@@ -100,6 +103,7 @@ public class ConstraintHistory {
         lastVariables.clear();
         loopModelList.clear();
         this.numberOfSaves = 0;
+        this.existing.clear();
     }
 
     void assignToVariable(String name, Expr value) {
@@ -128,7 +132,8 @@ public class ConstraintHistory {
     }
 
     private void addToLoopModelList(BoolExpr condition) {
-        if ((!condition.isConst()) && condition.isAnd()) {
+        // getLast(loopModelList).add(condition);
+        if (Settings.getInstance().UNFOLD_AND && (!condition.isConst()) && condition.isAnd()) {
             Expr[] args = condition.getArgs();
             for (Expr arg : args) {
                 BoolExpr v = (BoolExpr) arg;
@@ -136,7 +141,9 @@ public class ConstraintHistory {
             }
 
         } else {
-            getLast(loopModelList).add(condition);
+            if (Settings.getInstance().CHECK_HASHSET || existing.add(condition.toString())) {
+                getLast(loopModelList).add(condition);
+            }
         }
     }
 
