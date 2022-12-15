@@ -1,0 +1,110 @@
+package nl.tudelft.instrumentation.symbolic;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
+public class Settings {
+    private static final int DEFAULT_LOOP_UNROLLING = 10;
+    private static final int DEFAULT_LOOP_DETECTION_DEPTH = 1;
+    private static final int DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S = 100;
+    private static final int DEFAULT_MAX_TIME_S = -1;
+    private static Settings singleton;
+
+    public final boolean UNFOLD_AND;
+    public final boolean CHECK_HASHSET;
+    public final int LOOP_UNROLLING_AMOUNT;
+    public final int MAX_LOOP_DETECTION_DEPTH;
+    // Longest a single testcase is allowed to run
+    public final int MAX_RUNTIME_SINGLE_TRACE_S;
+    public final int MAX_TIME_S;
+
+    public final String[] INITIAL_TRACE;
+
+    private Settings(boolean unfoldAnd, boolean checkForExistingConstraints, String initial, int loopUnrollingAmount,
+            int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS) {
+        this.UNFOLD_AND = unfoldAnd;
+        this.CHECK_HASHSET = checkForExistingConstraints;
+        this.INITIAL_TRACE = initial == null ? null : initial.split(",");
+        this.LOOP_UNROLLING_AMOUNT = loopUnrollingAmount;
+        this.MAX_LOOP_DETECTION_DEPTH = maxLoopDetectionDepth;
+        this.MAX_RUNTIME_SINGLE_TRACE_S = maxRuntimeTraceS;
+        this.MAX_TIME_S = maxTimeS;
+    }
+
+    public static Settings create(String[] args) {
+        if (singleton == null) {
+            CommandLine cl = parseArguments(args);
+            boolean unfoldAnd = cl.hasOption("unfold-and");
+            String initialTrace = cl.getOptionValue("initial-trace", null);
+            int loopUnrollingAmount = Integer
+                    .parseInt(cl.getOptionValue("unroll-loops", String.valueOf(DEFAULT_LOOP_UNROLLING)));
+            int loopDetectionDepth = Integer
+                    .parseInt(cl.getOptionValue("loop-detection-depth", String.valueOf(DEFAULT_LOOP_UNROLLING)));
+            int maxRuntimeTraceMs = Integer
+                    .parseInt(cl.getOptionValue("max-runtime-single-trace", String.valueOf(DEFAULT_LOOP_UNROLLING)));
+            int maxTime = Integer
+                    .parseInt(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
+            Settings s = new Settings(unfoldAnd, false, initialTrace, loopUnrollingAmount, loopDetectionDepth,
+                    maxRuntimeTraceMs, maxTime);
+            singleton = s;
+            return s;
+        } else {
+            return singleton;
+        }
+    }
+
+    public static Settings getInstance() {
+        return singleton;
+    }
+
+    private static Options getOptions() {
+        Options options = new Options();
+        options.addOption("u", "unfold-and", false,
+                "Unfold 'AND' expressions to possibly make the loop constraints shorter");
+        options.addOption("h", "help", false, "Show this help message");
+        options.addOption("i", "initial-trace", true,
+                "The initial trace to run the program on. Use commas to seperate input symbols. (Example: 'A,B,C')");
+        options.addOption("l", "unroll-loops", true,
+                String.format(
+                        "Amount of times to unroll a loop before continuing with execution. This also is the amount of times a loop is verified to run. (Default: %d)",
+                        DEFAULT_LOOP_UNROLLING));
+        options.addOption("d", "loop-detection-depth", true,
+                String.format("The number of steps to look back into the history to try to detect loops. (Default: %d)",
+                        DEFAULT_LOOP_DETECTION_DEPTH));
+        options.addOption("mrst", "max-runtime-single-trace", true,
+                String.format("The number of seconds a single trace can run before its gets killed. (Default: %d)",
+                        DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S));
+        options.addOption("m", "max-time", true,
+                String.format(
+                        "The number of seconds a single trace can run before its gets killed. Use -1 to run indefinetely (Default: %d)",
+                        DEFAULT_MAX_TIME_S));
+        return options;
+    }
+
+    private static void printHelp(Options options) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("nl.tudelft.instrumentation.Main", options, true);
+    }
+
+    private static CommandLine parseArguments(String[] args) {
+        Options options = getOptions();
+        DefaultParser parser = new DefaultParser();
+        CommandLine line = null;
+        try {
+            line = parser.parse(options, args);
+            if (line.hasOption("help")) {
+                printHelp(options);
+                System.exit(0);
+            }
+        } catch (ParseException ex) {
+            System.err.println("Failed to parse command line arguments");
+            System.err.println(ex.toString());
+            printHelp(options);
+            System.exit(1);
+        }
+        return line;
+    }
+}

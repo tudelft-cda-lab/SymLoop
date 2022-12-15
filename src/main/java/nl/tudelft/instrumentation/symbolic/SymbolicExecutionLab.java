@@ -438,7 +438,8 @@ public class SymbolicExecutionLab {
         nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
         startTime = System.currentTimeMillis();
 
-        while (!isFinished) {
+        while (!isFinished && (settings.MAX_TIME_S == -1
+                || (System.currentTimeMillis() - startTime) < settings.MAX_TIME_S * 1000)) {
             reset();
             if (isEmpty()) {
                 System.out.println(errorTracker.getSet());
@@ -455,15 +456,23 @@ public class SymbolicExecutionLab {
                 fullTraces.add(String.format("1 %d %s\n", fullTrace.size(), String.join(" ", fullTrace)));
                 saveTraces();
                 saveGraph();
+                printStatus();
             }
             // System.in.read();
             isFinished = branchTracker.visitedAll();
-            System.out.printf("Visited: %d out of %d, #errors: %d, #nextTraces: %d, #backlog: %d, %s\n",
-                    branchTracker.numVisited(),
-                    branchTracker.totalBranches(), errorTracker.amount(), nextTraces.size(), backLog.size(),
-                    errorTracker);
+        }
+        if(!isFinished) {
+            printfYellow("TIME LIMIT REACHED\n");
+            printStatus();
         }
         System.exit(0);
+    }
+
+    public static void printStatus() {
+        System.out.printf("Visited: %d out of %d, #errors: %d, #nextTraces: %d, #backlog: %d, %s\n",
+                branchTracker.numVisited(),
+                branchTracker.totalBranches(), errorTracker.amount(), nextTraces.size(), backLog.size(),
+                errorTracker);
     }
 
     public static void printfGreen(String a, Object... args) {

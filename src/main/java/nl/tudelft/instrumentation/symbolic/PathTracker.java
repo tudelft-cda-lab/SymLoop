@@ -31,8 +31,6 @@ public class PathTracker {
     static ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
     static CallableTraceRunner<Void> problem;
     static String[] inputSymbols;
-    // Longest a single testcase is allowed to run
-    static final int timeoutMS = 10000000;
 
     static int lastLength = -1;
 
@@ -350,7 +348,7 @@ public class PathTracker {
         final Future handler = executor.submit(problem);
         executor.schedule(() -> {
             handler.cancel(true);
-        }, timeoutMS, TimeUnit.MILLISECONDS);
+        }, Settings.getInstance().MAX_RUNTIME_SINGLE_TRACE_S, TimeUnit.SECONDS);
 
         // Wait for it to be completed
         try {
