@@ -24,37 +24,32 @@ def get_output(file, starttime: float):
     if ret != 0 and p.stderr is not None:
         output = p.stderr.read().decode()
         assert modified >= 0
-        # print(time.ctime(modified))
         m = regex.match(output)
         if m:
             error = int(m.groups()[0])
-            # print(file, error, modified, 'diff', modified-starttime)
-            # exit(1)
             return (error, modified - starttime)
         else:
             print(f'Error: Did not find the error in the output: "{output}"')
-            # exit()
-    return (-1, modified - starttime)
-
-print(f'{directory=}, {program=}')
-
+    return None
 
 starttime = float(os.path.getmtime(starttime_file))
 files_and_folders = [join(directory, name) for name in listdir(directory)]
 files = [f for f in files_and_folders if isfile(f)]
 # ktest_files = [f for f in files if f.endswith('.err')]
-ktest_files = [f for f in files if f.endswith('.ktest')]
+
+# ktest_files = [f for f in files if f.endswith('.ktest')]
+
+ktest_files = [f.replace('assert.err', 'ktest') for f in files if f.endswith('.err')]
 # print(ktest_files)
 
 from joblib import Parallel, delayed
 n_jobs = 100
 print('starttime', time.ctime(starttime), starttime)
-outputs  = Parallel(n_jobs=n_jobs, prefer="processes")(
+outputs = Parallel(n_jobs=n_jobs, prefer="processes")(
     delayed(get_output)(f, starttime) for f in tqdm(ktest_files)
 )
 
 errors: dict[int, float] = defaultdict(lambda: float_info.max)
-print(outputs)
 for output in outputs:
     if output is not None:
         error, modified = output
@@ -64,3 +59,5 @@ for output in outputs:
 
 for error, modified in sorted(errors.items(), key=lambda x: x[0]):
     print(f'Error {error:-3}: {modified}')
+
+print(f'total errors: {len(errors)}')
