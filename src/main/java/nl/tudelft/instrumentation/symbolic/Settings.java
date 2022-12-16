@@ -1,5 +1,8 @@
 package nl.tudelft.instrumentation.symbolic;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -23,6 +26,39 @@ public class Settings {
     public final boolean STOP_ON_FIRST_TIMEOUT;
 
     public final String[] INITIAL_TRACE;
+
+
+    private static int parseTimeToS(String s) {
+            if (s.equals("-1")) {
+                    return -1;
+            }
+            Pattern TIME_PATTERN = Pattern.compile("(?<amount>\\d+)(?<multiplier>m|s|h)?");
+            Matcher m = TIME_PATTERN.matcher(s);
+            if (m.matches()) {
+                    System.out.println(m.group("amount"));
+                    int amount = Integer.parseInt(m.group("amount"));
+                    String multiplier = m.group("multiplier");
+                    System.out.printf("PARSE TIME: %d, %s\n", amount, multiplier);
+                    int seconds_multiplier = 1;
+                    switch (multiplier) {
+                        case "s":
+                        seconds_multiplier = 1;
+                        break;
+
+                        case "m":
+                        seconds_multiplier = 60;
+                        break;
+
+                        case "h":
+                        seconds_multiplier = 60*60;
+                        break;
+                    }
+                    return amount * seconds_multiplier;
+            }
+            System.err.printf("UNABLE TO PARSE TIME STRING: %s\n", s);
+            System.exit(1);
+            return -1;
+    }
 
     private Settings(boolean unfoldAnd, boolean checkForExistingConstraints, String initial, int loopUnrollingAmount,
             int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT) {
@@ -48,8 +84,7 @@ public class Settings {
                     .parseInt(cl.getOptionValue("loop-detection-depth", String.valueOf(DEFAULT_LOOP_UNROLLING)));
             int maxRuntimeTraceMs = Integer
                     .parseInt(cl.getOptionValue("max-runtime-single-trace", String.valueOf(DEFAULT_LOOP_UNROLLING)));
-            int maxTime = Integer
-                    .parseInt(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
+            int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
             Settings s = new Settings(unfoldAnd, false, initialTrace, loopUnrollingAmount, loopDetectionDepth,
                     maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT);
             singleton = s;
