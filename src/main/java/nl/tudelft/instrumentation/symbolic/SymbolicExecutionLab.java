@@ -434,8 +434,11 @@ public class SymbolicExecutionLab {
 
     static boolean timeLimitReached() {
         Settings settings = Settings.getInstance();
-        return (settings.MAX_TIME_S == -1
-                || (System.currentTimeMillis() - startTime) < settings.MAX_TIME_S * 1000);
+        if (settings.MAX_TIME_S == -1){
+            return false;
+        }
+        long elapsed = (System.currentTimeMillis() - startTime);
+        return elapsed > (settings.MAX_TIME_S * 1000);
     }
 
     static void run(String[] args) {
@@ -444,7 +447,7 @@ public class SymbolicExecutionLab {
         nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
         startTime = System.currentTimeMillis();
 
-        while (!isFinished && !isEmpty() && timeLimitReached()) {
+        while (!isFinished && !isEmpty() && !timeLimitReached()) {
             reset();
             NextTrace trace = getNext();
             runNext(trace);
