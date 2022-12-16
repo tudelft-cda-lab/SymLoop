@@ -54,7 +54,7 @@ public class ErrorTracker {
     }
 
     public String toString() {
-        return String.format("Errors: %s",
+        return String.format("Errorcodes: %s",
                 String.join(", ", errors.stream().map(e -> e.toString()).collect(Collectors.toList())));
     }
 }

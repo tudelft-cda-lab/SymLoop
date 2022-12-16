@@ -20,11 +20,12 @@ public class Settings {
     // Longest a single testcase is allowed to run
     public final int MAX_RUNTIME_SINGLE_TRACE_S;
     public final int MAX_TIME_S;
+    public final boolean STOP_ON_FIRST_TIMEOUT;
 
     public final String[] INITIAL_TRACE;
 
     private Settings(boolean unfoldAnd, boolean checkForExistingConstraints, String initial, int loopUnrollingAmount,
-            int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS) {
+            int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT) {
         this.UNFOLD_AND = unfoldAnd;
         this.CHECK_HASHSET = checkForExistingConstraints;
         this.INITIAL_TRACE = initial == null ? null : initial.split(",");
@@ -32,12 +33,14 @@ public class Settings {
         this.MAX_LOOP_DETECTION_DEPTH = maxLoopDetectionDepth;
         this.MAX_RUNTIME_SINGLE_TRACE_S = maxRuntimeTraceS;
         this.MAX_TIME_S = maxTimeS;
+        this.STOP_ON_FIRST_TIMEOUT = STOP_ON_FIRST_TIMEOUT;
     }
 
     public static Settings create(String[] args) {
         if (singleton == null) {
             CommandLine cl = parseArguments(args);
             boolean unfoldAnd = cl.hasOption("unfold-and");
+            boolean STOP_ON_FIRST_TIMEOUT = !cl.hasOption("continue-on-timeout");
             String initialTrace = cl.getOptionValue("initial-trace", null);
             int loopUnrollingAmount = Integer
                     .parseInt(cl.getOptionValue("unroll-loops", String.valueOf(DEFAULT_LOOP_UNROLLING)));
@@ -48,7 +51,7 @@ public class Settings {
             int maxTime = Integer
                     .parseInt(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
             Settings s = new Settings(unfoldAnd, false, initialTrace, loopUnrollingAmount, loopDetectionDepth,
-                    maxRuntimeTraceMs, maxTime);
+                    maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT);
             singleton = s;
             return s;
         } else {
@@ -64,6 +67,8 @@ public class Settings {
         Options options = new Options();
         options.addOption("u", "unfold-and", false,
                 "Unfold 'AND' expressions to possibly make the loop constraints shorter");
+        options.addOption("c", "continue-on-timeout", false,
+                "Continue execution whenever a single trace times out. (Note: this may lead to missing paths)");
         options.addOption("h", "help", false, "Show this help message");
         options.addOption("i", "initial-trace", true,
                 "The initial trace to run the program on. Use commas to seperate input symbols. (Example: 'A,B,C')");

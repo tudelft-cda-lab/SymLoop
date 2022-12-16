@@ -77,7 +77,7 @@ public class LoopDetection {
         int loopIndex = input.length() - lastN;
         String basePart = input.substring(0, loopIndex);
         String loopPart = input.substring(loopIndex);
-        String regex = String.format("^%s(%s)+", basePart, loopPart);
+        String regex = String.format("%s(%s)+", basePart, loopPart);
         if (lastN > 1) {
             String end = "";
             List<String> s = new ArrayList<>();
@@ -85,12 +85,12 @@ public class LoopDetection {
                 s.add(String.format("(%s)", loopPart.substring(0, i)));
             }
             end = String.format("(%s)?", String.join("|", s));
-            System.out.println(end);
             regex += end;
         }
         Pattern p = Pattern.compile(regex);
         Matcher m = p.matcher(input);
         assert m.matches();
+        System.out.println(p);
         return p;
     }
 

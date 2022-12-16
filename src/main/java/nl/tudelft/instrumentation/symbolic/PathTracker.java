@@ -69,7 +69,7 @@ public class PathTracker {
      *                   be printed in the terminal or not.
      */
     public static boolean solve(BoolExpr new_branch, boolean printModel, boolean isInput) {
-        SolverInterface s = solver;
+        OptimizingSolver s = solver;
         // Solver s = ctx.mkSolver();
         String output = "";
         // s.add(PathTracker.z3model);

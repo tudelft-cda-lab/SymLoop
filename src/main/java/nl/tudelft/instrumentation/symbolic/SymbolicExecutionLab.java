@@ -432,42 +432,50 @@ public class SymbolicExecutionLab {
         }
     }
 
+    static boolean timeLimitReached() {
+        Settings settings = Settings.getInstance();
+        return (settings.MAX_TIME_S == -1
+                || (System.currentTimeMillis() - startTime) < settings.MAX_TIME_S * 1000);
+    }
+
     static void run(String[] args) {
-        Settings settings = Settings.create(args);
+        Settings.create(args);
         initialize(PathTracker.inputSymbols);
         nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
         startTime = System.currentTimeMillis();
 
-        while (!isFinished && (settings.MAX_TIME_S == -1
-                || (System.currentTimeMillis() - startTime) < settings.MAX_TIME_S * 1000)) {
+        while (!isFinished && !isEmpty() && timeLimitReached()) {
             reset();
-            if (isEmpty()) {
-                System.out.println(errorTracker.getSet());
-                System.exit(0);
-            } else {
-                NextTrace trace = getNext();
-                printfYellow("now doing line: %d, %b, %s\n", trace.getLineNr(), trace.getConditionValue(),
-                        trace.trace);
-                currentTrace = trace.trace;
-                PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-                if(!skip) {
-                    loopDetector.isIterationLooping();
-                }
-                checkIfSolverIsRight(trace);
-                addToFullTrace();
-                fullTraces.add(String.format("1 %d %s\n", fullTrace.size(), String.join(" ", fullTrace)));
-                saveTraces();
-                saveGraph();
-                printStatus();
-            }
-            // System.in.read();
+            NextTrace trace = getNext();
+            runNext(trace);
             isFinished = branchTracker.visitedAll();
         }
-        if(!isFinished) {
+        if (timeLimitReached()) {
             printfYellow("TIME LIMIT REACHED\n");
+        }
+        if (branchTracker.visitedAll()) {
+            printfGreen("All paths visited, exiting now\n");
+        }
+        printStatus();
+        System.exit(0);
+    }
+
+    public static void runNext(NextTrace trace) {
+        printfYellow("now doing line: %d, %b, %s\n", trace.getLineNr(), trace.getConditionValue(),
+                trace.trace);
+        currentTrace = trace.trace;
+        boolean completed = PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
+        if (!skip && completed) {
+            loopDetector.isIterationLooping();
+        }
+        if (completed) {
+            checkIfSolverIsRight(trace);
+            addToFullTrace();
+            fullTraces.add(String.format("1 %d %s\n", fullTrace.size(), String.join(" ", fullTrace)));
+            saveTraces();
+            saveGraph();
             printStatus();
         }
-        System.exit(0);
     }
 
     public static void printStatus() {
@@ -511,7 +519,6 @@ public class SymbolicExecutionLab {
 
         }
         if (out.contains("Invalid")) {
-            System.out.println(out);
             skip = true;
             if (!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {
                 System.out.println(out);
