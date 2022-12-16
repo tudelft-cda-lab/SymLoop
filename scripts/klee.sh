@@ -29,8 +29,9 @@ prepare () {
     cd $OUT
 
     rm -f start.txt && touch start.txt
-    # $KLEE_BIN/klee --optimize -posix-runtime -libc=uclibc -max-time=1min "Problem$1.bc"
-    $KLEE_BIN/klee --only-output-states-covering-new --use-merge --emit-all-errors --optimize -posix-runtime -libc=uclibc -max-time=10s "Problem$1.bc"
+    DEFAULT_ARGS="--only-output-states-covering-new -posix-runtime --emit-all-errors -libc=uclibc"
+    # $KLEE_BIN/klee $DEFAULT_ARGS --use-merge --optimize -max-time=10min "Problem$1.bc"
+    $KLEE_BIN/klee $DEFAULT_ARGS --optimize -max-time=10min "Problem$1.bc"
 
     echo "SUMMARY"
     $KLEE_BIN/klee-stats ../
