@@ -16,6 +16,7 @@ public class PathTracker {
     public static HashMap<String, String> cfg = new HashMap<String, String>() {
         {
             put("model", "true");
+            put("timeout", "1000");
         }
     };
     public static Context ctx = new Context(cfg);
@@ -87,7 +88,8 @@ public class PathTracker {
             System.out.println(new_branch);
         }
 
-        if (s.check() == Status.SATISFIABLE) {
+        Status status = s.check();
+        if (status == Status.SATISFIABLE) {
             Model m = s.getModel();
             output += m;
             LinkedList<String> new_inputs = new LinkedList<String>();
@@ -112,6 +114,10 @@ public class PathTracker {
             s.pop();
             return true;
         } else {
+            if(status == Status.UNKNOWN) {
+                System.out.println("STATUS OF THE SOLVER IS UNKNOWN");
+                System.exit(1);
+            }
             s.pop();
         }
         return false;
@@ -341,24 +347,27 @@ public class PathTracker {
      * 
      * @param sequence the fuzzed sequence that needs top be run.
      */
-    public static void runNextFuzzedSequence(String[] sequence) {
+    public static boolean runNextFuzzedSequence(String[] sequence) {
         problem.setSequence(sequence);
         final Future handler = executor.submit(problem);
         executor.schedule(() -> {
-            handler.cancel(true);
+            handler.cancel(false);
         }, Settings.getInstance().MAX_RUNTIME_SINGLE_TRACE_S, TimeUnit.SECONDS);
 
         // Wait for it to be completed
         try {
             handler.get();
         } catch (CancellationException e) {
-            System.out.println("TIMEOUT!");
-            // System.exit(-1);
+            SymbolicExecutionLab.printfYellow("TIMEOUT!");
+            if(Settings.getInstance().STOP_ON_FIRST_TIMEOUT) {
+                System.exit(-1);
+            }
+            return false;
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
             System.exit(-1);
         }
-
+        return true;
     }
 
 }
