@@ -27,38 +27,38 @@ public class Settings {
 
     public final String[] INITIAL_TRACE;
 
-
     private static int parseTimeToS(String s) {
-            if (s.equals("-1")) {
-                    return -1;
-            }
-            Pattern TIME_PATTERN = Pattern.compile("(?<amount>\\d+)(?<multiplier>m|s|h)?");
-            Matcher m = TIME_PATTERN.matcher(s);
-            if (m.matches()) {
-                    int amount = Integer.parseInt(m.group("amount"));
-                    String multiplier = m.group("multiplier");
-                    int seconds_multiplier = 1;
-                    switch (multiplier) {
-                        case "s":
-                        seconds_multiplier = 1;
-                        break;
-
-                        case "m":
-                        seconds_multiplier = 60;
-                        break;
-
-                        case "h":
-                        seconds_multiplier = 60*60;
-                        break;
-                    }
-                    return amount * seconds_multiplier;
-            }
-            System.err.printf("UNABLE TO PARSE TIME STRING: %s\n", s);
-            System.exit(1);
+        if (s.equals("-1")) {
             return -1;
+        }
+        Pattern TIME_PATTERN = Pattern.compile("(?<amount>\\d+)(?<multiplier>m|s|h)?");
+        Matcher m = TIME_PATTERN.matcher(s);
+        if (m.matches()) {
+            int amount = Integer.parseInt(m.group("amount"));
+            String multiplier = m.group("multiplier");
+            int seconds_multiplier = 1;
+            switch (multiplier) {
+                case "s":
+                    seconds_multiplier = 1;
+                    break;
+
+                case "m":
+                    seconds_multiplier = 60;
+                    break;
+
+                case "h":
+                    seconds_multiplier = 60 * 60;
+                    break;
+            }
+            return amount * seconds_multiplier;
+        }
+        System.err.printf("UNABLE TO PARSE TIME STRING: %s\n", s);
+        System.exit(1);
+        return -1;
     }
 
-    private Settings(boolean unfoldAnd, boolean checkForExistingConstraints, String initial, int loopUnrollingAmount,
+    private Settings(boolean unfoldAnd, boolean checkForExistingConstraints, String initial,
+            int loopUnrollingAmount,
             int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT) {
         this.UNFOLD_AND = unfoldAnd;
         this.CHECK_HASHSET = checkForExistingConstraints;
@@ -77,13 +77,17 @@ public class Settings {
             boolean STOP_ON_FIRST_TIMEOUT = !cl.hasOption("continue-on-timeout");
             String initialTrace = cl.getOptionValue("initial-trace", null);
             int loopUnrollingAmount = Integer
-                    .parseInt(cl.getOptionValue("unroll-loops", String.valueOf(DEFAULT_LOOP_UNROLLING)));
+                    .parseInt(cl.getOptionValue("unroll-loops",
+                            String.valueOf(DEFAULT_LOOP_UNROLLING)));
             int loopDetectionDepth = Integer
-                    .parseInt(cl.getOptionValue("loop-detection-depth", String.valueOf(DEFAULT_LOOP_UNROLLING)));
+                    .parseInt(cl.getOptionValue("loop-detection-depth",
+                            String.valueOf(DEFAULT_LOOP_UNROLLING)));
             int maxRuntimeTraceMs = Integer
-                    .parseInt(cl.getOptionValue("max-runtime-single-trace", String.valueOf(DEFAULT_LOOP_UNROLLING)));
+                    .parseInt(cl.getOptionValue("max-runtime-single-trace",
+                            String.valueOf(DEFAULT_LOOP_UNROLLING)));
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
-            Settings s = new Settings(unfoldAnd, false, initialTrace, loopUnrollingAmount, loopDetectionDepth,
+            Settings s = new Settings(unfoldAnd, false, initialTrace, loopUnrollingAmount,
+                    loopDetectionDepth,
                     maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT);
             singleton = s;
             return s;

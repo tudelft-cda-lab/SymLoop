@@ -434,7 +434,7 @@ public class SymbolicExecutionLab {
 
     static boolean timeLimitReached() {
         Settings settings = Settings.getInstance();
-        if (settings.MAX_TIME_S == -1){
+        if (settings.MAX_TIME_S == -1) {
             return false;
         }
         long elapsed = (System.currentTimeMillis() - startTime);
