@@ -12,7 +12,7 @@ import org.apache.commons.cli.ParseException;
 public class Settings {
     private static final int DEFAULT_LOOP_UNROLLING = 10;
     private static final int DEFAULT_LOOP_DETECTION_DEPTH = 1;
-    private static final int DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S = 100;
+    private static final int DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S = 1000;
     private static final int DEFAULT_MAX_TIME_S = -1;
     private static Settings singleton;
 
@@ -35,10 +35,8 @@ public class Settings {
             Pattern TIME_PATTERN = Pattern.compile("(?<amount>\\d+)(?<multiplier>m|s|h)?");
             Matcher m = TIME_PATTERN.matcher(s);
             if (m.matches()) {
-                    System.out.println(m.group("amount"));
                     int amount = Integer.parseInt(m.group("amount"));
                     String multiplier = m.group("multiplier");
-                    System.out.printf("PARSE TIME: %d, %s\n", amount, multiplier);
                     int seconds_multiplier = 1;
                     switch (multiplier) {
                         case "s":
