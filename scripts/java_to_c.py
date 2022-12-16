@@ -2,9 +2,16 @@ import argparse
 import re
 
 
+def get_c_name(filename):
+    return filename.replace('.java', '.c')
+
 def read_file(filename):
     with open(filename) as f:
         return f.readlines()
+
+def write_file(filename, contents):
+    with open(filename, 'w') as f:
+        return f.write(contents)
 
 def replace_single_str(m):
     assert m
@@ -78,13 +85,39 @@ def convert(lines):
     text = re.sub(r'calculateOutput', 'calculate_output', text)
     return pre + text
 
+
+def handle_file(filename: str, write: bool):
+    contents = convert(read_file(filename))
+    if write:
+        write_file(get_c_name(filename), contents)
+    else:
+        print(contents)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
                         prog = 'Java To C',
                         description = 'Convert RERS challenges from Java to C',
                         epilog = 'NOTE: Experimental')
-    parser.add_argument('filename', help='The Java program to convert to C')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-f', '--filename', help='Java program to convert to C')
+    group.add_argument('-p', '--problem', help='Problem to convert, automatically looks for the file')
+    group.add_argument('-a', '--all', nargs='+', help='Try to convert all problems it can find')
+    parser.add_argument('-w', '--write', action='store_true', help='Write the files')
     args = parser.parse_args()
-    lines = read_file(args.filename)
-    convert(lines)
-    print(convert(lines))
+    print(args)
+    write = args.write
+
+    if args.filename:
+        handle_file(args.filename, write)
+    elif args.problem:
+        problem = args.problem
+        filename = f'./RERS/Problem{problem}/Problem{problem}.java'
+        handle_file(filename, write)
+
+    if args.all:
+        for filename in args.all:
+            if not write:
+                print('FILE:', filename)
+            handle_file(filename, write)
+            if not write:
+                print('\0')
