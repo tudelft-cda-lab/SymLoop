@@ -104,7 +104,6 @@ if __name__ == '__main__':
     group.add_argument('-a', '--all', nargs='+', help='Try to convert all problems it can find')
     parser.add_argument('-w', '--write', action='store_true', help='Write the files')
     args = parser.parse_args()
-    print(args)
     write = args.write
 
     if args.filename:
