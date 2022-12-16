@@ -12,7 +12,7 @@ import org.apache.commons.cli.ParseException;
 public class Settings {
     private static final int DEFAULT_LOOP_UNROLLING = 10;
     private static final int DEFAULT_LOOP_DETECTION_DEPTH = 1;
-    private static final int DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S = 1000;
+    private static final int DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S = 100*1000;
     private static final int DEFAULT_MAX_TIME_S = -1;
     private static Settings singleton;
 
@@ -81,10 +81,10 @@ public class Settings {
                             String.valueOf(DEFAULT_LOOP_UNROLLING)));
             int loopDetectionDepth = Integer
                     .parseInt(cl.getOptionValue("loop-detection-depth",
-                            String.valueOf(DEFAULT_LOOP_UNROLLING)));
+                            String.valueOf(DEFAULT_LOOP_DETECTION_DEPTH)));
             int maxRuntimeTraceMs = Integer
                     .parseInt(cl.getOptionValue("max-runtime-single-trace",
-                            String.valueOf(DEFAULT_LOOP_UNROLLING)));
+                            String.valueOf(DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S)));
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
             Settings s = new Settings(unfoldAnd, false, initialTrace, loopUnrollingAmount,
                     loopDetectionDepth,
