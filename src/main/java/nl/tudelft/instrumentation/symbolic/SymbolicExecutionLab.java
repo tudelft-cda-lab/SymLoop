@@ -186,6 +186,7 @@ public class SymbolicExecutionLab {
             return new MyVar(PathTracker.ctx.mkAdd(left_var, right_var));
         } else if (operator.equals("%")) {
             ArithExpr mod = PathTracker.ctx.mkMod(left_var, right_var);
+            // return new MyVar(mod);
             return new MyVar(
                     PathTracker.ctx.mkITE(
                             PathTracker.ctx.mkOr(
@@ -253,8 +254,8 @@ public class SymbolicExecutionLab {
         }
     }
 
-    static void saveGraph() {
-        if (changed) {
+    static void saveGraph(boolean always) {
+        if (changed || always) {
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("graph.dot")))) {
                 out.write("digraph {\nrankdir=TB\n");
                 for (EndpointPair<String> e : graph.edges()) {
@@ -475,6 +476,8 @@ public class SymbolicExecutionLab {
             printfGreen("All paths visited, exiting now\n");
         }
         printFinalStatus();
+        saveTraces();
+        saveGraph(true);
         System.exit(0);
     }
 
@@ -493,8 +496,8 @@ public class SymbolicExecutionLab {
             checkIfSolverIsRight(trace);
             addToFullTrace();
             fullTraces.add(String.format("1 %d %s\n", fullTrace.size(), String.join(" ", fullTrace)));
-            saveTraces();
-            saveGraph();
+            // saveTraces();
+            // saveGraph(false);
             printStatus();
         }
     }
