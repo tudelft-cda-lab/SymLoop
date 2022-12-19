@@ -7,7 +7,7 @@ KLEE_LIBRARY="$KLEE_BASE/build/lib/"
 CLANG_LOC="$HOME/klee_deps/llvm-110-install_O_D_A/bin"
 OPTIMIZATION="-O0"
 RUN_ID=$(date -Iseconds)
-NAME=$2
+NAME="klee-$2"
 
 if [[ -z $1 ]]; then
     echo "ERROR: usage ./klee.sh PROBLEM NAME"
