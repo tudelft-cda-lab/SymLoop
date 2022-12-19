@@ -115,6 +115,7 @@ public class LoopDetection {
                 return false;
             } else {
                 System.out.printf("'%s' not part of current pattern '%s' %d\n", INPUT, currentPattern, INPUT.length());
+                currentPattern = null;
             }
         }
         if (isSelfLooping(INPUT)) {
