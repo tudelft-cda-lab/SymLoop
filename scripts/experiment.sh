@@ -1,14 +1,39 @@
 #!/bin/bash
-D=$(date "+%Y.%m.%d-%H.%M.%S")
+RUN_ID=$(date -Iseconds)
 set -e
 mkdir -p experiments/$D
-for i in {11..19}; do
-  echo -n "$i, "
-  # ./scripts/run.sh $i | grep -A1 stable
-  echo "START $i" >> experiments/$D/full.log
-  ./scripts/run.sh $i | tee -a experiments/$D/full.log | tee -a experiments/$D/$i.log | tail -n2 | tee -a experiments/$D/summary.log
-  echo "DONE $i" >> experiments/$D/full.log
-  # echo Done problem $i
-  echo "Iter,Visited,Discovered,Errors,Score,TracesPerIter,Tracelength,Time" > experiments/$D/$i.sheet.csv
-  cat experiments/$D/$i.log | grep 'Iter' | grep -o '[0-9]\+\(\.[0-9]\+\)\?' | xargs -n 8 | tr ' ' ',' >> experiments/$D/$i.sheet.csv
-done
+NAME=$2
+
+if [[ -z $1 ]]; then
+    echo "ERROR: usage ./klee.sh PROBLEM NAME"
+    echo "please provide which problem to run on or 'all'"
+    exit
+fi
+if [[ -z $NAME ]]; then
+    echo "please provide second argument to indicate the name of this experiment"
+    exit
+fi
+
+DIR=experiments/$RUN_ID-$NAME-java
+mkdir -p $DIR
+cp ./target/aistr.jar $DIR
+cp ./Errors.class $DIR
+
+run () {
+  OLD=$PWD
+  OUT=$DIR/problem$1
+  mkdir -p $OUT
+  cd $OUT
+  ARGS="--max-time 10m -d 10 -l 100"
+  echo $ARGS > args.txt
+  java -ea -XX:-UseGCOverheadLimit -Xmx4G -cp ../:../aistr.jar:$OLD/lib/com.microsoft.z3.jar:$OLD/instrumented:. Problem$1 $ARGS | tee out.txt
+  cd $OLD
+}
+
+if [ "$1" = "all" ]; then
+    for i in 11, 12, 13, 14, 15, 17, 18; do
+        run $i
+    done;
+else
+    run $1
+fi
