@@ -33,8 +33,8 @@ prepare () {
     sed -i -z 's/while(1)\n.*if\(([^\n]*)\)[^}]*}/int length = 20;int program[length];klee_make_symbolic(program, sizeof(program), "program");for (int i = 0; i < length; ++i) {int input = program[i];if(\1){return 0;}calculate_output(input);}/' "$OUT/Problem$1.c"
     sed -i 's/^.*fprintf(stderr, "Invalid input:.*/exit(0);/' "$OUT/Problem$1.c"
     export LD_LIBRARY_PATH=$KLEE_LIBRARY:$LD_LIBRARY_PATH
-    $CLANG_LOC/clang $OPTIMIZATION -I $KLEE_INCLUDE -emit-llvm -g -c  "$OUT/Problem$1.c" -o "$OUT/Problem$1.bc"
     cd $OUT
+    $CLANG_LOC/clang $OPTIMIZATION -I $KLEE_INCLUDE -emit-llvm -g -c  "./Problem$1.c" -o "./Problem$1.bc"
 
     rm -f start.txt && touch start.txt
     DEFAULT_ARGS="--only-output-states-covering-new -posix-runtime --emit-all-errors -libc=uclibc"
