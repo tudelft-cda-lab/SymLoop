@@ -79,7 +79,7 @@ public class LoopDetection {
         String loopPart = input.substring(loopIndex);
         String amountQuantifier = minAmount == 1 ? "+" : String.format("{%d,}", minAmount);
         // The ^ makes sure the start is matched, even when using FIND
-        String regex = String.format("^(%s)(?:%s)%s(.*)", basePart, loopPart, amountQuantifier);
+        String regex = String.format("^(%s)(?:%s)%s", basePart, loopPart, amountQuantifier);
         if (lastN > 1) {
             String end = "";
             List<String> s = new ArrayList<>();
