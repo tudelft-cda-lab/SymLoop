@@ -2,7 +2,7 @@
 RUN_ID=$(date -Iseconds)
 set -e
 mkdir -p experiments/$D
-NAME=$2
+NAME="loop-sym-$2"
 
 if [[ -z $1 ]]; then
     echo "ERROR: usage ./klee.sh PROBLEM NAME"
