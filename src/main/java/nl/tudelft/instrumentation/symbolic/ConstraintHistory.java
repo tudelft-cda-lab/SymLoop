@@ -81,6 +81,19 @@ public class ConstraintHistory {
         numberOfSaves = 0;
     }
 
+    public BoolExpr getSelfLoopExpr(int amountOfSaves) {
+        List<BoolExpr> constraints = new ArrayList<>();
+        for (String name : variables.keySet()) {
+            List<Expr> assigns = variables.get(name);
+            int lastLength = getLastVariableLength(name, amountOfSaves);
+            if (lastLength == 0) {
+                return ctx.mkBool(false);
+            }
+            constraints.add(ctx.mkEq(assigns.get(lastLength-1), assigns.get(assigns.size() - 1)));
+        }
+        return mkAnd(constraints);
+    }
+
     public List<Replacement> getReplacementsForLastSaves(int amountOfSaves) {
         List<Replacement> replacements = new ArrayList<Replacement>();
         for (String name : variables.keySet()) {
