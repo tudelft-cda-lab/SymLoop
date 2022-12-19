@@ -1,16 +1,22 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ErrorTracker {
 
-    private SortedSet<Integer> errors = new TreeSet<Integer>();;
+    private SortedMap<Integer, Long> errors = new TreeMap<>();
     static Pattern pattern = Pattern.compile("Invalid input: error_(\\d+)");
 
     public ErrorTracker() {
+    }
+
+    public long getTime() {
+        long now = System.currentTimeMillis();
+        return now - SymbolicExecutionLab.START_TIME;
     }
 
     public boolean add(String line) {
@@ -18,17 +24,16 @@ public class ErrorTracker {
         if (error == null) {
             return false;
         } else {
-            return this.errors.add(error);
+            return this.add(error);
         }
     }
 
     public boolean add(int error) {
-        if (this.errors.contains(error)) {
+        if (errors.containsKey(error)) {
             return false;
-        } else {
-            this.errors.add(error);
-            return true;
         }
+        this.errors.put(error, getTime());
+        return true;
     }
 
     public int amount() {
@@ -36,7 +41,7 @@ public class ErrorTracker {
     }
 
     public Set<Integer> getSet() {
-        return this.errors;
+        return this.errors.keySet();
     }
 
     public Integer getError(String line) {
@@ -55,6 +60,17 @@ public class ErrorTracker {
 
     public String toString() {
         return String.format("Errorcodes: %s",
-                String.join(", ", errors.stream().map(e -> e.toString()).collect(Collectors.toList())));
+                String.join(", ", errors.keySet().stream().map(e -> e.toString()).collect(Collectors.toList())));
+    }
+
+
+    public String summary() {
+        String output = "";
+        for(Entry<Integer, Long> e : this.errors.entrySet()) {
+            double seconds = e.getValue().doubleValue() / 1000.0;
+            output += String.format("Error %3d: %2.3f\n", e.getKey(), seconds);
+        }
+        output += String.format("total errors: %d", errors.size());
+        return output;
     }
 }

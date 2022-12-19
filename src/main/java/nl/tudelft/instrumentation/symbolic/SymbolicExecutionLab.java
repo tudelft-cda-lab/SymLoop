@@ -26,9 +26,8 @@ public class SymbolicExecutionLab {
     static PriorityQueue<NextTrace> backLog = new PriorityQueue<>();
     static BranchVisitedTracker branchTracker = new BranchVisitedTracker();
     static BranchVisitedTracker currentBranchTracker = new BranchVisitedTracker();
-    static Map<Integer, Integer> impossibleBranchesPathLengths = new HashMap<>();
     static ErrorTracker errorTracker = new ErrorTracker();
-    static long startTime = System.currentTimeMillis();
+    static final long START_TIME = System.currentTimeMillis();
 
     private static int currentLineNumber = 0;
     private static boolean currentValue;
@@ -437,7 +436,7 @@ public class SymbolicExecutionLab {
         if (settings.MAX_TIME_S == -1) {
             return false;
         }
-        long elapsed = (System.currentTimeMillis() - startTime);
+        long elapsed = (System.currentTimeMillis() - START_TIME);
         return elapsed > (settings.MAX_TIME_S * 1000);
     }
 
@@ -445,8 +444,6 @@ public class SymbolicExecutionLab {
         Settings.create(args);
         initialize(PathTracker.inputSymbols);
         nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
-        startTime = System.currentTimeMillis();
-
         while (!isFinished && !isEmpty() && !timeLimitReached()) {
             reset();
             NextTrace trace = getNext();
@@ -459,7 +456,7 @@ public class SymbolicExecutionLab {
         if (branchTracker.visitedAll()) {
             printfGreen("All paths visited, exiting now\n");
         }
-        printStatus();
+        printFinalStatus();
         System.exit(0);
     }
 
@@ -486,6 +483,11 @@ public class SymbolicExecutionLab {
                 branchTracker.numVisited(),
                 branchTracker.totalBranches(), errorTracker.amount(), nextTraces.size(), backLog.size(),
                 errorTracker);
+    }
+
+    private static void printFinalStatus() {
+        printStatus();
+        System.out.println(errorTracker.summary());
     }
 
     public static void printfGreen(String a, Object... args) {
@@ -515,7 +517,7 @@ public class SymbolicExecutionLab {
             // System.out.printf("%sFound new error, current amount is: %d.%s\n",
             // ANSI_GREEN, errorTracker.amount(), ANSI_RESET);
             long current = System.currentTimeMillis();
-            long seconds = (current - startTime) / 1000;
+            long seconds = (current - START_TIME) / 1000;
             printfGreen("Found new error '%s', current amount is\t%d\t. in \t%d\t seconds\n", out,
                     errorTracker.amount(),
                     seconds);
