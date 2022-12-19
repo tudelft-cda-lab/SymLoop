@@ -82,11 +82,9 @@ public class LoopDetection {
         String regex = String.format("^(%s)(?:%s)%s", basePart, loopPart, amountQuantifier);
         if (lastN > 1) {
             String end = "";
-            List<String> s = new ArrayList<>();
-            for (int i = 1; i < lastN; i++) {
-                s.add(String.format("(%s)", loopPart.substring(0, i)));
+            for (int i = lastN-2; i >= 0; i--) {
+                end = String.format("(%c%s)?", loopPart.charAt(i), end);
             }
-            end = String.format("(%s)?", String.join("|", s));
             regex += end;
         }
         Pattern p = Pattern.compile(regex);
