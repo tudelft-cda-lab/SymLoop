@@ -16,7 +16,7 @@ public class PathTracker {
     public static HashMap<String, String> cfg = new HashMap<String, String>() {
         {
             put("model", "true");
-            put("timeout", "100000");
+            put("timeout", "10000");
         }
     };
     public static Context ctx = new Context(cfg);

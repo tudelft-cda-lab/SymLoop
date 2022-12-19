@@ -29,6 +29,8 @@ public class SymbolicExecutionLab {
     static ErrorTracker errorTracker = new ErrorTracker();
     static final long START_TIME = System.currentTimeMillis();
 
+    static Set<String> errorTraces = new HashSet<>();
+
     private static int currentLineNumber = 0;
     private static boolean currentValue;
 
@@ -311,6 +313,22 @@ public class SymbolicExecutionLab {
         loopDetector.addToLoopModel(branchCondition);
     }
 
+    static boolean isStillUsefull(Iterable<String> input) {
+        String s = String.join("", input);
+        if (errorTraces.contains(s)) {
+            return false;
+        }
+        for (String e : errorTraces) {
+            if (s.startsWith(e)) {
+                return false;
+            }
+        }
+        if (loopDetector.isSelfLooping(s)) {
+            return false;
+        }
+        return true;
+    }
+
     static void newSatisfiableInput(LinkedList<String> new_inputs, String output) {
         // Hurray! found a new branch using these new inputs!
         LinkedList<String> temp = new LinkedList<String>();
@@ -320,7 +338,7 @@ public class SymbolicExecutionLab {
 
         // Add a random input at the end to allow solving new paths
         String alreadyFound = String.join("", temp);
-        if (alreadyFoundTraces.add(alreadyFound)) {
+        if (!skip && alreadyFoundTraces.add(alreadyFound) && isStillUsefull(temp)) {
             // System.out.printf("New satisfiable input: %s\n", temp);
             temp.add(newRandomInputChar());
             // temp.add("A");
@@ -461,6 +479,9 @@ public class SymbolicExecutionLab {
     }
 
     public static void runNext(NextTrace trace) {
+        if (!isStillUsefull(trace.trace)) {
+            return;
+        }
         printfYellow("now doing line: %d, %b, %s\n", trace.getLineNr(), trace.getConditionValue(),
                 trace.trace);
         currentTrace = trace.trace;
@@ -524,6 +545,7 @@ public class SymbolicExecutionLab {
 
         }
         if (out.contains("Invalid")) {
+            errorTraces.add(SymbolicExecutionLab.processedInput);
             skip = true;
             if (!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {
                 System.out.println(out);

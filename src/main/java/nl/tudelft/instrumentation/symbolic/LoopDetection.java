@@ -73,11 +73,13 @@ public class LoopDetection {
         return false;
     }
 
-    Pattern getSelfLoopPattern(String input, int lastN) {
+    Pattern getSelfLoopPattern(String input, int lastN, int minAmount) {
         int loopIndex = input.length() - lastN;
         String basePart = input.substring(0, loopIndex);
         String loopPart = input.substring(loopIndex);
-        String regex = String.format("%s(%s)+", basePart, loopPart);
+        String amountQuantifier = minAmount == 1 ? "+" : String.format("{%d,}", minAmount);
+        // The ^ makes sure the start is matched, even when using FIND
+        String regex = String.format("^(%s)(?:%s)%s(.*)", basePart, loopPart, amountQuantifier);
         if (lastN > 1) {
             String end = "";
             List<String> s = new ArrayList<>();
@@ -89,7 +91,9 @@ public class LoopDetection {
         }
         Pattern p = Pattern.compile(regex);
         Matcher m = p.matcher(input);
-        assert m.matches();
+        if (minAmount == 1) {
+            assert m.matches();
+        }
         System.out.println(p);
         return p;
     }
@@ -124,6 +128,13 @@ public class LoopDetection {
             List<Replacement> replacements = history.getReplacementsForLastSaves(lastNSaves);
             BoolExpr loopModel = history.getConstraint(lastNSaves);
             BoolExpr extended = Replacement.applyAllTo(replacements, loopModel);
+            BoolExpr selfLoopExpr = history.getSelfLoopExpr(lastNSaves);
+            if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr, false, false)) {
+                System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d", INPUT, lastNSaves));
+                currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1);
+                selfLoopPatterns.add(currentPattern);
+                return true;
+            }
 
             // If already checked or there is no loop
             if (replacements.size() == 0
@@ -136,11 +147,13 @@ public class LoopDetection {
             foundLoops.add(SymbolicExecutionLab.processedInput);
 
             if (isSelfLoop(replacements, extended)) {
-                SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
-                        SymbolicExecutionLab.processedInput, lastNSaves - 1);
-                selfLoops.add(SymbolicExecutionLab.processedInput);
-                selfLoopPatterns.add(getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1));
-                return true;
+                currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 2);
+                if (selfLoops.add(SymbolicExecutionLab.processedInput)) {
+                    selfLoopPatterns.add(currentPattern);
+                    SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
+                            SymbolicExecutionLab.processedInput, lastNSaves - 1);
+                }
+                return false;
             }
 
             String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
@@ -157,7 +170,7 @@ public class LoopDetection {
             for (String s : foundLoops) {
                 SymbolicExecutionLab.printfBlue("%s\n", s);
             }
-            currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1);
+            currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1);
             if (!isLooping(INPUT, loopPatterns)) {
                 loopPatterns.add(currentPattern);
             }
@@ -202,8 +215,8 @@ public class LoopDetection {
                         i, extended);
                 return true;
             } else if (status == Status.UNKNOWN) {
-                SymbolicExecutionLab.printfRed("Solver exited with status: %s\n", status);
-                System.exit(1);
+                SymbolicExecutionLab.printfYellow("Solver exited with status: %s\n", status);
+                return true;
             }
         }
 
@@ -243,7 +256,7 @@ public class LoopDetection {
         history.save();
         history.resetNumberOfSave();
         solver.add(oneOfTheLoop);
-        assert solver.check() == Status.SATISFIABLE;
+        assert solver.check() != Status.UNSATISFIABLE;
         PathTracker.addToBranches(oneOfTheLoop);
         PathTracker.addToBranches(history.mkAnd(loop));
         System.out.println("new input over: " + currentPattern);
