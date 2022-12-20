@@ -47,7 +47,7 @@ class Replacement {
         for (int i = this.start; i >= this.stop; i--) {
             int base = i + (this.added * amount);
             from.add(getExprFor(base));
-            to.add(getExprFor(base));
+            to.add(getExprFor(base + this.added));
         }
     }
 
