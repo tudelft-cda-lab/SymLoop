@@ -17,9 +17,10 @@ def replace_single_str(m):
     assert m
     m = m.groups()[0]
     assert len(m) == 1
-    return str(ord(m) - ord('A') + 1)
+    return str(ord(m))
+    # return str(ord(m) - ord('A') + 1)
 def to_int(char_str):
-    m = re.match(r'"(.)"', char_str)
+    m = re.match(r'\s+"(.)"\s*', char_str)
     return replace_single_str(m)
 
 
@@ -65,20 +66,23 @@ def convert(lines):
     inputs = input_regex.search(text);
     assert inputs
     inputs = inputs.groups()[0]
+    orig_inputs = inputs[:]
     seperate_inputs = list(map(to_int, inputs.split(",")))
-    inputs = ','.join(seperate_inputs)
-    text = re.sub(input_regex, f'//inputs\n\tint inputs[] = {{{inputs}}};', text)
     text = re.sub(r'"(.)"', replace_single_str, text)
-    text = re.sub(rf'({var_regex})\.equals\((\d+)\)', r'(\1 == \2)', text)
+    inputs = ', '.join(seperate_inputs)
+    text = re.sub(input_regex, f'//inputs: {orig_inputs} \n\tint inputs[] = {{{inputs}}};', text)
+    text = re.sub(rf'(?:public)?\s*int\[\] ({var_regex}) = {{(.*)}}', r'int \1[] = {\2}', text)
+    text = re.sub(rf'({var_regex})\.equals\((-?\d+)\)', r'(\1 == \2)', text)
     text = re.sub(rf'public String ({var_regex})', r'int \1', text)
     text = re.sub(rf'public (int|boolean) ({var_regex})', r'int \2', text)
     text = re.sub(r'import .*;\n', r'', text)
     text = re.sub(r'public class Problem[^\n]*{\s*static BufferedReader[^;]*;', r'', text)
     text = re.sub(r'}\s*$', '', text)
     text = re.sub(rf'void ({var_regex})\(String ({var_regex})\)', r'void \1(int \2)', text)
-    text = re.sub(r'System\.out.println\((\d+)\);', r'printf("%d\\n", \1); fflush(stdout);', text);
+    text = re.sub(r'System\.out\.println\((\d+)\);', r'printf("%d\\n", \1); fflush(stdout);', text);
+    text = re.sub(r'System\.out\.println\("([^"]*)"\);', r'printf("\1\\n"); fflush(stdout);', text);
     text = re.sub(r'Errors\.__VERIFIER_error\((\d+)\);', r'__VERIFIER_error(\1);', text);
-    text = re.sub(r'if\(cf\)\s+throw new[^;]+;', r'if( cf==1 )\n\tfprintf(stderr, "Invalid input: %d\\n", input);',text)
+    text = re.sub(r'if\s*\(cf\)\s+throw new[^;]+;', r'if( cf==1 )\n\tfprintf(stderr, "Invalid input: %d\\n", input);',text)
     text = re.sub(r'void main.*$', get_main(seperate_inputs), text, flags=re.DOTALL)
     text = re.sub(r'true', '1', text)
     text = re.sub(r'false', '0', text)
