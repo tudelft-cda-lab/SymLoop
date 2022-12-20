@@ -26,10 +26,12 @@ class Replacement {
     }
 
     public static BoolExpr applyAllTo(List<Replacement> replacements, BoolExpr e) {
-        for (Replacement r : replacements) {
-            e = r.applyTo(e);
+        List<Expr> from = new ArrayList<>();
+        List<Expr> to = new ArrayList<>();
+        for(Replacement r : replacements) {
+            r.addApplyTo(from, to, 0);
         }
-        return e;
+        return (BoolExpr) e.substitute(from.toArray(Expr[]::new), to.toArray(Expr[]::new));
     }
 
     public List<Expr> getAllExprs(int amount) {
@@ -38,6 +40,15 @@ class Replacement {
             exprs.add(getExprFor(a));
         }
         return exprs;
+    }
+
+    public void addApplyTo(List<Expr> from, List<Expr> to, int amount) {
+        // Loop backwards to prevent repeated subsitution
+        for (int i = this.start; i >= this.stop; i--) {
+            int base = i + (this.added * amount);
+            from.add(getExprFor(base));
+            to.add(getExprFor(base));
+        }
     }
 
     public BoolExpr applyTo(BoolExpr expr, int amount) {
