@@ -26,6 +26,33 @@ def parse(filename):
         # print(err, seconds)
         yield (int(err), float(seconds))
 
+problemOutput = dict[str, dict[int, float]]
+
+
+def write_results_to_latex(problem, output: problemOutput):
+    data = output
+    errors = set()
+    for program in sorted(data.keys()):
+        errors.update(data[program].keys())
+    print(problem,errors)
+    errors = sorted(list(errors))
+    rows = [['Program / Error', *errors]]
+    for program in sorted(data.keys()):
+        row = [program]
+        for error in errors:
+            if error in data[program]:
+                row.append(f'{data[program][error]:.1f}')
+            else:
+                row.append('-')
+        rows.append(row)
+    print(rows)
+    print(tabulate(rows))
+    print('Tabulate Table:')
+    print(tabulate(rows, headers='firstrow'))
+    df = pd.DataFrame(rows)
+    f = open(f'/home/bram/projects/thesis/chapters/results/{problem}.tex', 'w')
+    f.write(tabulate(rows, tablefmt='latex', headers='firstrow'))
+    f.close()
 
 def get_output_file_names(folder):
     if os.path.exists(folder):
@@ -67,30 +94,10 @@ if __name__ == '__main__':
             for e, t in timings.items():
                 rows.append((folder, problem, e, t))
 
-
     for problem, data in sorted(per_problem.items()):
-        errors = set()
-        for program in sorted(data.keys()):
-            errors.update(data[program].keys())
-        print(problem,errors)
-        errors = sorted(list(errors))
-        rows = [['Program / Error', *errors]]
-        for program in sorted(data.keys()):
-            row = [program]
-            for error in errors:
-                if error in data[program]:
-                    row.append(f'{data[program][error]:.1f}')
-                else:
-                    row.append('-')
-            rows.append(row)
-        print(rows)
-        print(tabulate(rows))
-        print('Tabulate Table:')
-        print(tabulate(rows, headers='firstrow'))
-        df = pd.DataFrame(rows)
-        f = open(f'/home/bram/projects/thesis/chapters/results/{problem}.tex', 'w')
-        f.write(tabulate(rows, tablefmt='latex', headers='firstrow'))
-        f.close()
+        write_results_to_latex(problem, data)
+
+
 
     exit()
 
