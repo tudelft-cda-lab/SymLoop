@@ -186,24 +186,31 @@ public class SymbolicExecutionLab {
             return new MyVar(PathTracker.ctx.mkAdd(left_var, right_var));
         } else if (operator.equals("%")) {
             ArithExpr mod = PathTracker.ctx.mkMod(left_var, right_var);
-            // return new MyVar(mod);
-            return new MyVar(
-                    PathTracker.ctx.mkITE(
+            if (Settings.getInstance().CORRECT_INTEGER_MODEL) {
+                return new MyVar(
+                        PathTracker.ctx.mkITE(
                             PathTracker.ctx.mkOr(
-                                    PathTracker.ctx.mkGe(left_var,
-                                            (ArithExpr) PathTracker.ctx.mkInt(0)),
-                                    PathTracker.ctx.mkEq(mod,
-                                            (ArithExpr) PathTracker.ctx.mkInt(0))),
+                                PathTracker.ctx.mkGe(left_var,
+                                    (ArithExpr) PathTracker.ctx.mkInt(0)),
+                                PathTracker.ctx.mkEq(mod,
+                                    (ArithExpr) PathTracker.ctx.mkInt(0))),
 
                             mod,
                             PathTracker.ctx.mkSub(mod, right_var)));
+            } else {
+                return new MyVar(mod);
+            }
         } else if (operator.equals("/")) {
-            return new MyVar(ctx.mkMul(
-                    ctx.mkDiv(
-                            mkAbs(ctx, left_var),
-                            mkAbs(ctx, right_var)),
-                    mkSign(ctx, left_var),
-                    mkSign(ctx, right_var)));
+            if (Settings.getInstance().CORRECT_INTEGER_MODEL) {
+                return new MyVar(ctx.mkMul(
+                        ctx.mkDiv(
+                                mkAbs(ctx, left_var),
+                                mkAbs(ctx, right_var)),
+                        mkSign(ctx, left_var),
+                        mkSign(ctx, right_var)));
+            } else {
+                return new MyVar(ctx.mkDiv(left_var, right_var));
+            }
         }
         throw new IllegalArgumentException(String.format("binary int expression: %s not implement", operator));
     }
@@ -441,12 +448,16 @@ public class SymbolicExecutionLab {
         // Checking if the solver is actually right
         if ((!currentBranchTracker.hasVisited(trace.getLineNr(), trace.getConditionValue()))
                 && trace.getLineNr() != 0) {
-            printfRed("SOLVER IS WRONG, did not discover the solvable branch, %s\n", trace.from);
-            printfGreen(path);
-            System.out.printf("%d TRUE: %b, FALSE: %b\n", trace.getLineNr(),
-                    currentBranchTracker.hasVisited(trace.getLineNr(), true),
-                    currentBranchTracker.hasVisited(trace.getLineNr(), false));
-            System.exit(-1);
+            if (Settings.getInstance().CORRECT_INTEGER_MODEL) {
+                printfRed("SOLVER IS WRONG, did not discover the solvable branch, %s\n", trace.from);
+                printfGreen(path);
+                System.out.printf("%d TRUE: %b, FALSE: %b\n", trace.getLineNr(),
+                        currentBranchTracker.hasVisited(trace.getLineNr(), true),
+                        currentBranchTracker.hasVisited(trace.getLineNr(), false));
+                System.exit(-1);
+            } else {
+                printfRed("Current integer model is not sufficient, try enabling correct integer model using '-correct-integer-model', %s\n", trace.from);
+            }
         }
     }
 

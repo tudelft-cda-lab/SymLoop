@@ -26,6 +26,8 @@ public class Settings {
 
     public final String[] INITIAL_TRACE;
 
+    public final boolean CORRECT_INTEGER_MODEL;
+
     private static int parseTimeToS(String s) {
         if (s.equals("-1")) {
             return -1;
@@ -58,7 +60,7 @@ public class Settings {
 
     private Settings(boolean unfoldAnd, String initial,
             int loopUnrollingAmount,
-            int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT) {
+            int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT, boolean CORRECT_INTEGER_MODEL) {
         this.UNFOLD_AND = unfoldAnd;
         this.INITIAL_TRACE = initial == null ? null : initial.split(",");
         this.LOOP_UNROLLING_AMOUNT = loopUnrollingAmount;
@@ -66,6 +68,7 @@ public class Settings {
         this.MAX_RUNTIME_SINGLE_TRACE_S = maxRuntimeTraceS;
         this.MAX_TIME_S = maxTimeS;
         this.STOP_ON_FIRST_TIMEOUT = STOP_ON_FIRST_TIMEOUT;
+        this.CORRECT_INTEGER_MODEL = CORRECT_INTEGER_MODEL;
     }
 
     public static Settings create(String[] args) {
@@ -73,6 +76,7 @@ public class Settings {
             CommandLine cl = parseArguments(args);
             boolean unfoldAnd = cl.hasOption("unfold-and");
             boolean STOP_ON_FIRST_TIMEOUT = !cl.hasOption("continue-on-timeout");
+            boolean CORRECT_INTEGER_MODEL = cl.hasOption("correct-integer-model");
             String initialTrace = cl.getOptionValue("initial-trace", null);
             int loopUnrollingAmount = Integer
                     .parseInt(cl.getOptionValue("unroll-loops",
@@ -86,7 +90,7 @@ public class Settings {
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
             Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
                     loopDetectionDepth,
-                    maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT);
+                    maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT, CORRECT_INTEGER_MODEL);
             singleton = s;
             return s;
         } else {
@@ -101,7 +105,9 @@ public class Settings {
     private static Options getOptions() {
         Options options = new Options();
         options.addOption("u", "unfold-and", false,
-                "Unfold 'AND' expressions to possibly make the loop constraints shorter");
+                "Unfold 'AND' expressions to possibly make the loop constraints shorter.");
+        options.addOption("cim", "correct-integer-model", false,
+                "By default, the mod and division operators are not fully correct for negative values. Enabling this flag makes the model correct, but might lead to a degredation in performance.");
         options.addOption("c", "continue-on-timeout", false,
                 "Continue execution whenever a single trace times out. (Note: this may lead to missing paths)");
         options.addOption("h", "help", false, "Show this help message");
