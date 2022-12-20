@@ -17,7 +17,6 @@ public class Settings {
     private static Settings singleton;
 
     public final boolean UNFOLD_AND;
-    public final boolean CHECK_HASHSET;
     public final int LOOP_UNROLLING_AMOUNT;
     public final int MAX_LOOP_DETECTION_DEPTH;
     // Longest a single testcase is allowed to run
@@ -57,11 +56,10 @@ public class Settings {
         return -1;
     }
 
-    private Settings(boolean unfoldAnd, boolean checkForExistingConstraints, String initial,
+    private Settings(boolean unfoldAnd, String initial,
             int loopUnrollingAmount,
             int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT) {
         this.UNFOLD_AND = unfoldAnd;
-        this.CHECK_HASHSET = checkForExistingConstraints;
         this.INITIAL_TRACE = initial == null ? null : initial.split(",");
         this.LOOP_UNROLLING_AMOUNT = loopUnrollingAmount;
         this.MAX_LOOP_DETECTION_DEPTH = maxLoopDetectionDepth;
@@ -86,7 +84,7 @@ public class Settings {
                     .parseInt(cl.getOptionValue("max-runtime-single-trace",
                             String.valueOf(DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S)));
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
-            Settings s = new Settings(unfoldAnd, false, initialTrace, loopUnrollingAmount,
+            Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
                     loopDetectionDepth,
                     maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT);
             singleton = s;

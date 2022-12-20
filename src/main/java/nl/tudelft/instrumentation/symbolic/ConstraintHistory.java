@@ -154,9 +154,7 @@ public class ConstraintHistory {
             }
 
         } else {
-            if (Settings.getInstance().CHECK_HASHSET || existing.add(condition.toString())) {
-                getLast(loopModelList).add(condition);
-            }
+            getLast(loopModelList).add(condition);
         }
     }
 
