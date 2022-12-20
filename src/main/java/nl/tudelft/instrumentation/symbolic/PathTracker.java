@@ -123,38 +123,6 @@ public class PathTracker {
         return false;
     }
 
-    private static void simplify() {
-        Goal g = PathTracker.ctx.mkGoal(true, false, false);
-        g.add(PathTracker.z3model);
-        g.add(PathTracker.z3branches);
-
-        // ApplyResult ar = ctx.mkTactic("ctx-solver-simplify").apply(g);
-        ApplyResult ar = ctx.mkTactic("ctx-simplify").apply(g);
-        Goal[] subgoals = ar.getSubgoals();
-        BoolExpr[] formulas_0 = subgoals[0].getFormulas();
-        int count = 0;
-        for (BoolExpr b : formulas_0) {
-            if (!b.isConst()) {
-                count += 1;
-            }
-        }
-        if (count != PathTracker.lastLength) {
-            for (BoolExpr b : formulas_0) {
-                if (!b.isConst()) {
-                    System.out.println(b);
-                }
-            }
-            System.out.println(PathTracker.lastLength);
-            PathTracker.lastLength = count;
-            try {
-                System.in.read();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-    }
-
     // Making temporary variables, i.e., within if-conditions
     public static MyVar tempVar(boolean value) {
         return new MyVar(ctx.mkBool(value));
