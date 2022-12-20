@@ -24,13 +24,20 @@ prepare () {
     OUT=experiments/$RUN_ID-$NAME/klee/problem$1
     mkdir -p $OUT
     echo "Copying $1";
-    cp "RERS/Problem$1/Problem$1.c" $OUT/
+
+    PROBLEM_FILE="RERS/Problem$1/Problem$1.c"
+    if test -f "$PROBLEM_FILE"; then
+        echo "$PROBLEM_FILE exists."
+    else
+        PROBLEM_FILE="custom_problems/Problem$1.c"
+    fi
+    cp $PROBLEM_FILE $OUT/
     echo "Modifying $1";
     sed -i 's/^.*extern void __VERIFIER_error(int);/#include <klee\/klee.h>\
         void __VERIFIER_error(int i) { fprintf(stderr, "error_%d\\n", i); fflush(stderr); assert(0); }/' "$OUT/Problem$1.c"
     # Remove any output
     sed -i '/printf("/d' "$OUT/Problem$1.c"
-    sed -i -z 's/while(1)\n.*if\(([^\n]*)\)[^}]*}/int length = 20;int program[length];klee_make_symbolic(program, sizeof(program), "program");for (int i = 0; i < length; ++i) {int input = program[i];if(\1){return 0;}calculate_output(input);}/' "$OUT/Problem$1.c"
+    sed -i -z 's/while(1)\n.*if\(([^\n]*)\)[^}]*}/int length = 100;int program[length];klee_make_symbolic(program, sizeof(program), "program");for (int i = 0; i < length; ++i) {int input = program[i];if(\1){return 0;}calculate_output(input);}/' "$OUT/Problem$1.c"
     sed -i 's/^.*fprintf(stderr, "Invalid input:.*/exit(0);/' "$OUT/Problem$1.c"
     export LD_LIBRARY_PATH=$KLEE_LIBRARY:$LD_LIBRARY_PATH
     cd $OUT
