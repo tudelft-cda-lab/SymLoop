@@ -21,7 +21,7 @@ fi
 
 prepare () {
     OLD=$PWD
-    OUT=experiments/$RUN_ID-$NAME/klee/problem$1
+    OUT=experiments/$RUN_ID-$NAME/problem$1
     mkdir -p $OUT
     echo "Copying $1";
 
