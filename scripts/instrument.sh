@@ -24,7 +24,7 @@ instrument () {
 }
 
 if [ -z $1 ]; then
-  for i in $(ls $CUSTOM_DATASET); do
+  for i in $(ls $CUSTOM_DATASET | grep .java); do
     temp=${i#Problem}
     instrument ${temp%.java} &
   done
