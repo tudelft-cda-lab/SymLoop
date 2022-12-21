@@ -37,7 +37,8 @@ prepare () {
         void __VERIFIER_error(int i) { fprintf(stderr, "error_%d\\n", i); fflush(stderr); assert(0); }/' "$OUT/Problem$1.c"
     # Remove any output
     sed -i '/printf("/d' "$OUT/Problem$1.c"
-    sed -i -z 's/while(1)\n.*if\(([^\n]*)\)[^}]*}/int length = 100;int program[length];klee_make_symbolic(program, sizeof(program), "program");for (int i = 0; i < length; ++i) {int input = program[i];if(\1){return 0;}calculate_output(input);}/' "$OUT/Problem$1.c"
+    # sed -i -z 's/while(1)\n.*if\(([^\n]*)\)[^}]*}/int length = 1000;int program[length];klee_make_symbolic(program, sizeof(program), "program");for (int i = 0; i < length; ++i) {int input = program[i];if(\1){return 0;}calculate_output(input);}/' "$OUT/Problem$1.c"
+    sed -i -z 's/while(1)\n.*if\(([^\n]*)\)[^}]*}/while(1) {int input = 0; klee_make_symbolic(\&input, sizeof(input), "input");if(\1){return 0;}calculate_output(input);}/' "$OUT/Problem$1.c"
     sed -i 's/^.*fprintf(stderr, "Invalid input:.*/exit(0);/' "$OUT/Problem$1.c"
     export LD_LIBRARY_PATH=$KLEE_LIBRARY:$LD_LIBRARY_PATH
     cd $OUT
