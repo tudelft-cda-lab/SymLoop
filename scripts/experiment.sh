@@ -2,7 +2,7 @@
 RUN_ID=$(date -Iseconds)
 set -e
 mkdir -p experiments/$D
-NAME="loop-sym-$2"
+NAME="$2"
 
 if [[ -z $1 ]]; then
     echo "ERROR: usage ./klee.sh PROBLEM NAME"
@@ -14,7 +14,7 @@ if [[ -z $NAME ]]; then
     exit
 fi
 
-DIR=experiments/$RUN_ID-$NAME-java
+DIR="experiments/$RUN_ID-loop-sym-$NAME"
 mkdir -p $DIR
 cp ./target/aistr.jar $DIR
 cp ./Errors.class $DIR
