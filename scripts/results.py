@@ -41,7 +41,11 @@ def write_results_to_latex(problem, output: problemOutput):
         row = [program]
         for error in errors:
             if error in data[program]:
-                row.append(f'{data[program][error]:.1f}')
+                v = data[program][error]
+                if v >= 10:
+                    row.append(f'{v:.0f}')
+                else:
+                    row.append(f'{v:.1f}')
             else:
                 row.append('-')
         rows.append(row)
