@@ -76,7 +76,7 @@ public class Settings {
             CommandLine cl = parseArguments(args);
             boolean unfoldAnd = cl.hasOption("unfold-and");
             boolean STOP_ON_FIRST_TIMEOUT = !cl.hasOption("continue-on-timeout");
-            boolean CORRECT_INTEGER_MODEL = cl.hasOption("correct-integer-model");
+            boolean CORRECT_INTEGER_MODEL = !cl.hasOption("incorrect-integer-model");
             String initialTrace = cl.getOptionValue("initial-trace", null);
             int loopUnrollingAmount = Integer
                     .parseInt(cl.getOptionValue("unroll-loops",
