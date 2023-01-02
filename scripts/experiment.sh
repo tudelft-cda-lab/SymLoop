@@ -14,7 +14,9 @@ if [[ -z $NAME ]]; then
     exit
 fi
 
-DIR="experiments/$RUN_ID-loop-sym-$NAME"
+ARGS="${@:3}"
+ARGNAME="${ARGS// /}"
+DIR="experiments/$RUN_ID-loop-sym$ARGNAME-$NAME"
 mkdir -p $DIR
 cp ./target/aistr.jar $DIR
 cp ./Errors.class $DIR
@@ -24,7 +26,7 @@ run () {
   OUT=$DIR/problem$1
   mkdir -p $OUT
   cd $OUT
-  ARGS="--max-time 10m -d 5 -l 10"
+  ARGS="--max-time 10m ${@:3}"
   echo $ARGS > args.txt
   java -ea -XX:-UseGCOverheadLimit -Xmx4G -cp ../:../aistr.jar:$OLD/lib/com.microsoft.z3.jar:$OLD/instrumented:. Problem$1 $ARGS | tee out.txt
   cd $OLD
