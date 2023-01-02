@@ -5,7 +5,7 @@ mkdir -p experiments/$D
 NAME="$2"
 
 if [[ -z $1 ]]; then
-    echo "ERROR: usage ./klee.sh PROBLEM NAME"
+    echo "ERROR: usage ./experiment.sh PROBLEM NAME ARGS"
     echo "please provide which problem to run on or 'all'"
     exit
 fi
@@ -33,7 +33,7 @@ run () {
 }
 
 if [ "$1" = "all" ]; then
-    for i in 11 12 13 14 15 17 18; do
+    for i in "PowersOfTwo" 11 12 13 14 15 17 18; do
         run $i
     done;
 else
