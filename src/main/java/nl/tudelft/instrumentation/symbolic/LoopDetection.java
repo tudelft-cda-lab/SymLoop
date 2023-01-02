@@ -125,8 +125,8 @@ public class LoopDetection {
             Matcher m = currentPattern.matcher(INPUT);
             boolean isFullMatch = m.matches();
             if (isFullMatch) {
-                // TODO: Do not solve while it is part of the pattern
                 System.out.printf("'%s' is still part of current pattern '%s'\n", INPUT, currentPattern);
+                // TODO set it to true on the last input symbol
                 SymbolicExecutionLab.shouldSolve = false;
                 return false;
             } else {
