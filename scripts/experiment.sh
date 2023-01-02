@@ -26,7 +26,7 @@ run () {
   OUT=$DIR/problem$1
   mkdir -p $OUT
   cd $OUT
-  ARGS="--max-time 10m ${@:3}"
+  ARGS="--max-time 10m $ARGS"
   echo $ARGS > args.txt
   java -ea -XX:-UseGCOverheadLimit -Xmx4G -cp ../:../aistr.jar:$OLD/lib/com.microsoft.z3.jar:$OLD/instrumented:. Problem$1 $ARGS | tee out.txt
   cd $OLD

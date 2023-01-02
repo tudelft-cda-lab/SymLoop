@@ -59,7 +59,7 @@ prepare () {
 }
 
 if [ "$1" = "all" ]; then
-    for i in 11 12 13 14 15 17 18; do
+    for i in "PowersOfTwo" 11 12 13 14 15 17 18; do
         prepare $i
     done;
 else
