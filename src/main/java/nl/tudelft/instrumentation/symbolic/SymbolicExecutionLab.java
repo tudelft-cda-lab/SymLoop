@@ -55,6 +55,8 @@ public class SymbolicExecutionLab {
 
     public static HashMap<String, MyVar> vars = new HashMap<>();
 
+    public static boolean shouldSolve = true;
+
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         String[] initial = Settings.getInstance().INITIAL_TRACE;
@@ -309,6 +311,7 @@ public class SymbolicExecutionLab {
         Context c = PathTracker.ctx;
         if (
         // currentTrace.size() <= processedInput.length() &&
+        shouldSolve &&
         alreadySolvedBranches.add(pathString)) {
             // Call the solver
             PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false, true);
@@ -410,6 +413,7 @@ public class SymbolicExecutionLab {
         changed = false;
         path = "";
         invalid = false;
+        shouldSolve = true;
 
         /// OUTPUT generation
         output = "";

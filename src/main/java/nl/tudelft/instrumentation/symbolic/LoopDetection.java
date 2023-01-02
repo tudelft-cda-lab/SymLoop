@@ -73,11 +73,24 @@ public class LoopDetection {
         return false;
     }
 
-    Pattern getSelfLoopPattern(String input, int lastN, int minAmount) {
+    String getAmountQualifier(int min, int max){
+        if (max == -1) {
+            if(min <= 0) {
+                return "*";
+            }
+            if (min == 1) {
+                return "+";
+            }
+            return String.format("{%d,}", min);
+        }
+        return String.format("{%d,%d}", min, max);
+    }
+
+    Pattern getSelfLoopPattern(String input, int lastN, int minAmount, int maxAmount) {
         int loopIndex = input.length() - lastN;
         String basePart = input.substring(0, loopIndex);
         String loopPart = input.substring(loopIndex);
-        String amountQuantifier = minAmount == 1 ? "+" : String.format("{%d,}", minAmount);
+        String amountQuantifier = getAmountQualifier(minAmount, maxAmount);
         // The ^ makes sure the start is matched, even when using FIND
         String regex = String.format("^(%s)(?:%s)%s", basePart, loopPart, amountQuantifier);
         if (lastN > 1) {
@@ -107,12 +120,14 @@ public class LoopDetection {
             return false;
         }
 
+        SymbolicExecutionLab.shouldSolve = true;
         if (currentPattern != null) {
             Matcher m = currentPattern.matcher(INPUT);
             boolean isFullMatch = m.matches();
             if (isFullMatch) {
                 // TODO: Do not solve while it is part of the pattern
                 System.out.printf("'%s' is still part of current pattern '%s'\n", INPUT, currentPattern);
+                SymbolicExecutionLab.shouldSolve = false;
                 return false;
             } else {
                 System.out.printf("'%s' not part of current pattern '%s' %d\n", INPUT, currentPattern, INPUT.length());
@@ -131,7 +146,7 @@ public class LoopDetection {
             BoolExpr selfLoopExpr = history.getSelfLoopExpr(lastNSaves);
             if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr, false, false)) {
                 System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d", INPUT, lastNSaves));
-                currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1);
+                currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, -1);
                 selfLoopPatterns.add(currentPattern);
                 return true;
             }
@@ -147,7 +162,7 @@ public class LoopDetection {
             foundLoops.add(SymbolicExecutionLab.processedInput);
 
             if (isSelfLoop(replacements, extended)) {
-                currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 2);
+                currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 2, -1);
                 if (selfLoops.add(SymbolicExecutionLab.processedInput)) {
                     selfLoopPatterns.add(currentPattern);
                     SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
@@ -170,7 +185,7 @@ public class LoopDetection {
             for (String s : foundLoops) {
                 SymbolicExecutionLab.printfBlue("%s\n", s);
             }
-            currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1);
+            currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, Settings.getInstance().LOOP_UNROLLING_AMOUNT-1);
             if (!isLooping(INPUT, loopPatterns)) {
                 loopPatterns.add(currentPattern);
             }
