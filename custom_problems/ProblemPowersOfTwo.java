@@ -18,6 +18,7 @@ public class ProblemPowersOfTwo {
         }
         if (cf && input.equals("p")) {
             cf = false;
+            if (i > 256) { Errors.__VERIFIER_error(8); }
             if (i > 128) { Errors.__VERIFIER_error(7); }
             if (i > 64) { Errors.__VERIFIER_error(6); }
             if (i > 32) { Errors.__VERIFIER_error(5); }
