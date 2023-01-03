@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import matplotlib
 from matplotlib import pyplot as plt
 
@@ -78,6 +79,33 @@ def get_output_file_names(folder):
                 print(f"no output for problem '{problem}' in '{folder}'")
 
 
+def generate_bar_chart(problem: str, output: problemOutput):
+    print(problem, output)
+    errors = set()
+    [errors.update(e.keys()) for e in output.values()]
+    print(problem, errors)
+    programs = dict()
+    errors = sorted(list(errors))
+    default = 600
+    for program, times in output.items():
+        programs[program] = [times[error] if error in times else default for error in errors]
+                # ]
+            # if error in times:
+                # programs[program].append(times[error])
+            # else:
+                # programs[program].append(-1)
+    print(programs)
+    x = np.arange(len(errors))
+    width = 1.0 / (len(programs) + 1)
+    programs = sorted(programs.items())
+    for i, (program, d) in enumerate(programs):
+        plt.bar(x + i * width, d, width)
+    plt.xticks(x + 0.5 * width * len(programs), errors)
+    plt.xlabel('Errors')
+    plt.ylabel('Time')
+    plt.legend([p for p, _ in programs])
+    plt.title(f'Time to find errors on {problem}')
+    # plt.show(block=True)
 
 if __name__ == '__main__':
     folders = sys.argv[1:]
@@ -100,12 +128,19 @@ if __name__ == '__main__':
 
     for problem, data in sorted(per_problem.items()):
         write_results_to_latex(problem, data)
+        generate_bar_chart(problem, data)
 
 
 
+    # df = pd.DataFrame(rows, columns=['Program', 'Problem', 'Error', 'Time'])
+    # print(df)
+    # p = df[df['Problem'] == 'problem11']
+    # p = p.groupby('Program')
+    # print(p)
+    # a = p.plot(x='Error', kind='bar', stacked=True, y='Time')
+    # plt.show(block=True)
+    
     exit()
-
-    df = pd.DataFrame(rows, columns=['Program', 'Problem', 'Error', 'Time'])
     for problem, group in df.groupby('Problem'):
         # print(problem)
         # print(group)
