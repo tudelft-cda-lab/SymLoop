@@ -67,6 +67,10 @@ public class SymbolicExecutionLab {
         }
     }
 
+    static boolean isLastCharacter(){
+        return processedInput.length() >= currentTrace.size() - 2;
+    }
+
     static String createVarName(String name) {
         Integer count = nameCounts.getOrDefault(name, 0);
         // System.out.printf("createVarName: %s, %d\n", name, count);
