@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from sys import argv, float_info
 import time
 from os import listdir, environ
