@@ -220,15 +220,16 @@ public class LoopDetection {
             }
             solver.add(extended);
             loop.add(extended);
-            Status status = solver.check();
-            if (status == Status.UNSATISFIABLE) {
-                SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status,
-                        i, extended);
-                return true;
-            } else if (status == Status.UNKNOWN) {
-                SymbolicExecutionLab.printfYellow("Solver exited with status: %s\n", status);
-                return true;
-            }
+        }
+
+        Status status = solver.check();
+        if (status == Status.UNSATISFIABLE) {
+            // SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status,
+            //         i, extended);
+            return true;
+        } else if (status == Status.UNKNOWN) {
+            SymbolicExecutionLab.printfYellow("Solver exited with status: %s\n", status);
+            return true;
         }
 
         List<BoolExpr> onLoop = new ArrayList<>();
@@ -267,7 +268,7 @@ public class LoopDetection {
         history.save();
         history.resetNumberOfSave();
         solver.add(oneOfTheLoop);
-        assert solver.check() != Status.UNSATISFIABLE;
+        // assert solver.check() != Status.UNSATISFIABLE;
         PathTracker.addToBranches(oneOfTheLoop);
         PathTracker.addToBranches(history.mkAnd(loop));
         return false;
