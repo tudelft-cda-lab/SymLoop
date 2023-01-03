@@ -13,11 +13,15 @@ public class ProblemPowersOfTwo {
     public void calculateOutput(String input) {
         cf = true;
         if (cf && input.equals("i")) {
-            i += 1;
+            i++;
             cf = false;
         }
         if (cf && input.equals("p")) {
             cf = false;
+            if (i > 4096) { Errors.__VERIFIER_error(12); }
+            if (i > 2048) { Errors.__VERIFIER_error(11); }
+            if (i > 1024) { Errors.__VERIFIER_error(10); }
+            if (i > 512) { Errors.__VERIFIER_error(9); }
             if (i > 256) { Errors.__VERIFIER_error(8); }
             if (i > 128) { Errors.__VERIFIER_error(7); }
             if (i > 64) { Errors.__VERIFIER_error(6); }
