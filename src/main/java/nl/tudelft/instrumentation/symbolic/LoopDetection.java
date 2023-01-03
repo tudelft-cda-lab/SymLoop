@@ -125,12 +125,12 @@ public class LoopDetection {
             Matcher m = currentPattern.matcher(INPUT);
             boolean isFullMatch = m.matches();
             if (isFullMatch) {
-                System.out.printf("'%s' is still part of current pattern '%s'\n", INPUT, currentPattern);
+                // System.out.printf("'%s' is still part of current pattern '%s'\n", INPUT, currentPattern);
                 // Set it to true on the last input symbol
                 SymbolicExecutionLab.shouldSolve = SymbolicExecutionLab.isLastCharacter();
                 return false;
             } else {
-                System.out.printf("'%s' not part of current pattern '%s' %d\n", INPUT, currentPattern, INPUT.length());
+                // System.out.printf("'%s' not part of current pattern '%s' %d\n", INPUT, currentPattern, INPUT.length());
                 currentPattern = null;
             }
         }
@@ -145,7 +145,7 @@ public class LoopDetection {
             BoolExpr extended = Replacement.applyAllTo(replacements, loopModel);
             BoolExpr selfLoopExpr = history.getSelfLoopExpr(lastNSaves);
             if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr, false, false)) {
-                System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d", INPUT, lastNSaves));
+                // System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d", INPUT, lastNSaves));
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, -1);
                 selfLoopPatterns.add(currentPattern);
                 return true;
@@ -165,8 +165,7 @@ public class LoopDetection {
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 2, -1);
                 if (selfLoops.add(SymbolicExecutionLab.processedInput)) {
                     selfLoopPatterns.add(currentPattern);
-                    SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
-                            SymbolicExecutionLab.processedInput, lastNSaves - 1);
+                    // SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n", SymbolicExecutionLab.processedInput, lastNSaves - 1);
                 }
                 return false;
             }
@@ -182,14 +181,11 @@ public class LoopDetection {
                 return false;
             }
 
-            for (String s : foundLoops) {
-                SymbolicExecutionLab.printfBlue("%s\n", s);
-            }
             currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, Settings.getInstance().LOOP_UNROLLING_AMOUNT-1);
             if (!isLooping(INPUT, loopPatterns)) {
                 loopPatterns.add(currentPattern);
             }
-            printLoops();
+            // printLoops();
             return false;
         }
         return false;
@@ -274,7 +270,6 @@ public class LoopDetection {
         assert solver.check() != Status.UNSATISFIABLE;
         PathTracker.addToBranches(oneOfTheLoop);
         PathTracker.addToBranches(history.mkAnd(loop));
-        System.out.println("new input over: " + currentPattern);
         return false;
     }
 }

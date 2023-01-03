@@ -97,7 +97,7 @@ public class PathTracker {
                 if (loopIterations.containsKey(v)) {
                     Replacement r = loopIterations.get(v);
                     String amountAsString = m.evaluate(v.z3var, true).toString();
-                    SymbolicExecutionLab.printfBlue("loopVar %s: %s\n", v.z3var, amountAsString);
+                    // SymbolicExecutionLab.printfBlue("loopVar %s: %s\n", v.z3var, amountAsString);
                     int amount = Integer.parseInt(amountAsString);
                     for (Expr e : r.getAllExprs(amount)) {
                         String value = m.evaluate(e, true).toString();
