@@ -103,7 +103,6 @@ public class PathTracker {
                         String value = m.evaluate(e, true).toString();
                         new_inputs.add(value);
                     }
-                    ;
                 } else {
                     new_inputs.add(m.evaluate(v.z3var, true).toString());
                 }
@@ -114,7 +113,7 @@ public class PathTracker {
             s.pop();
             return true;
         } else {
-            if(status == Status.UNKNOWN) {
+            if (status == Status.UNKNOWN) {
                 System.out.println("STATUS OF THE SOLVER IS UNKNOWN");
                 return false;
             }
@@ -327,7 +326,7 @@ public class PathTracker {
             handler.get();
         } catch (CancellationException e) {
             SymbolicExecutionLab.printfYellow("TIMEOUT!");
-            if(Settings.getInstance().STOP_ON_FIRST_TIMEOUT) {
+            if (Settings.getInstance().STOP_ON_FIRST_TIMEOUT) {
                 System.exit(-1);
             }
             return false;
