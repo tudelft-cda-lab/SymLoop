@@ -1,0 +1,50 @@
+TIME LIMIT REACHED
+Visited: 393 out of 502, #errors: 22, #nextTraces: 0, #backlog: 184, ErrorTraces:
+        HB
+        HGJ
+        CDJF
+        CDA
+        CEII
+        CEG
+        CII
+        HHFF
+        HHH
+        AEB
+        HHGI
+        CEDD
+        CIHB
+        HHFHI
+        HHGGGB
+        HHGGF
+        AEHFC
+        CEIJD
+        CEIJFA
+        CEHD
+        HHDGFD
+        CIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIHGIB
+Errorcodes: 1, 3, 10, 14, 16, 23, 30, 31, 34, 35, 37, 48, 49, 52, 68, 70, 71, 72, 74, 75, 87, 90
+Error   1: 35.629
+Error   3: 18.019
+Error  10: 19.753
+Error  14: 612.348
+Error  16: 297.470
+Error  23: 287.005
+Error  30: 65.909
+Error  31: 93.353
+Error  34: 0.579
+Error  35: 12.045
+Error  37: 17.949
+Error  48: 16.545
+Error  49: 18.683
+Error  52: 59.688
+Error  68: 47.740
+Error  70: 25.694
+Error  71: 16.720
+Error  72: 95.490
+Error  74: 27.200
+Error  75: 19.335
+Error  87: 66.203
+Error  90: 45.113
+total errors: 22
+
+➜  CS4110-JavaInstrumentation git:(main) ✗ ./scripts/run.sh 13 -max-time 12m -d 10 -l 50

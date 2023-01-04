@@ -11,6 +11,8 @@ public class ErrorTracker {
     private SortedMap<Integer, Long> errors = new TreeMap<>();
     static Pattern pattern = Pattern.compile("Invalid input: error_(\\d+)");
 
+    private List<String> errorTraces = new ArrayList<>();
+
     public ErrorTracker() {
     }
 
@@ -32,6 +34,7 @@ public class ErrorTracker {
         if (errors.containsKey(error)) {
             return false;
         }
+        errorTraces.add(SymbolicExecutionLab.processedInput);
         this.errors.put(error, getTime());
         return true;
     }
@@ -59,7 +62,8 @@ public class ErrorTracker {
     }
 
     public String toString() {
-        return String.format("Errorcodes: %s",
+        return String.format("ErrorTraces:\n\t%s\nErrorcodes: %s",
+                String.join("\n\t", errorTraces),
                 String.join(", ", errors.keySet().stream().map(e -> e.toString()).collect(Collectors.toList())));
     }
 
