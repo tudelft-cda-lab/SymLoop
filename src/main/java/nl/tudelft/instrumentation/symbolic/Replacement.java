@@ -26,10 +26,14 @@ class Replacement {
     }
 
     public static BoolExpr applyAllTo(List<Replacement> replacements, BoolExpr e) {
+        return applyAllTo(replacements, e, 0);
+    }
+
+    public static BoolExpr applyAllTo(List<Replacement> replacements, BoolExpr e, int amount) {
         List<Expr> from = new ArrayList<>();
         List<Expr> to = new ArrayList<>();
         for(Replacement r : replacements) {
-            r.addApplyTo(from, to, 0);
+            r.addApplyTo(from, to, amount);
         }
         return (BoolExpr) e.substitute(from.toArray(Expr[]::new), to.toArray(Expr[]::new));
     }

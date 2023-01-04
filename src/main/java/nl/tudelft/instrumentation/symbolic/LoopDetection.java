@@ -215,9 +215,7 @@ public class LoopDetection {
         List<BoolExpr> loop = new ArrayList<>();
         loop.add(extended);
         for (int i = 1; i < LOOP_UNROLLING_AMOUNT; i += 1) {
-            for (Replacement r : replacements) {
-                extended = r.applyTo(extended, i);
-            }
+            extended = Replacement.applyAllTo(replacements, extended, i);
             solver.add(extended);
             loop.add(extended);
         }
