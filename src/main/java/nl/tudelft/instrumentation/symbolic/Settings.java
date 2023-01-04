@@ -12,7 +12,7 @@ import org.apache.commons.cli.ParseException;
 public class Settings {
     private static final int DEFAULT_LOOP_UNROLLING = 10;
     private static final int DEFAULT_LOOP_DETECTION_DEPTH = 1;
-    private static final int DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S = 60;
+    private static final int DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S = 600;
     private static final int DEFAULT_MAX_TIME_S = -1;
     private static Settings singleton;
 

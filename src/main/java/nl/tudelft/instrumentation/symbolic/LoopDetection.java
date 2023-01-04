@@ -265,8 +265,6 @@ public class LoopDetection {
         BoolExpr oneOfTheLoop = history.mkOr(onLoop);
         history.save();
         history.resetNumberOfSave();
-        solver.add(oneOfTheLoop);
-        // assert solver.check() != Status.UNSATISFIABLE;
         PathTracker.addToBranches(oneOfTheLoop);
         PathTracker.addToBranches(history.mkAnd(loop));
         return false;
