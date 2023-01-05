@@ -525,7 +525,7 @@ public class SymbolicExecutionLab {
         System.out.printf("Visited: %d out of %d, #errors: %d, #nextTraces: %d, #backlog: %d, %s\n",
                 branchTracker.numVisited(),
                 branchTracker.totalBranches(), errorTracker.amount(), nextTraces.size(), backLog.size(),
-                errorTracker);
+                errorTracker.summary());
     }
 
     private static void printFinalStatus() {

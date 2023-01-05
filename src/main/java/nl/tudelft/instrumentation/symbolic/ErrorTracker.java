@@ -9,9 +9,8 @@ import java.util.stream.Collectors;
 public class ErrorTracker {
 
     private SortedMap<Integer, Long> errors = new TreeMap<>();
+    private SortedMap<Integer, String> errorTraces = new TreeMap<>();
     static Pattern pattern = Pattern.compile("Invalid input: error_(\\d+)");
-
-    private List<String> errorTraces = new ArrayList<>();
 
     public ErrorTracker() {
     }
@@ -34,7 +33,7 @@ public class ErrorTracker {
         if (errors.containsKey(error)) {
             return false;
         }
-        errorTraces.add(SymbolicExecutionLab.processedInput);
+        errorTraces.put(error, SymbolicExecutionLab.processedInput);
         this.errors.put(error, getTime());
         return true;
     }
@@ -63,16 +62,15 @@ public class ErrorTracker {
 
     public String toString() {
         return String.format("ErrorTraces:\n\t%s\nErrorcodes: %s",
-                String.join("\n\t", errorTraces),
+                String.join("\n\t", errorTraces.values()),
                 String.join(", ", errors.keySet().stream().map(e -> e.toString()).collect(Collectors.toList())));
     }
 
-
     public String summary() {
         String output = "";
-        for(Entry<Integer, Long> e : this.errors.entrySet()) {
+        for (Entry<Integer, Long> e : this.errors.entrySet()) {
             double seconds = e.getValue().doubleValue() / 1000.0;
-            output += String.format("Error %3d: %2.3f\n", e.getKey(), seconds);
+            output += String.format("Error %3d: %9.3f %s\n", e.getKey(), seconds, this.errorTraces.get(e.getKey()));
         }
         output += String.format("total errors: %d", errors.size());
         return output;
