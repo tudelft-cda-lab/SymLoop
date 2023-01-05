@@ -522,7 +522,7 @@ public class SymbolicExecutionLab {
     }
 
     public static void printStatus() {
-        System.out.printf("Visited: %d out of %d, #errors: %d, #nextTraces: %d, #backlog: %d, %s\n",
+        System.out.printf("Visited: %d out of %d, #errors: %d, #nextTraces: %d, #backlog: %d, Errors:\n%s\n",
                 branchTracker.numVisited(),
                 branchTracker.totalBranches(), errorTracker.amount(), nextTraces.size(), backLog.size(),
                 errorTracker.summary());
