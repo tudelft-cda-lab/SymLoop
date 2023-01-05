@@ -224,6 +224,8 @@ public class LoopDetection {
         if (status == Status.UNSATISFIABLE) {
             // SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status,
             //         i, extended);
+            //         //
+            // TODO: Create a constraint that goes up to the number of times that it is possible to go through the loop.
             return true;
         } else if (status == Status.UNKNOWN) {
             SymbolicExecutionLab.printfYellow("Solver exited with status: %s\n", status);
