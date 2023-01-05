@@ -49,7 +49,7 @@ prepare () {
 
     rm -f start.txt && touch start.txt
     DEFAULT_ARGS="--only-output-states-covering-new -posix-runtime --emit-all-errors -libc=uclibc"
-    ADDITIONAL_ARGS="--max-time=24h"
+    ADDITIONAL_ARGS="--max-time=2h"
     # $KLEE_BIN/klee $DEFAULT_ARGS --use-merge --optimize -max-time=10min "Problem$1.bc"
     $KLEE_BIN/klee $DEFAULT_ARGS $ADDITIONAL_ARGS "Problem$1.bc"
 

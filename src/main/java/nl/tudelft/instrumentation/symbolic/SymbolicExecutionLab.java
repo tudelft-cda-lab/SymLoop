@@ -495,8 +495,8 @@ public class SymbolicExecutionLab {
             printfGreen("All paths visited, exiting now\n");
         }
         printFinalStatus();
-        saveTraces();
-        saveGraph(true);
+        // saveTraces();
+        // saveGraph(true);
         System.exit(0);
     }
 

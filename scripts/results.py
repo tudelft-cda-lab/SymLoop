@@ -23,7 +23,7 @@ def read(filename):
 
 def parse(filename):
     lines = read(filename)
-    for err, seconds in re.findall(r'Error\s+(\d+):\s+(.*)', lines):
+    for err, seconds in re.findall(r'Error\s+(\d+):\s+(\S*)', lines):
         # print(err, seconds)
         yield (int(err), float(seconds))
 

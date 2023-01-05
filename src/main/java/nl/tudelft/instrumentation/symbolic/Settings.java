@@ -125,7 +125,7 @@ public class Settings {
                         DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S));
         options.addOption("m", "max-time", true,
                 String.format(
-                        "The number of seconds a single trace can run before its gets killed. Use -1 to run indefinetely (Default: %d)",
+                        "The amount of time to keep running. Use -1 to run indefinetely (Default: %d)",
                         DEFAULT_MAX_TIME_S));
         return options;
     }
