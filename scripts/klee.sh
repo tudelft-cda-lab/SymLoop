@@ -45,19 +45,25 @@ prepare () {
     cd $OUT
     $CLANG_LOC/clang $OPTIMIZATION -I $KLEE_INCLUDE -emit-llvm -g -c  "./Problem$1.c" -o "./Problem$1.bc"
 
+    $CLANG_LOC/clang $OPTIMIZATION -I "$KLEE_INCLUDE" -L "$KLEE_LIBRARY" "Problem$1.c" -o "Problem$1-test.bc" -lkleeRuntest
+
     rm -f start.txt && touch start.txt
     DEFAULT_ARGS="--only-output-states-covering-new -posix-runtime --emit-all-errors -libc=uclibc"
-    ADDITIONAL_ARGS="--max-time=10min"
+    ADDITIONAL_ARGS="--max-time=24s --use-merge --optimize"
     # $KLEE_BIN/klee $DEFAULT_ARGS --use-merge --optimize -max-time=10min "Problem$1.bc"
     $KLEE_BIN/klee $DEFAULT_ARGS $ADDITIONAL_ARGS "Problem$1.bc"
 
     echo "SUMMARY"
     $KLEE_BIN/klee-stats ../
-    $CLANG_LOC/clang $OPTIMIZATION -I "$KLEE_INCLUDE" -L "$KLEE_LIBRARY" "Problem$1.c" -o "Problem$1-test.bc" -lkleeRuntest
-    cat klee-last/info
+
     cd $OLD
     python3 ./scripts/analyze_klee.py "$OUT/klee-last" "$OUT/./Problem$1-test.bc" "$OUT/start.txt" | tee "$OUT/errors.txt"
+
     echo "results in: $OUT/errors.txt"
+
+    rm -f $OUT/klee-last/*.ktest
+    rm -f $OUT/klee-last/*.kquery
+    rm -f $OUT/klee-last/*.assert.err
 }
 
 if [ "$1" = "all" ]; then

@@ -29,8 +29,6 @@ def get_output(file, starttime: float):
         if m:
             error = int(m.groups()[0])
             return (error, modified - starttime)
-        else:
-            print(f'Error: Did not find the error in the output: "{output}"')
     return None
 
 starttime = float(os.path.getmtime(starttime_file))
