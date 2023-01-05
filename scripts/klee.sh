@@ -49,7 +49,7 @@ prepare () {
 
     rm -f start.txt && touch start.txt
     DEFAULT_ARGS="--only-output-states-covering-new -posix-runtime --emit-all-errors -libc=uclibc"
-    ADDITIONAL_ARGS="--max-time=24s --use-merge --optimize"
+    ADDITIONAL_ARGS="--max-time=24h"
     # $KLEE_BIN/klee $DEFAULT_ARGS --use-merge --optimize -max-time=10min "Problem$1.bc"
     $KLEE_BIN/klee $DEFAULT_ARGS $ADDITIONAL_ARGS "Problem$1.bc"
 
@@ -61,9 +61,12 @@ prepare () {
 
     echo "results in: $OUT/errors.txt"
 
-    rm -f $OUT/klee-last/*.ktest
-    rm -f $OUT/klee-last/*.kquery
-    rm -f $OUT/klee-last/*.assert.err
+    cd $OUT/klee-last
+    find . -name "*.ktest" -type f -delete
+    find . -name "*.kquery" -type f -delete
+    find . -name "*.assert.err" -type f -delete
+    find . -name "*.early" -type f -delete
+    cd $OLD
 }
 
 if [ "$1" = "all" ]; then
