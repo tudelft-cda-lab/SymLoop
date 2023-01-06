@@ -27,6 +27,7 @@ Thumbs.db
 target/
 instrumented/
 retired_experiments/
+experiments_retired/
 scripts/lastmodified
 problems/
 instrumented1/instrumented.zip
