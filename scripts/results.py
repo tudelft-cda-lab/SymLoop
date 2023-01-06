@@ -86,7 +86,7 @@ def generate_bar_chart(problem: str, output: problemOutput):
     print(problem, errors)
     programs = dict()
     errors = sorted(list(errors))
-    default = 600
+    default = -100
     for program, times in output.items():
         programs[program] = [times[error] if error in times else default for error in errors]
                 # ]
@@ -96,7 +96,7 @@ def generate_bar_chart(problem: str, output: problemOutput):
                 # programs[program].append(-1)
     print(programs)
     x = np.arange(len(errors))
-    width = 1.0 / (len(programs) + 1)
+    width = 1.0 / (len(programs) + 4)
     programs = sorted(programs.items())
     for i, (program, d) in enumerate(programs):
         plt.bar(x + i * width, d, width)
@@ -105,6 +105,7 @@ def generate_bar_chart(problem: str, output: problemOutput):
     plt.ylabel('Time')
     plt.legend([p for p, _ in programs])
     plt.title(f'Time to find errors on {problem}')
+    plt.yscale("log") 
     # plt.show(block=True)
 
 if __name__ == '__main__':
