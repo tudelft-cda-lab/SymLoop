@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
 
+import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
+
 public class LoopDetection {
 
     private SortedSet<String> foundLoops = new TreeSet<>();
@@ -67,7 +69,7 @@ public class LoopDetection {
         for (Replacement r : replacements) {
             all = ctx.mkAnd(r.isSelfLoopExpr(), all);
         }
-        if (PathTracker.solve(ctx.mkAnd(all, extended), false, false)) {
+        if (PathTracker.solve(ctx.mkAnd(all, extended), SolvingForType.IS_SELF_LOOP, false, false)) {
             return true;
         }
         return false;
@@ -144,7 +146,7 @@ public class LoopDetection {
             BoolExpr loopModel = history.getConstraint(lastNSaves);
             BoolExpr extended = Replacement.applyAllTo(replacements, loopModel);
             BoolExpr selfLoopExpr = history.getSelfLoopExpr(lastNSaves);
-            if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr, false, false)) {
+            if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr,SolvingForType.IS_SELF_LOOP, false, false)) {
                 // System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d", INPUT, lastNSaves));
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, -1);
                 selfLoopPatterns.add(currentPattern);
@@ -155,7 +157,7 @@ public class LoopDetection {
             if (replacements.size() == 0
                     // || !alreadyChecked.add(lastNSaves + '-' +
                     // SymbolicExecutionLab.processedInput)
-                    || !PathTracker.solve(extended, false, false)) {
+                    || !PathTracker.solve(extended, SolvingForType.IS_LOOP, false, false)) {
                 continue;
             }
 
@@ -218,7 +220,7 @@ public class LoopDetection {
         }
         solver.add(loop.toArray(BoolExpr[]::new));
 
-        Status status = solver.check();
+        Status status = solver.check(SolvingForType.IS_REATING_LOOP);
         if(status != Status.SATISFIABLE) {
             solver.pop();
         }
@@ -263,13 +265,13 @@ public class LoopDetection {
                 PathTracker.loopIterations.put(myNVar, r);
             }
         }
-
         PathTracker.solver.minimize(numberOfTimesTheLoopExecutes);
         PathTracker.inputs.add(myNVar);
         BoolExpr oneOfTheLoop = history.mkOr(onLoop);
         history.save();
         history.resetNumberOfSave();
         PathTracker.addToBranches(oneOfTheLoop);
+        SymbolicExecutionLab.numberOfLoopsInPathConstraint += 1;
         return false;
     }
 }

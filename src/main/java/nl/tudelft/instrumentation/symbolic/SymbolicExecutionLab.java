@@ -1,6 +1,7 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -12,6 +13,8 @@ import com.google.common.graph.MutableGraph;
 import com.microsoft.z3.*;
 
 import nl.tudelft.instrumentation.fuzzing.BranchVisitedTracker;
+import nl.tudelft.instrumentation.symbolic.OptimizingSolver.DataPoint;
+import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
 
 /**
  * You should write your solution using this class.
@@ -57,6 +60,10 @@ public class SymbolicExecutionLab {
 
     public static boolean shouldSolve = true;
 
+    public static int numberOfLoopsInPathConstraint = 0;
+
+    private static BufferedWriter solverTimesWriter;
+
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         String[] initial = Settings.getInstance().INITIAL_TRACE;
@@ -67,7 +74,7 @@ public class SymbolicExecutionLab {
         }
     }
 
-    static boolean isLastCharacter(){
+    static boolean isLastCharacter() {
         return processedInput.length() >= currentTrace.size() - 2;
     }
 
@@ -195,14 +202,14 @@ public class SymbolicExecutionLab {
             if (Settings.getInstance().CORRECT_INTEGER_MODEL) {
                 return new MyVar(
                         PathTracker.ctx.mkITE(
-                            PathTracker.ctx.mkOr(
-                                PathTracker.ctx.mkGe(left_var,
-                                    (ArithExpr) PathTracker.ctx.mkInt(0)),
-                                PathTracker.ctx.mkEq(mod,
-                                    (ArithExpr) PathTracker.ctx.mkInt(0))),
+                                PathTracker.ctx.mkOr(
+                                        PathTracker.ctx.mkGe(left_var,
+                                                (ArithExpr) PathTracker.ctx.mkInt(0)),
+                                        PathTracker.ctx.mkEq(mod,
+                                                (ArithExpr) PathTracker.ctx.mkInt(0))),
 
-                            mod,
-                            PathTracker.ctx.mkSub(mod, right_var)));
+                                mod,
+                                PathTracker.ctx.mkSub(mod, right_var)));
             } else {
                 return new MyVar(mod);
             }
@@ -267,6 +274,32 @@ public class SymbolicExecutionLab {
         }
     }
 
+    static void saveSolverTimes() {
+        if (solverTimesWriter == null) {
+            try {
+                solverTimesWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("solvertimes.csv")));
+                solverTimesWriter.write("TYPE\tMS\tTRACE_LEN\tLOOPS\n");
+            } catch (FileNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        try {
+            for (DataPoint d : OptimizingSolver.solverTimes) {
+                solverTimesWriter.write(
+                        String.format("%c\t%d\t%d\t%d\n", d.type.c, d.timeInMs, d.traceLength, d.numberOfLoops));
+            }
+            solverTimesWriter.flush();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        OptimizingSolver.solverTimes.clear();
+    }
+
     static void saveGraph(boolean always) {
         if (changed || always) {
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("graph.dot")))) {
@@ -316,9 +349,9 @@ public class SymbolicExecutionLab {
         if (
         // currentTrace.size() <= processedInput.length() &&
         shouldSolve &&
-        alreadySolvedBranches.add(pathString)) {
+                alreadySolvedBranches.add(pathString)) {
             // Call the solver
-            PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), false, true);
+            PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), SolvingForType.BRANCH, false, true);
         }
         BoolExpr branchCondition = (BoolExpr) condition.z3var;
         if (!value) {
@@ -418,6 +451,7 @@ public class SymbolicExecutionLab {
         path = "";
         invalid = false;
         shouldSolve = true;
+        numberOfLoopsInPathConstraint = 0;
 
         /// OUTPUT generation
         output = "";
@@ -464,7 +498,9 @@ public class SymbolicExecutionLab {
                         currentBranchTracker.hasVisited(trace.getLineNr(), false));
                 System.exit(-1);
             } else {
-                printfRed("Current integer model is not sufficient, try enabling correct integer model using '-correct-integer-model', %s\n", trace.from);
+                printfRed(
+                        "Current integer model is not sufficient, try enabling correct integer model using '-correct-integer-model', %s\n",
+                        trace.from);
             }
         }
     }
@@ -495,6 +531,7 @@ public class SymbolicExecutionLab {
             printfGreen("All paths visited, exiting now\n");
         }
         printFinalStatus();
+        saveSolverTimes();
         // saveTraces();
         // saveGraph(true);
         System.exit(0);

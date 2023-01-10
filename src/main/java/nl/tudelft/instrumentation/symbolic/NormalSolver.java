@@ -20,7 +20,7 @@ class NormalSolver implements SolverInterface {
     }
 
     @Override
-    public Status check() {
+    public Status check(SolvingForType type) {
         return solver.check();
     }
 

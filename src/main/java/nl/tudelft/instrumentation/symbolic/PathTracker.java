@@ -6,6 +6,7 @@ import java.util.concurrent.*;
 
 import com.microsoft.z3.*;
 import nl.tudelft.instrumentation.runner.CallableTraceRunner;
+import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
 
 /**
  * This class is used for the symbolic execution lab.
@@ -16,7 +17,7 @@ public class PathTracker {
     public static HashMap<String, String> cfg = new HashMap<String, String>() {
         {
             put("model", "true");
-            put("timeout", "100000");
+            put("timeout", "10000");
         }
     };
     public static Context ctx = new Context(cfg);
@@ -69,7 +70,7 @@ public class PathTracker {
      *                   should
      *                   be printed in the terminal or not.
      */
-    public static boolean solve(BoolExpr new_branch, boolean printModel, boolean isInput) {
+    public static boolean solve(BoolExpr new_branch, SolvingForType type, boolean printModel, boolean isInput) {
         OptimizingSolver s = solver;
         // Solver s = ctx.mkSolver();
         String output = "";
@@ -88,7 +89,7 @@ public class PathTracker {
             System.out.println(new_branch);
         }
 
-        Status status = s.check();
+        Status status = s.check(type);
         if (status == Status.SATISFIABLE) {
             Model m = s.getModel();
             // output += m;
@@ -115,6 +116,7 @@ public class PathTracker {
         } else {
             if (status == Status.UNKNOWN) {
                 System.out.println("STATUS OF THE SOLVER IS UNKNOWN");
+                System.exit(1);
                 return false;
             }
             s.pop();
