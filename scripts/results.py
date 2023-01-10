@@ -7,11 +7,7 @@ from collections import defaultdict
 import re
 import os
 
-# matplotlib.use('GTK3Agg')
-# matplotlib.use('Agg')
 plt.ion()
-print(matplotlib.rcParams['interactive'])
-print(matplotlib.matplotlib_fname())
 from tabulate import tabulate
 
 import numpy as np
