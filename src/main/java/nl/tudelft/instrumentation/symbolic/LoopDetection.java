@@ -207,20 +207,21 @@ public class LoopDetection {
 
     boolean isFiniteLoop(BoolExpr extended, List<Replacement> replacements) {
         final int LOOP_UNROLLING_AMOUNT = Settings.getInstance().LOOP_UNROLLING_AMOUNT;
-        Solver solver = ctx.mkSolver();
-        solver.add(PathTracker.z3model);
-        solver.add(PathTracker.z3branches);
+        OptimizingSolver solver = PathTracker.solver;
+        solver.push();
 
-        solver.add(extended);
         List<BoolExpr> loop = new ArrayList<>();
         loop.add(extended);
         for (int i = 1; i < LOOP_UNROLLING_AMOUNT; i += 1) {
             extended = Replacement.applyAllTo(replacements, extended, i);
-            solver.add(extended);
             loop.add(extended);
         }
+        solver.add(loop.toArray(BoolExpr[]::new));
 
         Status status = solver.check();
+        if(status != Status.SATISFIABLE) {
+            solver.pop();
+        }
         if (status == Status.UNSATISFIABLE) {
             // SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status,
             //         i, extended);
@@ -231,6 +232,7 @@ public class LoopDetection {
             SymbolicExecutionLab.printfYellow("Solver exited with status: %s\n", status);
             return true;
         }
+        assert status == Status.SATISFIABLE;
 
         List<BoolExpr> onLoop = new ArrayList<>();
         ArithExpr numberOfTimesTheLoopExecutes = (ArithExpr) ctx.mkConst("custom_loop_number_" + (currentLoopNumber++),
@@ -268,7 +270,6 @@ public class LoopDetection {
         history.save();
         history.resetNumberOfSave();
         PathTracker.addToBranches(oneOfTheLoop);
-        PathTracker.addToBranches(history.mkAnd(loop));
         return false;
     }
 }

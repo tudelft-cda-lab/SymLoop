@@ -22,7 +22,7 @@ public class PathTracker {
     public static Context ctx = new Context(cfg);
 
     public static BoolExpr z3model = ctx.mkTrue();
-    public static BoolExpr z3branches = ctx.mkTrue();
+    // private static BoolExpr z3branches = ctx.mkTrue();
     public static OptimizingSolver solver = new OptimizingSolver();
 
     static HashMap<MyVar, Replacement> loopIterations = new HashMap<>();
@@ -40,13 +40,13 @@ public class PathTracker {
      */
     public static void reset() {
         z3model = ctx.mkTrue();
-        z3branches = ctx.mkTrue();
+        // z3branches = ctx.mkTrue();
         inputs.clear();
         solver.reset();
     }
 
     public static void addToBranches(BoolExpr expr) {
-        z3branches = ctx.mkAnd(expr, z3branches);
+        // z3branches = ctx.mkAnd(expr, z3branches);
         solver.add(expr);
     }
 
@@ -83,7 +83,7 @@ public class PathTracker {
             System.out.print("Model: ");
             System.out.println(PathTracker.z3model);
             System.out.print("Branches: ");
-            System.out.println(PathTracker.z3branches);
+            // System.out.println(PathTracker.z3branches);
             System.out.print("New branch: ");
             System.out.println(new_branch);
         }
