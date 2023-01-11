@@ -115,7 +115,7 @@ public class PathTracker {
             return true;
         } else {
             if (status == Status.UNKNOWN) {
-                System.out.println("STATUS OF THE SOLVER IS UNKNOWN");
+                System.out.println("STATUS OF THE SOLVER IS UNKNOWN: " + type.c);
                 return false;
             }
             s.pop();
