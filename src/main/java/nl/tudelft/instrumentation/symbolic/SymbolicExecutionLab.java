@@ -39,7 +39,6 @@ public class SymbolicExecutionLab {
     static String processedInput = "";
 
     static boolean skip = false;
-    static boolean changed = false;
     static LoopDetection loopDetector = new LoopDetection();
 
     static HashMap<String, Integer> nameCounts = new HashMap<String, Integer>();
@@ -382,7 +381,6 @@ public class SymbolicExecutionLab {
         processedInput = "";
         currentBranchTracker.clear();
         skip = false;
-        changed = false;
         invalid = false;
         shouldSolve = true;
         numberOfLoopsInPathConstraint = 0;
