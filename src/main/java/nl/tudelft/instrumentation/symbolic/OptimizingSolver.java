@@ -16,13 +16,13 @@ class OptimizingSolver implements SolverInterface {
     public static class DataPoint {
         final int traceLength;
         final int numberOfLoops;
-        final long timeInMs;
+        final long timeInNs;
         final SolvingForType type;
 
-        public DataPoint(SolvingForType type, long timeInMs) {
+        public DataPoint(SolvingForType type, long timeInNs) {
             this.traceLength = SymbolicExecutionLab.processedInput.length();
             this.numberOfLoops = SymbolicExecutionLab.numberOfLoopsInPathConstraint;
-            this.timeInMs = timeInMs;
+            this.timeInNs = timeInNs;
             this.type = type;
         }
     }
