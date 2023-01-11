@@ -38,11 +38,9 @@ public class SymbolicExecutionLab {
     private static HashSet<String> alreadySolvedBranches = new HashSet<>();
     private static HashSet<String> alreadyFoundTraces = new HashSet<>();
 
-    static int firstBranchLineNr = -1;
     static int inputInIndex = 0;
     static String processedInput = "";
 
-    static String path = "";
     static boolean skip = false;
     static boolean changed = false;
     static LoopDetection loopDetector = new LoopDetection();
@@ -51,8 +49,6 @@ public class SymbolicExecutionLab {
 
     private static MutableGraph<String> graph = GraphBuilder.directed().allowsSelfLoops(true).build();
     private static Map<String, String> edges = new HashMap<String, String>();
-
-    private static String pathString = "Start";
 
     public static HashMap<String, MyVar> vars = new HashMap<>();
 
@@ -144,6 +140,12 @@ public class SymbolicExecutionLab {
         // loopModel = PathTracker.ctx.mkTrue();
         // loopModel = c.mkAnd(c.mkOr(temp), loopModel);
         loopDetector.nextInput(c.mkOr(temp), name);
+
+        assert inputInIndex < currentTrace.size();
+        // System.out.printf("inputInIndex: %d\n", inputInIndex);
+        processedInput += currentTrace.get(inputInIndex);
+        inputInIndex++;
+
         return input;
     }
 
@@ -290,17 +292,6 @@ public class SymbolicExecutionLab {
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
-        path += String.format("%d:%b\n", line_nr, value);
-        if (firstBranchLineNr == -1) {
-            firstBranchLineNr = line_nr;
-        }
-        if (firstBranchLineNr == line_nr) {
-            assert inputInIndex < currentTrace.size();
-            // System.out.printf("inputInIndex: %d\n", inputInIndex);
-            processedInput += currentTrace.get(inputInIndex);
-            inputInIndex++;
-        }
-
         String newPathString = String.format("%s_%d", processedInput, line_nr);
         String from = String.valueOf(currentLineNumber);
         String to = String.valueOf(line_nr);
@@ -313,7 +304,6 @@ public class SymbolicExecutionLab {
         currentValue = value;
         branchTracker.visit(line_nr, value);
         currentBranchTracker.visit(line_nr, value);
-        pathString = newPathString;
         if (skip) {
             return;
         }
@@ -321,7 +311,7 @@ public class SymbolicExecutionLab {
         if (
         // currentTrace.size() <= processedInput.length() &&
         shouldSolve &&
-                alreadySolvedBranches.add(pathString)) {
+                alreadySolvedBranches.add(newPathString)) {
             // Call the solver
             PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), SolvingForType.BRANCH, false, true);
         }
@@ -368,7 +358,7 @@ public class SymbolicExecutionLab {
             String newInput = String.join("", temp);
             if (!loopDetector.isSelfLooping(newInput)) {
                 add(new NextTrace(temp, currentLineNumber,
-                        String.join(" ", currentTrace) + "\n" + path + "\n" + output, !currentValue));
+                        String.join(" ", currentTrace) + "\n" + output, !currentValue));
             } else {
                 printfGreen("PART OF LOOP: %s\n", newInput);
             }
@@ -414,7 +404,6 @@ public class SymbolicExecutionLab {
     static void reset() {
         PathTracker.reset();
         loopDetector.reset();
-        pathString = "Start";
         nameCounts.clear();
         System.gc();
         currentLineNumber = 0;
@@ -423,7 +412,6 @@ public class SymbolicExecutionLab {
         currentBranchTracker.clear();
         skip = false;
         changed = false;
-        path = "";
         invalid = false;
         shouldSolve = true;
         numberOfLoopsInPathConstraint = 0;
@@ -467,7 +455,6 @@ public class SymbolicExecutionLab {
                 && trace.getLineNr() != 0) {
             if (Settings.getInstance().CORRECT_INTEGER_MODEL) {
                 printfRed("SOLVER IS WRONG, did not discover the solvable branch, %s\n", trace.from);
-                printfGreen(path);
                 System.out.printf("%d TRUE: %b, FALSE: %b\n", trace.getLineNr(),
                         currentBranchTracker.hasVisited(trace.getLineNr(), true),
                         currentBranchTracker.hasVisited(trace.getLineNr(), false));
