@@ -28,6 +28,7 @@ target/
 instrumented/
 retired_experiments/
 experiments_retired/
+experiments_desktop/
 scripts/lastmodified
 problems/
 instrumented1/instrumented.zip
