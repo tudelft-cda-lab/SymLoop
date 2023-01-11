@@ -278,7 +278,7 @@ public class SymbolicExecutionLab {
         if (solverTimesWriter == null) {
             try {
                 solverTimesWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("solvertimes.csv")));
-                solverTimesWriter.write("TYPE\tMS\tTRACE_LEN\tLOOPS\n");
+                solverTimesWriter.write("TYPE\tNS\tTRACE_LEN\tLOOPS\n");
             } catch (FileNotFoundException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -290,7 +290,7 @@ public class SymbolicExecutionLab {
         try {
             for (DataPoint d : OptimizingSolver.solverTimes) {
                 solverTimesWriter.write(
-                        String.format("%c\t%d\t%d\t%d\n", d.type.c, d.timeInMs, d.traceLength, d.numberOfLoops));
+                        String.format("%c\t%d\t%d\t%d\n", d.type.c, d.timeInNs, d.traceLength, d.numberOfLoops));
             }
             solverTimesWriter.flush();
         } catch (IOException e) {
