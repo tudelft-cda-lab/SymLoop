@@ -20,18 +20,25 @@ def read(filename):
 def parse(filename):
     lines = read(filename)
     for err, seconds in re.findall(r'Error\s+(\d+):\s+(\S*)', lines):
-        # print(err, seconds)
         yield (int(err), float(seconds))
 
 problemOutput = dict[str, dict[int, float]]
 
+
+def print_header(header):
+    l = len(header)
+    target = 18
+    if l < target:
+        diff = (target - l) // 2
+        pad = ''.join([' '] * diff)
+        header = pad + header + pad
+    print(f'  --===#### {header} ####===--')
 
 def write_results_to_latex(problem, output: problemOutput):
     data = output
     errors = set()
     for program in sorted(data.keys()):
         errors.update(data[program].keys())
-    print(problem,errors)
     errors = sorted(list(errors))
     rows = [['Program / Error', *errors]]
     for program in sorted(data.keys()):
@@ -46,16 +53,11 @@ def write_results_to_latex(problem, output: problemOutput):
             else:
                 row.append('-')
         rows.append(row)
-    print(rows)
-    print(tabulate(rows))
-    print('Tabulate Table:')
-    print(tabulate(rows, headers='firstrow'))
-    df = pd.DataFrame(rows)
     f = open(f'/home/bram/projects/thesis/chapters/results/{problem}.tex', 'w')
     f.write(tabulate(rows, tablefmt='latex', headers='firstrow'))
     f.close()
 
-def get_output_file_names(folder):
+def get_output_file_names(folder, filenames=['errors.txt', 'out.txt']):
     if os.path.exists(folder):
         klee = os.path.join(folder, 'klee')
         dirname = folder
@@ -65,21 +67,21 @@ def get_output_file_names(folder):
             if 'problem' not in problem:
                 continue
             problemdir = os.path.join(dirname, problem)
-            e = os.path.join(problemdir, 'errors.txt')
-            o = os.path.join(problemdir, 'out.txt')
-            if os.path.exists(e):
-                yield (problem, e)
-            elif os.path.exists(o):
-                yield (problem, o)
+            for f in filenames:
+                e = os.path.join(problemdir, f)
+                if os.path.exists(e):
+                    yield (problem, e)
+                    break
             else:
                 print(f"no output for problem '{problem}' in '{folder}'")
 
+def get_output_profile_names(folder):
+    return list(get_output_file_names(folder, filenames=['solvertimes.csv']))
 
 def generate_bar_chart(problem: str, output: problemOutput):
-    print(problem, output)
     errors = set()
-    [errors.update(e.keys()) for e in output.values()]
-    print(problem, errors)
+    for e in output.values():
+        errors.update(e.keys())
     programs = dict()
     errors = sorted(list(errors))
     default = -100
@@ -90,7 +92,6 @@ def generate_bar_chart(problem: str, output: problemOutput):
                 # programs[program].append(times[error])
             # else:
                 # programs[program].append(-1)
-    print(programs)
     x = np.arange(len(errors))
     width = 1.0 / (len(programs) + 4)
     programs = sorted(programs.items())
@@ -104,16 +105,24 @@ def generate_bar_chart(problem: str, output: problemOutput):
     plt.yscale("log") 
     # plt.show(block=True)
 
+
+def aggregate_times(df, group_by='TYPE'):
+    return df.groupby(group_by).agg(
+        sum=('S', np.sum),
+        mean=('S', np.mean),
+        count=('S', len))
+
 if __name__ == '__main__':
     folders = sys.argv[1:]
     # program / problem / error -> time
     outputs:dict[str, dict[str, dict[int, float]]] = defaultdict(dict)
     # problem / program / error -> time
     per_problem:dict[str, dict[str, dict[int, float]]] = defaultdict(dict)
-    rows= []
+    rows = []
     for folder in folders:
         t = '+01:00'
         name = folder[folder.index(t)+len(t)+1:]
+        fname = folder
         files = list(get_output_file_names(folder))
         folder = name
         for problem, f in files:
@@ -122,11 +131,33 @@ if __name__ == '__main__':
             per_problem[problem][folder] = timings
             for e, t in timings.items():
                 rows.append((folder, problem, e, t))
+        overall = pd.DataFrame()
+        for problem, f in get_output_profile_names(fname):
+            df = pd.DataFrame(pd.read_csv(f, delimiter='\t'))
+            ns = df['NS']
+            assert ns is not None
+            df['S'] = ns / 1000000000
+            overall = pd.concat([overall, df])
+            print_header(problem)
+            print(aggregate_times(df))
+            # print(df)
+            # print(df.groupby('TYPE')['S'].agg(np.sum))
+            print()
+            # for a, b in df.groupby('LOOPS'):
+            #     data = b['MS']
+            #     assert data is not None
+            #     print(problem, a, f'{np.average(data.to_numpy()):10.0f}')
+            # print()
+        print_header('all problems')
+        print(aggregate_times(overall))
+        print()
+        print(aggregate_times(overall, group_by='LOOPS'))
+        # print()
+
 
     for problem, data in sorted(per_problem.items()):
         write_results_to_latex(problem, data)
         generate_bar_chart(problem, data)
-
 
 
     # df = pd.DataFrame(rows, columns=['Program', 'Problem', 'Error', 'Time'])
