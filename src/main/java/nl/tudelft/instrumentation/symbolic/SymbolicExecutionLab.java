@@ -6,9 +6,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.*;
 
-import com.google.common.graph.EndpointPair;
-import com.google.common.graph.GraphBuilder;
-import com.google.common.graph.MutableGraph;
 import com.microsoft.z3.*;
 
 import nl.tudelft.instrumentation.fuzzing.BranchVisitedTracker;
@@ -47,8 +44,6 @@ public class SymbolicExecutionLab {
 
     static HashMap<String, Integer> nameCounts = new HashMap<String, Integer>();
 
-    private static MutableGraph<String> graph = GraphBuilder.directed().allowsSelfLoops(true).build();
-    private static Map<String, String> edges = new HashMap<String, String>();
 
     public static HashMap<String, MyVar> vars = new HashMap<>();
 
@@ -274,32 +269,8 @@ public class SymbolicExecutionLab {
         }
     }
 
-    static void saveGraph(boolean always) {
-        if (changed || always) {
-            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("graph.dot")))) {
-                out.write("digraph {\nrankdir=TB\n");
-                for (EndpointPair<String> e : graph.edges()) {
-                    out.write(String.format("%s-> %s [ label=\"%s\"];\n", e.source(), e.target(),
-                            edges.get(e.source() + e.target()).replace("\"", "'")));
-                    out.newLine();
-                }
-                out.write("}\n");
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
         String newPathString = String.format("%s_%d", processedInput, line_nr);
-        String from = String.valueOf(currentLineNumber);
-        String to = String.valueOf(line_nr);
-        if (graph.putEdge(from, to)) {
-            changed = true;
-            edges.put(from + to, condition.z3var.toString());
-        }
-
         currentLineNumber = line_nr;
         currentValue = value;
         branchTracker.visit(line_nr, value);
