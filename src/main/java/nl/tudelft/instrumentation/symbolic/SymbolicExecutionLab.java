@@ -1,9 +1,5 @@
 package nl.tudelft.instrumentation.symbolic;
 
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.*;
 
 import com.microsoft.z3.*;
@@ -43,13 +39,12 @@ public class SymbolicExecutionLab {
 
     static HashMap<String, Integer> nameCounts = new HashMap<String, Integer>();
 
-
     public static HashMap<String, MyVar> vars = new HashMap<>();
 
     public static boolean shouldSolve = true;
 
     public static int numberOfLoopsInPathConstraint = 0;
-    
+
     private static Profiling profiler = new Profiling();
 
     static void initialize(String[] inputSymbols) {
@@ -94,26 +89,11 @@ public class SymbolicExecutionLab {
         return myVar;
     }
 
-    private static String input = "";
-    private static String output = "";
-    private static List<String> fullTrace = new ArrayList<>();
-    private static List<String> fullTraces = new ArrayList<>();
-    private static boolean invalid;
-
-    static void addToFullTrace() {
-        if (!input.isEmpty() && !invalid) {
-            fullTrace.add(String.format("%s/%s", input, output));
-        }
-    }
-
     static MyVar createInput(String name, Expr value, Sort s) {
         if (!skip && loopDetector.isIterationLooping()) {
             printfRed("STOPPING AT %s\n", processedInput);
             skip = true;
         }
-        addToFullTrace();
-        input = value.toString().replaceAll("\"", "");
-        output = "";
         // Create an input var, these should be free variables!
         // Do not add it to the model
         Context c = PathTracker.ctx;
@@ -256,18 +236,6 @@ public class SymbolicExecutionLab {
         loopDetector.addToLoopModel(c.mkEq(z3var, value));
     }
 
-    static void saveTraces() {
-        try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("traces.dat")))) {
-            out.write(String.format("%d %d\n", fullTraces.size(), PathTracker.inputSymbols.length));
-            for (String t : fullTraces) {
-                out.write(t);
-            }
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
         String newPathString = String.format("%s_%d", processedInput, line_nr);
         currentLineNumber = line_nr;
@@ -381,14 +349,8 @@ public class SymbolicExecutionLab {
         processedInput = "";
         currentBranchTracker.clear();
         skip = false;
-        invalid = false;
         shouldSolve = true;
         numberOfLoopsInPathConstraint = 0;
-
-        /// OUTPUT generation
-        output = "";
-        input = "";
-        fullTrace.clear();
     }
 
     static boolean isEmpty() {
@@ -481,8 +443,6 @@ public class SymbolicExecutionLab {
         }
         if (completed) {
             checkIfSolverIsRight(trace);
-            addToFullTrace();
-            fullTraces.add(String.format("1 %d %s\n", fullTrace.size(), String.join(" ", fullTrace)));
             // saveTraces();
             // saveGraph(false);
             printStatus();
@@ -540,10 +500,6 @@ public class SymbolicExecutionLab {
             if (!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {
                 System.out.println(out);
             }
-            invalid = true;
-            output += "INVALID";
-        } else {
-            output += out.strip();
         }
     }
 
