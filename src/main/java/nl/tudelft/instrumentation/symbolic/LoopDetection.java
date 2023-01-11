@@ -265,7 +265,9 @@ public class LoopDetection {
                 PathTracker.loopIterations.put(myNVar, r);
             }
         }
-        PathTracker.solver.minimize(numberOfTimesTheLoopExecutes);
+        if (Settings.getInstance().MINIMIZE) {
+            PathTracker.solver.minimize(numberOfTimesTheLoopExecutes);
+        }
         PathTracker.inputs.add(myNVar);
         BoolExpr oneOfTheLoop = history.mkOr(onLoop);
         history.save();

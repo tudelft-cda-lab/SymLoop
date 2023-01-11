@@ -17,6 +17,7 @@ public class Settings {
     private static Settings singleton;
 
     public final boolean UNFOLD_AND;
+    public final boolean MINIMIZE;
     public final int LOOP_UNROLLING_AMOUNT;
     public final int MAX_LOOP_DETECTION_DEPTH;
     // Longest a single testcase is allowed to run
@@ -60,7 +61,7 @@ public class Settings {
 
     private Settings(boolean unfoldAnd, String initial,
             int loopUnrollingAmount,
-            int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT, boolean CORRECT_INTEGER_MODEL) {
+            int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE) {
         this.UNFOLD_AND = unfoldAnd;
         this.INITIAL_TRACE = initial == null ? null : initial.split(",");
         this.LOOP_UNROLLING_AMOUNT = loopUnrollingAmount;
@@ -69,6 +70,7 @@ public class Settings {
         this.MAX_TIME_S = maxTimeS;
         this.STOP_ON_FIRST_TIMEOUT = STOP_ON_FIRST_TIMEOUT;
         this.CORRECT_INTEGER_MODEL = CORRECT_INTEGER_MODEL;
+        this.MINIMIZE = MINIMIZE;
     }
 
     public static Settings create(String[] args) {
@@ -77,6 +79,7 @@ public class Settings {
             boolean unfoldAnd = cl.hasOption("unfold-and");
             boolean STOP_ON_FIRST_TIMEOUT = !cl.hasOption("continue-on-timeout");
             boolean CORRECT_INTEGER_MODEL = !cl.hasOption("incorrect-integer-model");
+            boolean MINIMIZE = !cl.hasOption("no-minimize");
             String initialTrace = cl.getOptionValue("initial-trace", null);
             int loopUnrollingAmount = Integer
                     .parseInt(cl.getOptionValue("unroll-loops",
@@ -90,7 +93,7 @@ public class Settings {
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
             Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
                     loopDetectionDepth,
-                    maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT, CORRECT_INTEGER_MODEL);
+                    maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT, CORRECT_INTEGER_MODEL, MINIMIZE);
             singleton = s;
             return s;
         } else {
@@ -104,6 +107,8 @@ public class Settings {
 
     private static Options getOptions() {
         Options options = new Options();
+        options.addOption("n", "no-minimize", false,
+                "Disable minimization strategy to the solver for loop constraints. Minimization makes the generated inputs shorter.");
         options.addOption("u", "unfold-and", false,
                 "Unfold 'AND' expressions to possibly make the loop constraints shorter.");
         options.addOption("cim", "correct-integer-model", false,
