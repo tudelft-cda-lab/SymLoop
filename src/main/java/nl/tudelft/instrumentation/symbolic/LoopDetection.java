@@ -75,9 +75,9 @@ public class LoopDetection {
         return false;
     }
 
-    String getAmountQualifier(int min, int max){
+    String getAmountQualifier(int min, int max) {
         if (max == -1) {
-            if(min <= 0) {
+            if (min <= 0) {
                 return "*";
             }
             if (min == 1) {
@@ -97,7 +97,7 @@ public class LoopDetection {
         String regex = String.format("^(%s)(?:%s)%s", basePart, loopPart, amountQuantifier);
         if (lastN > 1) {
             String end = "";
-            for (int i = lastN-2; i >= 0; i--) {
+            for (int i = lastN - 2; i >= 0; i--) {
                 end = String.format("(%c%s)?", loopPart.charAt(i), end);
             }
             regex += end;
@@ -127,12 +127,14 @@ public class LoopDetection {
             Matcher m = currentPattern.matcher(INPUT);
             boolean isFullMatch = m.matches();
             if (isFullMatch) {
-                // System.out.printf("'%s' is still part of current pattern '%s'\n", INPUT, currentPattern);
+                // System.out.printf("'%s' is still part of current pattern '%s'\n", INPUT,
+                // currentPattern);
                 // Set it to true on the last input symbol
                 SymbolicExecutionLab.shouldSolve = SymbolicExecutionLab.isLastCharacter();
                 return false;
             } else {
-                // System.out.printf("'%s' not part of current pattern '%s' %d\n", INPUT, currentPattern, INPUT.length());
+                // System.out.printf("'%s' not part of current pattern '%s' %d\n", INPUT,
+                // currentPattern, INPUT.length());
                 currentPattern = null;
             }
         }
@@ -146,8 +148,9 @@ public class LoopDetection {
             BoolExpr loopModel = history.getConstraint(lastNSaves);
             BoolExpr extended = Replacement.applyAllTo(replacements, loopModel);
             BoolExpr selfLoopExpr = history.getSelfLoopExpr(lastNSaves);
-            if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr,SolvingForType.IS_SELF_LOOP, false, false)) {
-                // System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d", INPUT, lastNSaves));
+            if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr, SolvingForType.IS_SELF_LOOP, false, false)) {
+                // System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d", INPUT,
+                // lastNSaves));
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, -1);
                 selfLoopPatterns.add(currentPattern);
                 return true;
@@ -167,7 +170,8 @@ public class LoopDetection {
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 2, -1);
                 if (selfLoops.add(SymbolicExecutionLab.processedInput)) {
                     selfLoopPatterns.add(currentPattern);
-                    // SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n", SymbolicExecutionLab.processedInput, lastNSaves - 1);
+                    // SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
+                    // SymbolicExecutionLab.processedInput, lastNSaves - 1);
                 }
                 return false;
             }
@@ -183,7 +187,8 @@ public class LoopDetection {
                 return false;
             }
 
-            currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, Settings.getInstance().LOOP_UNROLLING_AMOUNT-1);
+            currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1,
+                    Settings.getInstance().LOOP_UNROLLING_AMOUNT - 1);
             if (!isLooping(INPUT, loopPatterns)) {
                 loopPatterns.add(currentPattern);
             }
@@ -221,14 +226,16 @@ public class LoopDetection {
         solver.add(loop.toArray(BoolExpr[]::new));
 
         Status status = solver.check(SolvingForType.IS_REATING_LOOP);
-        if(status != Status.SATISFIABLE) {
+        if (status != Status.SATISFIABLE) {
             solver.pop();
         }
         if (status == Status.UNSATISFIABLE) {
-            // SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on model %s\n", status,
-            //         i, extended);
-            //         //
-            // TODO: Create a constraint that goes up to the number of times that it is possible to go through the loop.
+            // SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on
+            // model %s\n", status,
+            // i, extended);
+            // //
+            // TODO: Create a constraint that goes up to the number of times that it is
+            // possible to go through the loop.
             return true;
         } else if (status == Status.UNKNOWN) {
             SymbolicExecutionLab.printfYellow("Solver exited with status: %s\n", status);
