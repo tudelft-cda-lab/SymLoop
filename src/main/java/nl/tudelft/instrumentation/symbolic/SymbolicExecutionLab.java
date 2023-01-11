@@ -1,7 +1,6 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -13,7 +12,6 @@ import com.google.common.graph.MutableGraph;
 import com.microsoft.z3.*;
 
 import nl.tudelft.instrumentation.fuzzing.BranchVisitedTracker;
-import nl.tudelft.instrumentation.symbolic.OptimizingSolver.DataPoint;
 import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
 
 /**
@@ -61,8 +59,8 @@ public class SymbolicExecutionLab {
     public static boolean shouldSolve = true;
 
     public static int numberOfLoopsInPathConstraint = 0;
-
-    private static BufferedWriter solverTimesWriter;
+    
+    private static Profiling profiler = new Profiling();
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -274,32 +272,6 @@ public class SymbolicExecutionLab {
         }
     }
 
-    static void saveSolverTimes() {
-        if (solverTimesWriter == null) {
-            try {
-                solverTimesWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("solvertimes.csv")));
-                solverTimesWriter.write("TYPE\tNS\tTRACE_LEN\tLOOPS\n");
-            } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-        try {
-            for (DataPoint d : OptimizingSolver.solverTimes) {
-                solverTimesWriter.write(
-                        String.format("%c\t%d\t%d\t%d\n", d.type.c, d.timeInNs, d.traceLength, d.numberOfLoops));
-            }
-            solverTimesWriter.flush();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        OptimizingSolver.solverTimes.clear();
-    }
-
     static void saveGraph(boolean always) {
         if (changed || always) {
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("graph.dot")))) {
@@ -364,14 +336,17 @@ public class SymbolicExecutionLab {
     static boolean isStillUsefull(Iterable<String> input) {
         String s = String.join("", input);
         if (errorTraces.contains(s)) {
+            printfRed("contained in  errorTraces: %s\n", s);
             return false;
         }
         for (String e : errorTraces) {
             if (s.startsWith(e)) {
+                printfRed("startswith error: %s\n", e);
                 return false;
             }
         }
         if (loopDetector.isSelfLooping(s)) {
+            printfRed("isSelfLooping: %s\n", s);
             return false;
         }
         return true;
@@ -531,7 +506,7 @@ public class SymbolicExecutionLab {
             printfGreen("All paths visited, exiting now\n");
         }
         printFinalStatus();
-        saveSolverTimes();
+        profiler.saveSolverTimes();
         // saveTraces();
         // saveGraph(true);
         System.exit(0);
@@ -567,7 +542,7 @@ public class SymbolicExecutionLab {
 
     private static void printFinalStatus() {
         printStatus();
-        System.out.println(errorTracker.summary());
+        // System.out.println(errorTracker.summary());
     }
 
     public static void printfGreen(String a, Object... args) {
