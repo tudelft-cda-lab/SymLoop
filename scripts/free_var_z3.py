@@ -14,3 +14,7 @@ def check_free(var):
 print("free before:", check_free(y))
 s.add( x < y)
 print("free after: ", check_free(y))
+
+import ctypes
+a = ctypes.c_ulong(-1)
+b = ctypes.c_ulong(1)
