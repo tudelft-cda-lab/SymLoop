@@ -37,3 +37,11 @@ short/
 experiments/
 RERS/
 src/main/resources/tests.txt
+*.html
+*.svg
+*.dot
+.classpath
+.project
+.settings/
+*.csv
+*.dat
