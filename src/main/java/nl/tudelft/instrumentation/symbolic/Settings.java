@@ -111,7 +111,7 @@ public class Settings {
                 "Disable minimization strategy to the solver for loop constraints. Minimization makes the generated inputs shorter.");
         options.addOption("u", "unfold-and", false,
                 "Unfold 'AND' expressions to possibly make the loop constraints shorter.");
-        options.addOption("cim", "correct-integer-model", false,
+        options.addOption("icim", "incorrect-integer-model", false,
                 "By default, the mod and division operators are not fully correct for negative values. Enabling this flag makes the model correct, but might lead to a degredation in performance.");
         options.addOption("c", "continue-on-timeout", false,
                 "Continue execution whenever a single trace times out. (Note: this may lead to missing paths)");
