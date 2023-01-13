@@ -9,6 +9,7 @@ import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
 import nl.tudelft.instrumentation.symbolic.exprs.ConstantCustomExpr;
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp;
+import nl.tudelft.instrumentation.symbolic.exprs.ExprMemoizer;
 import nl.tudelft.instrumentation.symbolic.exprs.NamedCustomExpr;
 
 /**
@@ -51,6 +52,8 @@ public class SymbolicExecutionLab {
 
     private static Profiling profiler = new Profiling();
 
+    public static ExprMemoizer memory = new ExprMemoizer();
+
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         String[] initial = Settings.getInstance().INITIAL_TRACE;
@@ -76,7 +79,9 @@ public class SymbolicExecutionLab {
         return name + "_" + index;
     }
 
+
     static MyVar createVar(String name, CustomExpr expr) {
+        // System.out.printf("create var (%s): %s\n",name, expr.toZ3());
         Expr value = expr.toZ3();
         /**
          * Create var, assign value and add to path constraint.
@@ -85,8 +90,11 @@ public class SymbolicExecutionLab {
          * obtain a path constraint.
          */
         loopDetector.assignToVariable(name, expr);
-        CustomExpr var = new NamedCustomExpr(createVarName(name), expr.type);
-        PathTracker.addToModel(CustomExprOp.mkEq(var, expr).toBoolExpr());
+        String newName = createVarName(name);
+        CustomExpr var = new NamedCustomExpr(newName, expr.type);
+
+        CustomExpr optimized = memory.addOptimized(newName, expr);
+        PathTracker.addToModel(CustomExprOp.mkEq(var, optimized).toBoolExpr());
         // loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
         MyVar myVar = new MyVar(name, var);
         vars.put(name, myVar);
@@ -210,16 +218,23 @@ public class SymbolicExecutionLab {
     }
 
     static void assign(MyVar var, String name, CustomExpr expr) {
+        // System.out.printf("MyVar (%s): %s \n %s\n", name, var.z3var(), expr.toZ3());
         Expr value = expr.toZ3();
         Sort s = expr.type.toSort();
         // All variable assignments, use single static assignment
         Context c = PathTracker.ctx;
-        CustomExpr customVar = new NamedCustomExpr(createVarName(name), expr.type);
+        String newName = createVarName(name);
+        CustomExpr customVar = new NamedCustomExpr(newName, expr.type);
         loopDetector.assignToVariable(name, expr);
         var.assign(customVar);
         CustomExpr eq = CustomExprOp.mkEq(customVar, expr);
-        PathTracker.addToModel(eq.toBoolExpr());
+        CustomExpr optimized = memory.addOptimized(newName, expr);
+        PathTracker.addToModel(CustomExprOp.mkEq(customVar, optimized).toBoolExpr());
+        // PathTracker.addToModel(eq.toBoolExpr());
         loopDetector.addToLoopModel(eq.toBoolExpr());
+        // if (name.equals("my_i")) {
+        //     System.exit(1);
+        // }
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
@@ -239,12 +254,12 @@ public class SymbolicExecutionLab {
             // Call the solver
             PathTracker.solve(c.mkEq(condition.z3var(), c.mkBool(!value)), SolvingForType.BRANCH, false, true);
         }
-        BoolExpr branchCondition = (BoolExpr) condition.z3var();
+        CustomExpr branchCondition = condition.expr;
         if (!value) {
-            branchCondition = c.mkNot(branchCondition);
+            branchCondition = CustomExprOp.mkNot(branchCondition);
         }
-        PathTracker.addToBranches(branchCondition);
-        loopDetector.addToLoopModel(branchCondition);
+        PathTracker.addToBranches((BoolExpr) memory.optimize(branchCondition).toZ3());
+        loopDetector.addToLoopModel((BoolExpr) branchCondition.toZ3());
     }
 
     static boolean isStillUsefull(Iterable<String> input) {
@@ -328,6 +343,7 @@ public class SymbolicExecutionLab {
     static void reset() {
         PathTracker.reset();
         loopDetector.reset();
+        memory.reset();
         nameCounts.clear();
         System.gc();
         currentLineNumber = 0;

@@ -29,4 +29,8 @@ public abstract class CustomExpr {
         assert this.type == ExprType.BOOL;
         return (BoolExpr) toZ3();
     }
+
+    public String toString() {
+        return toZ3().toString();
+    }
 }

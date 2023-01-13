@@ -96,7 +96,7 @@ public class PathTracker {
         Status status = s.check(type);
         if (status == Status.SATISFIABLE) {
             Model m = s.getModel();
-            // output += m;
+            output += m;
             LinkedList<String> new_inputs = new LinkedList<String>();
             for (MyVar v : PathTracker.inputs) {
                 if (loopIterations.containsKey(v)) {

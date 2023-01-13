@@ -24,4 +24,5 @@ public class NamedCustomExpr extends CustomExpr {
         return ctx.mkConst(name, this.type.toSort());
     }
 
+
 }

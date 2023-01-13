@@ -45,4 +45,15 @@ public class ConstantCustomExpr extends CustomExpr {
         return null;
     }
 
+
+    public boolean asBool() {
+        assert this.type == ExprType.BOOL;
+        return (boolean) this.value;
+    }
+
+    public int asInt() {
+        assert this.type == ExprType.INT;
+        return (int) this.value;
+    }
+
 }

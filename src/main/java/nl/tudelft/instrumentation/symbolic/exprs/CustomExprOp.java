@@ -38,8 +38,38 @@ public class CustomExprOp extends CustomExpr {
 
     private CustomExprOp(ExprType type, Operation op, CustomExpr... args) {
         super(type);
+        for(int i = 0; i < args.length; i++) {
+            assert args[i] != null;
+        }
         this.args = args;
         this.op = op;
+    }
+
+
+    public static CustomExprOp mkBinop(Operation op, CustomExpr left, CustomExpr right) {
+        ExprType ret;
+        switch(op) {
+                case ADD:
+                case DIV:
+                case MOD:
+                case MUL:
+                case SUB:
+                    ret = ExprType.INT;
+                    break;
+                case EQ:
+                case GT:
+                case GTE:
+                case LT:
+                case LTE:
+                    ret = ExprType.BOOL;
+                    break;
+                default:
+                    ret = null;
+                    System.out.println("INVALID BINOP:" + op);
+                    assert false;
+
+        }
+        return new CustomExprOp(ret, op, left, right);
     }
 
     public static CustomExprOp mkEq(CustomExpr a, CustomExpr b) {
@@ -76,7 +106,7 @@ public class CustomExprOp extends CustomExpr {
 
     public static CustomExprOp mkITE(CustomExpr condition, CustomExpr a, CustomExpr b) {
         assertType(condition, ExprType.BOOL);
-        assert a.type == b.type;
+        assert a.type.equals(b.type);
         return new CustomExprOp(a.type, Operation.ITE, condition, a, b);
     }
 
@@ -129,7 +159,7 @@ public class CustomExprOp extends CustomExpr {
     }
 
     private static void assertType(CustomExpr e, ExprType t) {
-        assert e.type == t;
+        assert e.type.equals(t);
     }
 
     public static CustomExprOp mkNot(CustomExpr a) {
@@ -138,19 +168,19 @@ public class CustomExprOp extends CustomExpr {
     }
 
     public ArithExpr[] argsToArith() {
-        ArithExpr[] args = new ArithExpr[this.args.length];
-        for (int i = 0; i < args.length; i++) {
-            args[i] = this.args[i].toArithExpr();
+        ArithExpr[] newArgs = new ArithExpr[this.args.length];
+        for (int i = 0; i < newArgs.length; i++) {
+            newArgs[i] = this.args[i].toArithExpr();
         }
-        return args;
+        return newArgs;
     }
 
     public BoolExpr[] argsToBool() {
-        BoolExpr[] args = new BoolExpr[this.args.length];
-        for (int i = 0; i < args.length; i++) {
-            args[i] = this.args[i].toBoolExpr();
+        BoolExpr[] newArgs = new BoolExpr[this.args.length];
+        for (int i = 0; i < newArgs.length; i++) {
+            newArgs[i] = this.args[i].toBoolExpr();
         }
-        return args;
+        return newArgs;
     }
 
     static ArithExpr mkAbs(Context ctx, ArithExpr a) {
