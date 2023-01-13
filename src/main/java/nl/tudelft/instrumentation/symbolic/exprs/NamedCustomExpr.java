@@ -34,5 +34,12 @@ public class NamedCustomExpr extends CustomExpr {
         return this;
     }
 
+    public boolean equals(Object other) {
+        if (super.equals(other) && other instanceof NamedCustomExpr) {
+            NamedCustomExpr that = (NamedCustomExpr) other;
+            return this.name.equals(that.name);
+        }
+        return false;
+    }
 
 }

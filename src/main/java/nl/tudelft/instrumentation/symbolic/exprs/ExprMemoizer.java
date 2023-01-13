@@ -1,6 +1,8 @@
 package nl.tudelft.instrumentation.symbolic.exprs;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp.Operation;
@@ -103,16 +105,21 @@ public class ExprMemoizer {
     }
 
     public CustomExpr handleAnd(CustomExpr... args) {
-        CustomExpr[] optimized = new CustomExpr[args.length];
+        List<CustomExpr> optimized = new ArrayList<>(args.length);
         for (int i = 0; i < args.length; i++) {
-            optimized[i] = optimize(args[i]);
-            if (optimized[i] instanceof ConstantCustomExpr) {
-                if (((ConstantCustomExpr) optimized[i]).asBool() == false) {
+            CustomExpr o = optimize(args[i]);
+            if (o.isConst()) {
+                if (!o.asConst().asBool()) {
                     return ConstantCustomExpr.fromBool(false);
                 }
+            } else {
+                optimized.add(o);
             }
         }
-        return CustomExprOp.mkAnd(optimized);
+        if (optimized.size() == 0) {
+            return ConstantCustomExpr.fromBool(true);
+        }
+        return CustomExprOp.mkAnd(optimized.toArray(CustomExpr[]::new));
     }
 
     public CustomExpr handleNot(CustomExpr arg) {
@@ -123,20 +130,16 @@ public class ExprMemoizer {
         }
     }
 
-    public CustomExpr handleITE(CustomExpr condition, CustomExpr a, CustomExpr b)  {
+    public CustomExpr handleITE(CustomExpr condition, CustomExpr a, CustomExpr b) {
         CustomExpr c = optimize(condition);
         if (c instanceof ConstantCustomExpr) {
-            if(((ConstantCustomExpr) c).asBool()) {
+            if (((ConstantCustomExpr) c).asBool()) {
                 return a;
             } else {
                 return b;
             }
         }
-        // System.out.println(condition);
-        // System.out.println(a +":"+ a.type + "opt: " + optimize(a).type);
-        // System.out.println(b  +":"+ b.type + "opt: " + optimize(b).type);
-        // System.out.println("\nasdf\n");
-        return CustomExprOp.mkITE(c,  optimize(a), optimize(b));
+        return CustomExprOp.mkITE(c, optimize(a), optimize(b));
     }
 
     public CustomExpr eval(CustomExprOp e) {

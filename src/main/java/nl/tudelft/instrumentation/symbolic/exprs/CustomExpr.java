@@ -46,4 +46,13 @@ public abstract class CustomExpr {
     public CustomExpr substitute(CustomExpr from, CustomExpr to) {
         return substitute(new CustomExpr[]{from}, new CustomExpr[]{to});
     }
+
+    public boolean isConst() {
+        return this instanceof ConstantCustomExpr;
+    }
+
+    public ConstantCustomExpr asConst() {
+        assert isConst();
+        return (ConstantCustomExpr) this;
+    }
 }

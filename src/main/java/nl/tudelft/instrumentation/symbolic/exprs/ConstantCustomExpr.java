@@ -11,6 +11,9 @@ import nl.tudelft.instrumentation.symbolic.PathTracker;
 
 public class ConstantCustomExpr extends CustomExpr {
 
+    public static final ConstantCustomExpr TRUE = new ConstantCustomExpr(ExprType.BOOL, true);
+    public static final ConstantCustomExpr FALSE =new ConstantCustomExpr(ExprType.BOOL, false);
+
     public Object value;
 
     private ConstantCustomExpr(ExprType type, Object value) {
@@ -19,7 +22,10 @@ public class ConstantCustomExpr extends CustomExpr {
     }
 
     public static ConstantCustomExpr fromBool(boolean value) {
-        return new ConstantCustomExpr(ExprType.BOOL, value);
+        if (value) {
+            return TRUE;
+        }
+        return FALSE;
     }
 
     public static ConstantCustomExpr fromInt(int value) {
@@ -57,12 +63,20 @@ public class ConstantCustomExpr extends CustomExpr {
 
     @Override
     public CustomExpr substitute(CustomExpr[] from, CustomExpr[] to) {
-        for(int i = 0; i < from.length; i ++) {
+        for (int i = 0; i < from.length; i++) {
             if (this.equals(from[i])) {
                 return to[i];
             }
         }
         return this;
+    }
+
+    public boolean equals(Object other) {
+        if (super.equals(other) && other instanceof ConstantCustomExpr) {
+            ConstantCustomExpr that = (ConstantCustomExpr) other;
+            return this.value.equals(that.value);
+        }
+        return false;
     }
 
 }

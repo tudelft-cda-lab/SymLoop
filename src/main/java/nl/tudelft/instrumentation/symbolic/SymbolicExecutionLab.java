@@ -81,7 +81,6 @@ public class SymbolicExecutionLab {
 
     static MyVar createVar(String name, CustomExpr expr) {
         // System.out.printf("create var (%s): %s\n",name, expr.toZ3());
-        Expr value = expr.toZ3();
         /**
          * Create var, assign value and add to path constraint.
          * We show how to do it for creating new symbols, please
@@ -107,7 +106,6 @@ public class SymbolicExecutionLab {
         }
         // Create an input var, these should be free variables!
         // Do not add it to the model
-        Context c = PathTracker.ctx;
         CustomExpr intermediate = new NamedCustomExpr(createVarName(name), expr.type);
         // intermediate = c.mkEq(intermediate, value);
         MyVar input = new MyVar(name, intermediate);
@@ -219,10 +217,7 @@ public class SymbolicExecutionLab {
 
     static void assign(MyVar var, String name, CustomExpr expr) {
         // System.out.printf("MyVar (%s): %s \n %s\n", name, var.z3var(), expr.toZ3());
-        Expr value = expr.toZ3();
-        Sort s = expr.type.toSort();
         // All variable assignments, use single static assignment
-        Context c = PathTracker.ctx;
         String newName = createVarName(name);
         CustomExpr customVar = new NamedCustomExpr(newName, expr.type);
         loopDetector.assignToVariable(name, expr);
@@ -345,7 +340,7 @@ public class SymbolicExecutionLab {
         loopDetector.reset();
         memory.reset();
         nameCounts.clear();
-        System.gc();
+        // System.gc();
         currentLineNumber = 0;
         inputInIndex = 0;
         processedInput = "";

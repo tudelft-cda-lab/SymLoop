@@ -113,7 +113,6 @@ public class LoopDetection {
         if (minAmount == 1) {
             assert m.matches();
         }
-        System.out.println(p);
         return p;
     }
 
@@ -230,7 +229,10 @@ public class LoopDetection {
             extended = Replacement.applyAllTo(replacements, extended, i);
             loop.add(extended);
         }
-        solver.add(loop.toArray(BoolExpr[]::new));
+        CustomExpr unrolledConstrained = CustomExprOp.mkAnd(loop.toArray(CustomExpr[]::new));
+        CustomExpr unrolledConstrainedOpt = SymbolicExecutionLab.memory.optimize(unrolledConstrained);
+
+        solver.add(unrolledConstrainedOpt.toBoolExpr());
 
         Status status = solver.check(SolvingForType.IS_REATING_LOOP);
         if (status != Status.SATISFIABLE) {
@@ -251,7 +253,8 @@ public class LoopDetection {
         assert status == Status.SATISFIABLE;
 
         List<CustomExpr> onLoop = new ArrayList<>();
-        CustomExpr numberOfTimesTheLoopExecutes = new NamedCustomExpr("custom_loop_number_" + (currentLoopNumber++), ExprType.INT);
+        CustomExpr numberOfTimesTheLoopExecutes = new NamedCustomExpr("custom_loop_number_" + (currentLoopNumber++),
+                ExprType.INT);
         for (int i = 0; i < LOOP_UNROLLING_AMOUNT; i += 1) {
             List<CustomExpr> thisIteration = new ArrayList<>();
             for (Replacement r : replacements) {

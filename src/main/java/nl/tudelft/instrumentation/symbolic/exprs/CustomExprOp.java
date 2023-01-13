@@ -283,10 +283,21 @@ public class CustomExprOp extends CustomExpr {
             }
         }
         CustomExpr[] newArgs = new CustomExpr[this.args.length];
+        boolean changed = false;
+        CustomExpr old;
+        boolean self = true;
         for(int i = 0; i < newArgs.length; i++) {
+            old = newArgs[i];
             newArgs[i] = this.args[i].substitute(from, to);
+            if (old != newArgs[i]) {
+                self = false;
+            }
         }
-        return new CustomExprOp(type, this.op, newArgs);
+        if (self) {
+            return this;
+        } else {
+            return new CustomExprOp(type, this.op, newArgs);
+        }
     }
 
     public boolean equals(Object other) {
