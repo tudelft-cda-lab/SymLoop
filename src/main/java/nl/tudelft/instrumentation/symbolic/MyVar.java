@@ -27,12 +27,8 @@ public class MyVar {
      * Create a new MyVar object from a Z3 expression that has already been given a name before.
      * @param v the Z3 expression.
      */
-    MyVar(Expr v, CustomExpr c){
-        this.z3var = v;
-        this.expr = c;
-    }
-
     MyVar(CustomExpr c){
+        assert c != null;
         this.z3var = c.toZ3();
         this.expr = c;
     }
@@ -42,9 +38,17 @@ public class MyVar {
      * @param v the Z3 expression
      * @param n the name of the variable.
      */
-    MyVar(Expr v, String n, CustomExpr c){
-        this.z3var = v;
+    MyVar(String n, CustomExpr c){
+        assert c != null;
+        this.z3var = c.toZ3();
         this.name = n;
+        this.expr = c;
+    }
+
+    public void assign(CustomExpr c){
+        assert c != null;
+        this.z3var = c.toZ3();
+        this.expr = c;
     }
 
 }

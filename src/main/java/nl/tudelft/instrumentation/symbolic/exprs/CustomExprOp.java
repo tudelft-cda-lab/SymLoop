@@ -107,25 +107,25 @@ public class CustomExprOp extends CustomExpr {
     public static CustomExprOp mkLt(CustomExpr a, CustomExpr b) {
         assertType(a, ExprType.INT);
         assertType(b, ExprType.INT);
-        return new CustomExprOp(ExprType.INT, Operation.LT, a, b);
+        return new CustomExprOp(ExprType.BOOL, Operation.LT, a, b);
     }
 
     public static CustomExprOp mkLe(CustomExpr a, CustomExpr b) {
         assertType(a, ExprType.INT);
         assertType(b, ExprType.INT);
-        return new CustomExprOp(ExprType.INT, Operation.LTE, a, b);
+        return new CustomExprOp(ExprType.BOOL, Operation.LTE, a, b);
     }
 
     public static CustomExprOp mkGt(CustomExpr a, CustomExpr b) {
         assertType(a, ExprType.INT);
         assertType(b, ExprType.INT);
-        return new CustomExprOp(ExprType.INT, Operation.GT, a, b);
+        return new CustomExprOp(ExprType.BOOL, Operation.GT, a, b);
     }
 
     public static CustomExprOp mkGe(CustomExpr a, CustomExpr b) {
         assertType(a, ExprType.INT);
         assertType(b, ExprType.INT);
-        return new CustomExprOp(ExprType.INT, Operation.GTE, a, b);
+        return new CustomExprOp(ExprType.BOOL, Operation.GTE, a, b);
     }
 
     private static void assertType(CustomExpr e, ExprType t) {

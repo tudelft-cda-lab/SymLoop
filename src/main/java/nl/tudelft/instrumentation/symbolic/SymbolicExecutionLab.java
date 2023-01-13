@@ -78,8 +78,6 @@ public class SymbolicExecutionLab {
 
     static MyVar createVar(String name, CustomExpr expr) {
         Expr value = expr.toZ3();
-        Sort s = expr.type.toSort();
-        Context c = PathTracker.ctx;
         /**
          * Create var, assign value and add to path constraint.
          * We show how to do it for creating new symbols, please
@@ -87,16 +85,15 @@ public class SymbolicExecutionLab {
          * obtain a path constraint.
          */
         loopDetector.assignToVariable(name, value);
-        Expr z3var = c.mkConst(c.mkSymbol(createVarName(name)), s);
-        PathTracker.addToModel(c.mkEq(z3var, value));
+        CustomExpr var = new NamedCustomExpr(createVarName(name), expr.type);
+        PathTracker.addToModel(CustomExprOp.mkEq(var, expr).toBoolExpr());
         // loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
-        MyVar myVar = new MyVar(z3var, name, expr);
+        MyVar myVar = new MyVar(name, expr);
         vars.put(name, myVar);
         return myVar;
     }
 
     static MyVar createInput(String name, ConstantCustomExpr expr) {
-        Sort s = expr.type.toSort();
         if (!skip && loopDetector.isIterationLooping()) {
             printfRed("STOPPING AT %s\n", processedInput);
             skip = true;
@@ -104,19 +101,19 @@ public class SymbolicExecutionLab {
         // Create an input var, these should be free variables!
         // Do not add it to the model
         Context c = PathTracker.ctx;
-        Expr intermediate = c.mkConst(c.mkSymbol(createVarName(name)), s);
+        CustomExpr intermediate = new NamedCustomExpr(createVarName(name), expr.type);
         // intermediate = c.mkEq(intermediate, value);
-        MyVar input = new MyVar(intermediate, name, new NamedCustomExpr(name, expr.type));
+        MyVar input = new MyVar(name, intermediate);
         vars.put(name, input);
         PathTracker.inputs.add(input);
 
         // restrict inputs to the valid input symbols found in PathTracker.inputSymbols
         BoolExpr[] temp = new BoolExpr[PathTracker.inputSymbols.length];
         for (int i = 0; i < PathTracker.inputSymbols.length; i++) {
-            temp[i] = c.mkEq(c.mkString(PathTracker.inputSymbols[i]), intermediate);
+            temp[i] = CustomExprOp.mkEq(ConstantCustomExpr.fromString(PathTracker.inputSymbols[i]), intermediate).toBoolExpr();
         }
 
-        loopDetector.assignToVariable(name, intermediate);
+        loopDetector.assignToVariable(name, intermediate.toZ3());
         PathTracker.addToModel(c.mkOr(temp));
         // loopModel = PathTracker.ctx.mkTrue();
         // loopModel = c.mkAnd(c.mkOr(temp), loopModel);
@@ -136,7 +133,7 @@ public class SymbolicExecutionLab {
         // Any unary expression (!)
         if (operator.equals("!")) {
             CustomExpr c = CustomExprOp.mkNot(var);
-            return new MyVar(c.toZ3(), c);
+            return new MyVar(c);
         }
         throw new IllegalArgumentException(String.format("unary operator: %s not implement", operator));
     }
@@ -217,11 +214,12 @@ public class SymbolicExecutionLab {
         Sort s = expr.type.toSort();
         // All variable assignments, use single static assignment
         Context c = PathTracker.ctx;
-        Expr z3var = c.mkConst(c.mkSymbol(createVarName(name)), s);
+        CustomExpr customVar = new NamedCustomExpr(createVarName(name), expr.type);
         loopDetector.assignToVariable(name, value);
-        var.z3var = z3var;
-        PathTracker.addToModel(c.mkEq(z3var, value));
-        loopDetector.addToLoopModel(c.mkEq(z3var, value));
+        var.assign(customVar);
+        CustomExpr eq = CustomExprOp.mkEq(customVar, expr);
+        PathTracker.addToModel(eq.toBoolExpr());
+        loopDetector.addToLoopModel(eq.toBoolExpr());
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {

@@ -14,6 +14,7 @@ public abstract class CustomExpr {
     public ExprType type;
 
     public CustomExpr(ExprType type) {
+        assert type != null;
         this.type = type;
     }
 

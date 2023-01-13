@@ -129,15 +129,15 @@ public class PathTracker {
 
     // Making temporary variables, i.e., within if-conditions
     public static MyVar tempVar(boolean value) {
-        return new MyVar(ctx.mkBool(value), ConstantCustomExpr.fromBool(value));
+        return new MyVar(ConstantCustomExpr.fromBool(value));
     }
 
     public static MyVar tempVar(int value) {
-        return new MyVar(ctx.mkInt(value), ConstantCustomExpr.fromInt(value));
+        return new MyVar(ConstantCustomExpr.fromInt(value));
     }
 
     public static MyVar tempVar(String value) {
-        return new MyVar(ctx.mkString(value), ConstantCustomExpr.fromString(value));
+        return new MyVar(ConstantCustomExpr.fromString(value));
     }
 
     // Making new stored variables
@@ -197,7 +197,8 @@ public class PathTracker {
         // if (i.z3var instanceof IntExpr || i.z3var instanceof ArithExpr) {
         // return SymbolicExecutionLab.createIntExpr((IntExpr) i.z3var, operator);
         // }
-        return new MyVar(ctx.mkFalse(), ConstantCustomExpr.fromBool(false));
+        assert false;
+        return new MyVar(ConstantCustomExpr.fromBool(false));
     }
 
     public static MyVar binaryExpr(MyVar i, MyVar j, String operator) {
@@ -207,6 +208,7 @@ public class PathTracker {
         if (i.z3var instanceof IntExpr) {
             return SymbolicExecutionLab.createIntExpr(i.expr, j.expr, operator);
         }
+        assert false;
         return new MyVar(ConstantCustomExpr.fromBool(false));
     }
 
