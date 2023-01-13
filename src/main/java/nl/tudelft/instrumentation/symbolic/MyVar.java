@@ -2,6 +2,9 @@ package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
 import com.microsoft.z3.*;
+
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+
 import java.util.Random;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -16,6 +19,7 @@ import java.io.IOException;
  * @author Sicco Verwer
  */
 public class MyVar {
+    public CustomExpr expr;
     public Expr z3var; // the Z3 expression that will used in the construction of a path constraint.
     public String name = "v";
 
