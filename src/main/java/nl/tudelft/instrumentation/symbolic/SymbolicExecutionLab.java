@@ -79,7 +79,6 @@ public class SymbolicExecutionLab {
         return name + "_" + index;
     }
 
-
     static MyVar createVar(String name, CustomExpr expr) {
         // System.out.printf("create var (%s): %s\n",name, expr.toZ3());
         Expr value = expr.toZ3();
@@ -116,16 +115,17 @@ public class SymbolicExecutionLab {
         PathTracker.inputs.add(input);
 
         // restrict inputs to the valid input symbols found in PathTracker.inputSymbols
-        BoolExpr[] temp = new BoolExpr[PathTracker.inputSymbols.length];
+        CustomExpr[] temp = new CustomExpr[PathTracker.inputSymbols.length];
         for (int i = 0; i < PathTracker.inputSymbols.length; i++) {
-            temp[i] = CustomExprOp.mkEq(ConstantCustomExpr.fromString(PathTracker.inputSymbols[i]), intermediate).toBoolExpr();
+            temp[i] = CustomExprOp.mkEq(ConstantCustomExpr.fromString(PathTracker.inputSymbols[i]), intermediate);
         }
 
         loopDetector.assignToVariable(name, intermediate);
-        PathTracker.addToModel(c.mkOr(temp));
+        CustomExpr orred = CustomExprOp.mkOr(temp);
+        PathTracker.addToModel(orred.toBoolExpr());
         // loopModel = PathTracker.ctx.mkTrue();
         // loopModel = c.mkAnd(c.mkOr(temp), loopModel);
-        loopDetector.nextInput(c.mkOr(temp), name);
+        loopDetector.nextInput(orred, name);
 
         assert inputInIndex < currentTrace.size();
         // System.out.printf("inputInIndex: %d\n", inputInIndex);
@@ -231,9 +231,9 @@ public class SymbolicExecutionLab {
         CustomExpr optimized = memory.addOptimized(newName, expr);
         PathTracker.addToModel(CustomExprOp.mkEq(customVar, optimized).toBoolExpr());
         // PathTracker.addToModel(eq.toBoolExpr());
-        loopDetector.addToLoopModel(eq.toBoolExpr());
+        loopDetector.addToLoopModel(eq);
         // if (name.equals("my_i")) {
-        //     System.exit(1);
+        // System.exit(1);
         // }
     }
 
@@ -246,20 +246,20 @@ public class SymbolicExecutionLab {
         if (skip) {
             return;
         }
-        Context c = PathTracker.ctx;
         if (
         // currentTrace.size() <= processedInput.length() &&
         shouldSolve &&
                 alreadySolvedBranches.add(newPathString)) {
             // Call the solver
-            PathTracker.solve(c.mkEq(condition.z3var(), c.mkBool(!value)), SolvingForType.BRANCH, false, true);
+            PathTracker.solve(CustomExprOp.mkEq(ConstantCustomExpr.fromBool(!value), condition.expr),
+                    SolvingForType.BRANCH, false, true);
         }
         CustomExpr branchCondition = condition.expr;
         if (!value) {
             branchCondition = CustomExprOp.mkNot(branchCondition);
         }
         PathTracker.addToBranches((BoolExpr) memory.optimize(branchCondition).toZ3());
-        loopDetector.addToLoopModel((BoolExpr) branchCondition.toZ3());
+        loopDetector.addToLoopModel(branchCondition);
     }
 
     static boolean isStillUsefull(Iterable<String> input) {

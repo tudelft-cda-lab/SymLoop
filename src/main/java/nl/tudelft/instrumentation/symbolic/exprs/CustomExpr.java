@@ -33,4 +33,17 @@ public abstract class CustomExpr {
     public String toString() {
         return toZ3().toString();
     }
+
+    public boolean equals(Object other) {
+        if (other instanceof CustomExpr) {
+            CustomExpr o = (CustomExpr) other;
+            return o.type.equals(this.type);
+        }
+        return false;
+    }
+
+    public abstract CustomExpr substitute(CustomExpr[] from, CustomExpr[] to);
+    public CustomExpr substitute(CustomExpr from, CustomExpr to) {
+        return substitute(new CustomExpr[]{from}, new CustomExpr[]{to});
+    }
 }

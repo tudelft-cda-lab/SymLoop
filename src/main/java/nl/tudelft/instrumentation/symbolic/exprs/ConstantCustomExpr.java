@@ -45,7 +45,6 @@ public class ConstantCustomExpr extends CustomExpr {
         return null;
     }
 
-
     public boolean asBool() {
         assert this.type == ExprType.BOOL;
         return (boolean) this.value;
@@ -54,6 +53,16 @@ public class ConstantCustomExpr extends CustomExpr {
     public int asInt() {
         assert this.type == ExprType.INT;
         return (int) this.value;
+    }
+
+    @Override
+    public CustomExpr substitute(CustomExpr[] from, CustomExpr[] to) {
+        for(int i = 0; i < from.length; i ++) {
+            if (this.equals(from[i])) {
+                return to[i];
+            }
+        }
+        return this;
     }
 
 }

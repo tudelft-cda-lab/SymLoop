@@ -5,7 +5,10 @@ import java.util.*;
 
 import com.microsoft.z3.*;
 
+import nl.tudelft.instrumentation.symbolic.exprs.ConstantCustomExpr;
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp;
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp.Operation;
 
 public class ConstraintHistory {
 
@@ -13,7 +16,7 @@ public class ConstraintHistory {
     private HashMap<String, List<Integer>> lastVariables = new HashMap<>();
     private final Context ctx = PathTracker.ctx;
 
-    private List<List<BoolExpr>> loopModelList = new ArrayList<>();
+    private List<List<CustomExpr>> loopModelList = new ArrayList<>();
     private int numberOfSaves = 0;
 
     private HashSet<String> existing = new HashSet<>();
@@ -25,23 +28,23 @@ public class ConstraintHistory {
     public ConstraintHistory() {
     }
 
-    public BoolExpr mkAnd(List<BoolExpr> exprs) {
-        return ctx.mkAnd(exprs.toArray(BoolExpr[]::new));
+    public CustomExpr mkAnd(List<CustomExpr> exprs) {
+        return CustomExprOp.mkAnd(exprs.toArray(CustomExpr[]::new));
     }
 
-    public BoolExpr mkOr(List<BoolExpr> exprs) {
-        return ctx.mkOr(exprs.toArray(BoolExpr[]::new));
+    public CustomExpr mkOr(List<CustomExpr> exprs) {
+        return CustomExprOp.mkOr(exprs.toArray(CustomExpr[]::new));
     }
 
-    public BoolExpr getExtendedConstraint(int lastNSaves, List<Replacement> replacements) {
+    public CustomExpr getExtendedConstraint(int lastNSaves, List<Replacement> replacements) {
         assert lastNSaves <= loopModelList.size();
-        List<BoolExpr> expressions = new ArrayList<>();
+        List<CustomExpr> expressions = new ArrayList<>();
         int amountOfSaves = loopModelList.size();
         for (int i = amountOfSaves - lastNSaves; i < amountOfSaves; i++) {
-            List<BoolExpr> allConstraints = loopModelList.get(i);
-            List<BoolExpr> filtered = new ArrayList<>();
-            for (BoolExpr e : allConstraints) {
-                BoolExpr changed = e;
+            List<CustomExpr> allConstraints = loopModelList.get(i);
+            List<CustomExpr> filtered = new ArrayList<>();
+            for (CustomExpr e : allConstraints) {
+                CustomExpr changed = e;
                 for (Replacement r : replacements) {
                     changed = r.applyTo(changed);
                 }
@@ -54,9 +57,9 @@ public class ConstraintHistory {
         return mkAnd(expressions);
     }
 
-    public BoolExpr getConstraint(int lastNSaves) {
+    public CustomExpr getConstraint(int lastNSaves) {
         assert lastNSaves <= loopModelList.size();
-        List<BoolExpr> expressions = new ArrayList<>();
+        List<CustomExpr> expressions = new ArrayList<>();
         int amountOfSaves = loopModelList.size();
         for (int i = amountOfSaves - lastNSaves; i < amountOfSaves; i++) {
             expressions.add(mkAnd(loopModelList.get(i)));
@@ -83,15 +86,15 @@ public class ConstraintHistory {
         numberOfSaves = 0;
     }
 
-    public BoolExpr getSelfLoopExpr(int amountOfSaves) {
-        List<BoolExpr> constraints = new ArrayList<>();
+    public CustomExpr getSelfLoopExpr(int amountOfSaves) {
+        List<CustomExpr> constraints = new ArrayList<>();
         for (String name : variables.keySet()) {
             List<CustomExpr> assigns = variables.get(name);
             int lastLength = getLastVariableLength(name, amountOfSaves);
             if (lastLength == 0) {
-                return ctx.mkBool(false);
+                return ConstantCustomExpr.fromBool(false);
             }
-            constraints.add(ctx.mkEq(assigns.get(lastLength-1).toZ3(), assigns.get(assigns.size() - 1).toZ3()));
+            constraints.add(CustomExprOp.mkEq(assigns.get(lastLength - 1), assigns.get(assigns.size() - 1)));
         }
         return mkAnd(constraints);
     }
@@ -142,25 +145,27 @@ public class ConstraintHistory {
         return list.get(list.size() - 1);
     }
 
-    void nextInput(BoolExpr inputConstraint) {
+    void nextInput(CustomExpr inputConstraint) {
         addToLoopModel(inputConstraint);
     }
 
-    private void addToLoopModelList(BoolExpr condition) {
+    private void addToLoopModelList(CustomExpr condition) {
         // getLast(loopModelList).add(condition);
-        if (Settings.getInstance().UNFOLD_AND && (!condition.isConst()) && condition.isAnd()) {
-            Expr[] args = condition.getArgs();
-            for (Expr arg : args) {
-                BoolExpr v = (BoolExpr) arg;
-                addToLoopModelList(v);
+        if (Settings.getInstance().UNFOLD_AND && condition instanceof CustomExprOp) {
+            CustomExprOp c = (CustomExprOp) condition;
+            if (c.op == Operation.EQ) {
+                for (CustomExpr arg : c.args) {
+                    CustomExpr v = arg;
+                    addToLoopModelList(v);
+                }
+                return;
             }
 
-        } else {
-            getLast(loopModelList).add(condition);
         }
+        getLast(loopModelList).add(condition);
     }
 
-    void addToLoopModel(BoolExpr condition) {
+    void addToLoopModel(CustomExpr condition) {
         addToLoopModelList(condition);
     }
 

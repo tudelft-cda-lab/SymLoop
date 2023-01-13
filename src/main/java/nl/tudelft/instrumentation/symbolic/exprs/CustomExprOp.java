@@ -1,5 +1,7 @@
 package nl.tudelft.instrumentation.symbolic.exprs;
 
+import java.util.Arrays;
+
 import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -36,37 +38,38 @@ public class CustomExprOp extends CustomExpr {
     public final Operation op;
     public final CustomExpr[] args;
 
+    private Expr z3Cache = null;
+
     private CustomExprOp(ExprType type, Operation op, CustomExpr... args) {
         super(type);
-        for(int i = 0; i < args.length; i++) {
+        for (int i = 0; i < args.length; i++) {
             assert args[i] != null;
         }
         this.args = args;
         this.op = op;
     }
 
-
     public static CustomExprOp mkBinop(Operation op, CustomExpr left, CustomExpr right) {
         ExprType ret;
-        switch(op) {
-                case ADD:
-                case DIV:
-                case MOD:
-                case MUL:
-                case SUB:
-                    ret = ExprType.INT;
-                    break;
-                case EQ:
-                case GT:
-                case GTE:
-                case LT:
-                case LTE:
-                    ret = ExprType.BOOL;
-                    break;
-                default:
-                    ret = null;
-                    System.out.println("INVALID BINOP:" + op);
-                    assert false;
+        switch (op) {
+            case ADD:
+            case DIV:
+            case MOD:
+            case MUL:
+            case SUB:
+                ret = ExprType.INT;
+                break;
+            case EQ:
+            case GT:
+            case GTE:
+            case LT:
+            case LTE:
+                ret = ExprType.BOOL;
+                break;
+            default:
+                ret = null;
+                System.out.println("INVALID BINOP:" + op);
+                assert false;
 
         }
         return new CustomExprOp(ret, op, left, right);
@@ -197,8 +200,16 @@ public class CustomExprOp extends CustomExpr {
                         ctx.mkInt(-1)));
     }
 
+
     @Override
     public Expr toZ3() {
+        if(this.z3Cache == null) {
+            this.z3Cache = toZ3non_cached();
+        }
+        return this.z3Cache;
+    }
+
+    public Expr toZ3non_cached() {
         Context ctx = PathTracker.ctx;
         switch (this.op) {
             case ADD:
@@ -262,6 +273,28 @@ public class CustomExprOp extends CustomExpr {
         }
         assert false;
         return null;
+    }
+
+    @Override
+    public CustomExpr substitute(CustomExpr[] from, CustomExpr[] to) {
+        for(int i = 0; i < from.length; i ++) {
+            if (this.equals(from[i])) {
+                return to[i];
+            }
+        }
+        CustomExpr[] newArgs = new CustomExpr[this.args.length];
+        for(int i = 0; i < newArgs.length; i++) {
+            newArgs[i] = this.args[i].substitute(from, to);
+        }
+        return new CustomExprOp(type, this.op, newArgs);
+    }
+
+    public boolean equals(Object other) {
+        if (super.equals(other) && other instanceof CustomExprOp) {
+            CustomExprOp o = (CustomExprOp) other;
+            return o.op == op && Arrays.equals(o.args, args);
+        }
+        return false;
     }
 
 }

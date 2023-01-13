@@ -1,10 +1,19 @@
 package nl.tudelft.instrumentation.symbolic;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import com.microsoft.z3.*;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Model;
+import com.microsoft.z3.Status;
+
 import nl.tudelft.instrumentation.runner.CallableTraceRunner;
 import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
 import nl.tudelft.instrumentation.symbolic.exprs.ConstantCustomExpr;
@@ -74,7 +83,15 @@ public class PathTracker {
      *                   should
      *                   be printed in the terminal or not.
      */
-    public static boolean solve(BoolExpr new_branch, SolvingForType type, boolean printModel, boolean isInput) {
+    public static boolean solve(CustomExpr new_branch, SolvingForType type, boolean printModel, boolean isInput) {
+        CustomExpr optimized = SymbolicExecutionLab.memory.optimize(new_branch);
+        if (optimized instanceof ConstantCustomExpr) {
+            ConstantCustomExpr c = (ConstantCustomExpr) optimized;
+            if (!c.asBool()) {
+                return false;
+            }
+        }
+
         OptimizingSolver s = solver;
         // Solver s = ctx.mkSolver();
         String output = "";
@@ -82,7 +99,7 @@ public class PathTracker {
         // s.add(PathTracker.z3branches);
         // s.push();
         s.push();
-        s.add(new_branch);
+        s.add(optimized.toBoolExpr());
 
         if (printModel) {
             System.out.print("Model: ");
@@ -104,8 +121,8 @@ public class PathTracker {
                     String amountAsString = m.evaluate(v.z3var(), true).toString();
                     // SymbolicExecutionLab.printfBlue("loopVar %s: %s\n", v.z3var, amountAsString);
                     int amount = Integer.parseInt(amountAsString);
-                    for (Expr e : r.getAllExprs(amount)) {
-                        String value = m.evaluate(e, true).toString();
+                    for (CustomExpr e : r.getAllExprs(amount)) {
+                        String value = m.evaluate(e.toZ3(), true).toString();
                         new_inputs.add(value);
                     }
                 } else {

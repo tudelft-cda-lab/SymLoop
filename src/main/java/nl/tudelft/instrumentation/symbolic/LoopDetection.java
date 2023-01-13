@@ -9,7 +9,9 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
+import nl.tudelft.instrumentation.symbolic.exprs.ConstantCustomExpr;
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp;
 import nl.tudelft.instrumentation.symbolic.exprs.ExprType;
 import nl.tudelft.instrumentation.symbolic.exprs.NamedCustomExpr;
 
@@ -58,21 +60,22 @@ public class LoopDetection {
         return value.isNumeral();
     }
 
-    void nextInput(BoolExpr inputConstraint, String name) {
+    void nextInput(CustomExpr inputConstraint, String name) {
         inputName = name;
         history.nextInput(inputConstraint);
     }
 
-    void addToLoopModel(BoolExpr condition) {
+    void addToLoopModel(CustomExpr condition) {
         history.addToLoopModel(condition);
     }
 
-    boolean isSelfLoop(List<Replacement> replacements, BoolExpr extended) {
-        BoolExpr all = ctx.mkTrue();
-        for (Replacement r : replacements) {
-            all = ctx.mkAnd(r.isSelfLoopExpr(), all);
+    boolean isSelfLoop(List<Replacement> replacements, CustomExpr extended) {
+        CustomExpr[] all = new CustomExpr[replacements.size()];
+        for (int i = 0; i < replacements.size(); i++) {
+            all[i] = replacements.get(i).isSelfLoopExpr();
         }
-        if (PathTracker.solve(ctx.mkAnd(all, extended), SolvingForType.IS_SELF_LOOP, false, false)) {
+        if (PathTracker.solve(CustomExprOp.mkAnd(extended, CustomExprOp.mkAnd(all)), SolvingForType.IS_SELF_LOOP, false,
+                false)) {
             return true;
         }
         return false;
@@ -148,9 +151,9 @@ public class LoopDetection {
 
         for (; lastNSaves <= depth; lastNSaves++) {
             List<Replacement> replacements = history.getReplacementsForLastSaves(lastNSaves);
-            BoolExpr loopModel = history.getConstraint(lastNSaves);
-            BoolExpr extended = Replacement.applyAllTo(replacements, loopModel);
-            BoolExpr selfLoopExpr = history.getSelfLoopExpr(lastNSaves);
+            CustomExpr loopModel = history.getConstraint(lastNSaves);
+            CustomExpr extended = Replacement.applyAllTo(replacements, loopModel);
+            CustomExpr selfLoopExpr = history.getSelfLoopExpr(lastNSaves);
             if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr, SolvingForType.IS_SELF_LOOP, false, false)) {
                 // System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d", INPUT,
                 // lastNSaves));
@@ -216,12 +219,12 @@ public class LoopDetection {
         }
     }
 
-    boolean isFiniteLoop(BoolExpr extended, List<Replacement> replacements) {
+    boolean isFiniteLoop(CustomExpr extended, List<Replacement> replacements) {
         final int LOOP_UNROLLING_AMOUNT = Settings.getInstance().LOOP_UNROLLING_AMOUNT;
         OptimizingSolver solver = PathTracker.solver;
         solver.push();
 
-        List<BoolExpr> loop = new ArrayList<>();
+        List<CustomExpr> loop = new ArrayList<>();
         loop.add(extended);
         for (int i = 1; i < LOOP_UNROLLING_AMOUNT; i += 1) {
             extended = Replacement.applyAllTo(replacements, extended, i);
@@ -247,19 +250,18 @@ public class LoopDetection {
         }
         assert status == Status.SATISFIABLE;
 
-        List<BoolExpr> onLoop = new ArrayList<>();
-        CustomExpr n = new NamedCustomExpr("custom_loop_number_" + (currentLoopNumber++), ExprType.INT);
-        ArithExpr numberOfTimesTheLoopExecutes = n.toArithExpr();
+        List<CustomExpr> onLoop = new ArrayList<>();
+        CustomExpr numberOfTimesTheLoopExecutes = new NamedCustomExpr("custom_loop_number_" + (currentLoopNumber++), ExprType.INT);
         for (int i = 0; i < LOOP_UNROLLING_AMOUNT; i += 1) {
-            List<BoolExpr> thisIteration = new ArrayList<>();
+            List<CustomExpr> thisIteration = new ArrayList<>();
             for (Replacement r : replacements) {
-                thisIteration.add(ctx.mkEq(r.getExprAfter(i), r.getExprAfter(LOOP_UNROLLING_AMOUNT + 1)));
+                thisIteration.add(CustomExprOp.mkEq(r.getExprAfter(i), r.getExprAfter(LOOP_UNROLLING_AMOUNT + 1)));
             }
-            thisIteration.add(ctx.mkEq(numberOfTimesTheLoopExecutes, ctx.mkInt(i)));
+            thisIteration.add(CustomExprOp.mkEq(numberOfTimesTheLoopExecutes, ConstantCustomExpr.fromInt(i)));
             onLoop.add(history.mkAnd(thisIteration));
         }
         boolean onlyOneInputVariable = false;
-        MyVar myNVar = new MyVar(n);
+        MyVar myNVar = new MyVar(numberOfTimesTheLoopExecutes);
         for (Replacement r : replacements) {
             String varName = r.getName();
             String newName = SymbolicExecutionLab.getVarName(varName, r.getIndexAfter(0));
@@ -276,13 +278,13 @@ public class LoopDetection {
             }
         }
         if (Settings.getInstance().MINIMIZE) {
-            PathTracker.solver.minimize(numberOfTimesTheLoopExecutes);
+            PathTracker.solver.minimize(numberOfTimesTheLoopExecutes.toArithExpr());
         }
         PathTracker.inputs.add(myNVar);
-        BoolExpr oneOfTheLoop = history.mkOr(onLoop);
+        CustomExpr oneOfTheLoop = history.mkOr(onLoop);
         history.save();
         history.resetNumberOfSave();
-        PathTracker.addToBranches(oneOfTheLoop);
+        PathTracker.addToBranches(oneOfTheLoop.toBoolExpr());
         SymbolicExecutionLab.numberOfLoopsInPathConstraint += 1;
         return false;
     }

@@ -24,5 +24,15 @@ public class NamedCustomExpr extends CustomExpr {
         return ctx.mkConst(name, this.type.toSort());
     }
 
+    @Override
+    public CustomExpr substitute(CustomExpr[] from, CustomExpr[] to) {
+        for(int i = 0; i < from.length; i ++) {
+            if (this.equals(from[i])) {
+                return to[i];
+            }
+        }
+        return this;
+    }
+
 
 }
