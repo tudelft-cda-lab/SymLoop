@@ -20,7 +20,7 @@ import java.io.IOException;
  */
 public class MyVar {
     public CustomExpr expr;
-    public Expr z3var; // the Z3 expression that will used in the construction of a path constraint.
+    private Expr z3var; // the Z3 expression that will used in the construction of a path constraint.
     public String name = "v";
 
     /**
@@ -49,6 +49,10 @@ public class MyVar {
         assert c != null;
         this.z3var = c.toZ3();
         this.expr = c;
+    }
+
+    public Expr z3var() {
+        return expr.toZ3();
     }
 
 }

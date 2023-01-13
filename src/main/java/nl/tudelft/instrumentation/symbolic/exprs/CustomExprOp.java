@@ -75,7 +75,7 @@ public class CustomExprOp extends CustomExpr {
     }
 
     public static CustomExprOp mkITE(CustomExpr condition, CustomExpr a, CustomExpr b) {
-        assertType(a, ExprType.BOOL);
+        assertType(condition, ExprType.BOOL);
         assert a.type == b.type;
         return new CustomExprOp(a.type, Operation.ITE, condition, a, b);
     }
@@ -95,7 +95,7 @@ public class CustomExprOp extends CustomExpr {
     public static CustomExprOp mkAdd(CustomExpr a, CustomExpr b) {
         assertType(a, ExprType.INT);
         assertType(b, ExprType.INT);
-        return new CustomExprOp(ExprType.INT, Operation.SUB, a, b);
+        return new CustomExprOp(ExprType.INT, Operation.ADD, a, b);
     }
 
     public static CustomExprOp mkMul(CustomExpr a, CustomExpr b) {

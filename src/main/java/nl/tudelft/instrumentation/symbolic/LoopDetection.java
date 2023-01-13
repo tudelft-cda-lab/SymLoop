@@ -50,7 +50,7 @@ public class LoopDetection {
         currentPattern = null;
     }
 
-    void assignToVariable(String name, Expr value) {
+    void assignToVariable(String name, CustomExpr value) {
         history.assignToVariable(name, value);
     }
 
@@ -176,6 +176,7 @@ public class LoopDetection {
                     // SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
                     // SymbolicExecutionLab.processedInput, lastNSaves - 1);
                 }
+
                 return false;
             }
 
@@ -267,7 +268,7 @@ public class LoopDetection {
                 this.history.assignToVariable(varName, null);
             }
             MyVar v = SymbolicExecutionLab.vars.get(varName);
-            SymbolicExecutionLab.assign(v, varName, new NamedCustomExpr(newName, ExprType.fromSort(v.z3var.getSort())));
+            SymbolicExecutionLab.assign(v, varName, new NamedCustomExpr(newName, v.expr.type));
             if (r.name.equals(inputName)) {
                 assert !onlyOneInputVariable;
                 onlyOneInputVariable = true;

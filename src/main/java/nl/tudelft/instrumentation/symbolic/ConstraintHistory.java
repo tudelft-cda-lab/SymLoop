@@ -5,9 +5,11 @@ import java.util.*;
 
 import com.microsoft.z3.*;
 
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+
 public class ConstraintHistory {
 
-    private HashMap<String, List<Expr>> variables = new HashMap<>();
+    private HashMap<String, List<CustomExpr>> variables = new HashMap<>();
     private HashMap<String, List<Integer>> lastVariables = new HashMap<>();
     private final Context ctx = PathTracker.ctx;
 
@@ -84,12 +86,12 @@ public class ConstraintHistory {
     public BoolExpr getSelfLoopExpr(int amountOfSaves) {
         List<BoolExpr> constraints = new ArrayList<>();
         for (String name : variables.keySet()) {
-            List<Expr> assigns = variables.get(name);
+            List<CustomExpr> assigns = variables.get(name);
             int lastLength = getLastVariableLength(name, amountOfSaves);
             if (lastLength == 0) {
                 return ctx.mkBool(false);
             }
-            constraints.add(ctx.mkEq(assigns.get(lastLength-1), assigns.get(assigns.size() - 1)));
+            constraints.add(ctx.mkEq(assigns.get(lastLength-1).toZ3(), assigns.get(assigns.size() - 1).toZ3()));
         }
         return mkAnd(constraints);
     }
@@ -97,11 +99,11 @@ public class ConstraintHistory {
     public List<Replacement> getReplacementsForLastSaves(int amountOfSaves) {
         List<Replacement> replacements = new ArrayList<Replacement>();
         for (String name : variables.keySet()) {
-            List<Expr> assigns = variables.get(name);
+            List<CustomExpr> assigns = variables.get(name);
             int lastLength = getLastVariableLength(name, amountOfSaves);
             int added = assigns.size() - lastLength;
             if (added > 0) {
-                Sort s = assigns.get(0).getSort();
+                Sort s = assigns.get(0).type.toSort();
                 Replacement r = new Replacement(
                         name, s,
                         assigns.size() - 1, added, lastLength - 1);
@@ -119,11 +121,11 @@ public class ConstraintHistory {
         this.existing.clear();
     }
 
-    void assignToVariable(String name, Expr value) {
+    void assignToVariable(String name, CustomExpr value) {
         if (this.variables.containsKey(name)) {
             this.variables.get(name).add(value);
         } else {
-            List<Expr> initial = new ArrayList<Expr>();
+            List<CustomExpr> initial = new ArrayList<>();
             initial.add(value);
             this.variables.put(name, initial);
             List<Integer> l = new ArrayList<Integer>();

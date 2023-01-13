@@ -84,11 +84,11 @@ public class SymbolicExecutionLab {
          * add similar steps to the functions below in order to
          * obtain a path constraint.
          */
-        loopDetector.assignToVariable(name, value);
+        loopDetector.assignToVariable(name, expr);
         CustomExpr var = new NamedCustomExpr(createVarName(name), expr.type);
         PathTracker.addToModel(CustomExprOp.mkEq(var, expr).toBoolExpr());
         // loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
-        MyVar myVar = new MyVar(name, expr);
+        MyVar myVar = new MyVar(name, var);
         vars.put(name, myVar);
         return myVar;
     }
@@ -113,7 +113,7 @@ public class SymbolicExecutionLab {
             temp[i] = CustomExprOp.mkEq(ConstantCustomExpr.fromString(PathTracker.inputSymbols[i]), intermediate).toBoolExpr();
         }
 
-        loopDetector.assignToVariable(name, intermediate.toZ3());
+        loopDetector.assignToVariable(name, intermediate);
         PathTracker.addToModel(c.mkOr(temp));
         // loopModel = PathTracker.ctx.mkTrue();
         // loopModel = c.mkAnd(c.mkOr(temp), loopModel);
@@ -215,7 +215,7 @@ public class SymbolicExecutionLab {
         // All variable assignments, use single static assignment
         Context c = PathTracker.ctx;
         CustomExpr customVar = new NamedCustomExpr(createVarName(name), expr.type);
-        loopDetector.assignToVariable(name, value);
+        loopDetector.assignToVariable(name, expr);
         var.assign(customVar);
         CustomExpr eq = CustomExprOp.mkEq(customVar, expr);
         PathTracker.addToModel(eq.toBoolExpr());
@@ -237,9 +237,9 @@ public class SymbolicExecutionLab {
         shouldSolve &&
                 alreadySolvedBranches.add(newPathString)) {
             // Call the solver
-            PathTracker.solve(c.mkEq(condition.z3var, c.mkBool(!value)), SolvingForType.BRANCH, false, true);
+            PathTracker.solve(c.mkEq(condition.z3var(), c.mkBool(!value)), SolvingForType.BRANCH, false, true);
         }
-        BoolExpr branchCondition = (BoolExpr) condition.z3var;
+        BoolExpr branchCondition = (BoolExpr) condition.z3var();
         if (!value) {
             branchCondition = c.mkNot(branchCondition);
         }

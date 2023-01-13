@@ -101,7 +101,7 @@ public class PathTracker {
             for (MyVar v : PathTracker.inputs) {
                 if (loopIterations.containsKey(v)) {
                     Replacement r = loopIterations.get(v);
-                    String amountAsString = m.evaluate(v.z3var, true).toString();
+                    String amountAsString = m.evaluate(v.z3var(), true).toString();
                     // SymbolicExecutionLab.printfBlue("loopVar %s: %s\n", v.z3var, amountAsString);
                     int amount = Integer.parseInt(amountAsString);
                     for (Expr e : r.getAllExprs(amount)) {
@@ -109,7 +109,7 @@ public class PathTracker {
                         new_inputs.add(value);
                     }
                 } else {
-                    new_inputs.add(m.evaluate(v.z3var, true).toString());
+                    new_inputs.add(m.evaluate(v.z3var(), true).toString());
                 }
             }
             if (isInput) {
@@ -202,10 +202,10 @@ public class PathTracker {
     }
 
     public static MyVar binaryExpr(MyVar i, MyVar j, String operator) {
-        if (i.z3var instanceof BoolExpr) {
+        if (i.expr.type == ExprType.BOOL) {
             return SymbolicExecutionLab.createBoolExpr(i.expr, j.expr, operator);
         }
-        if (i.z3var instanceof IntExpr) {
+        if (i.expr.type == ExprType.INT) {
             return SymbolicExecutionLab.createIntExpr(i.expr, j.expr, operator);
         }
         assert false;
