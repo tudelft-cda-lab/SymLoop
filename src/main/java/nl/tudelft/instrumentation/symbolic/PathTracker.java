@@ -7,6 +7,10 @@ import java.util.concurrent.*;
 import com.microsoft.z3.*;
 import nl.tudelft.instrumentation.runner.CallableTraceRunner;
 import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
+import nl.tudelft.instrumentation.symbolic.exprs.ConstantCustomExpr;
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp;
+import nl.tudelft.instrumentation.symbolic.exprs.ExprType;
 
 /**
  * This class is used for the symbolic execution lab.
@@ -125,37 +129,37 @@ public class PathTracker {
 
     // Making temporary variables, i.e., within if-conditions
     public static MyVar tempVar(boolean value) {
-        return new MyVar(ctx.mkBool(value));
+        return new MyVar(ctx.mkBool(value), ConstantCustomExpr.fromBool(value));
     }
 
     public static MyVar tempVar(int value) {
-        return new MyVar(ctx.mkInt(value));
+        return new MyVar(ctx.mkInt(value), ConstantCustomExpr.fromInt(value));
     }
 
     public static MyVar tempVar(String value) {
-        return new MyVar(ctx.mkString(value));
+        return new MyVar(ctx.mkString(value), ConstantCustomExpr.fromString(value));
     }
 
     // Making new stored variables
     public static MyVar myVar(boolean value, String name) {
-        return SymbolicExecutionLab.createVar(name, ctx.mkBool(value), ctx.getBoolSort());
+        return SymbolicExecutionLab.createVar(name, ConstantCustomExpr.fromBool(value));
     }
 
     public static MyVar myVar(int value, String name) {
-        return SymbolicExecutionLab.createVar(name, ctx.mkInt(value), ctx.getIntSort());
+        return SymbolicExecutionLab.createVar(name, ConstantCustomExpr.fromInt(value));
     }
 
     public static MyVar myVar(String value, String name) {
-        return SymbolicExecutionLab.createVar(name, ctx.mkString(value), ctx.getStringSort());
+        return SymbolicExecutionLab.createVar(name, ConstantCustomExpr.fromString(value));
     }
 
     public static MyVar myVar(MyVar value, String name) {
-        return SymbolicExecutionLab.createVar(name, value.z3var, value.z3var.getSort());
+        return SymbolicExecutionLab.createVar(name, value.expr);
     }
 
     // Making a new input variable
     public static MyVar myInputVar(String value, String name) {
-        return SymbolicExecutionLab.createInput(name, ctx.mkString(value), ctx.getStringSort());
+        return SymbolicExecutionLab.createInput(name, ConstantCustomExpr.fromString(value));
     }
 
     // for assigning an array to a variable.
@@ -184,34 +188,39 @@ public class PathTracker {
      * This part is for handling arithmetic and boolean logic.
      */
     public static MyVar unaryExpr(MyVar i, String operator) {
-        if (i.z3var instanceof BoolExpr) {
-            return SymbolicExecutionLab.createBoolExpr((BoolExpr) i.z3var, operator);
+        if (i.expr.type == ExprType.BOOL) {
+            return SymbolicExecutionLab.createBoolExpr(i.expr, operator);
         }
-        if (i.z3var instanceof IntExpr || i.z3var instanceof ArithExpr) {
-            return SymbolicExecutionLab.createIntExpr((IntExpr) i.z3var, operator);
+        if (i.expr.type == ExprType.INT) {
+            return SymbolicExecutionLab.createIntExpr(i.expr, operator);
         }
-        return new MyVar(ctx.mkFalse());
+        // if (i.z3var instanceof IntExpr || i.z3var instanceof ArithExpr) {
+        // return SymbolicExecutionLab.createIntExpr((IntExpr) i.z3var, operator);
+        // }
+        return new MyVar(ctx.mkFalse(), ConstantCustomExpr.fromBool(false));
     }
 
     public static MyVar binaryExpr(MyVar i, MyVar j, String operator) {
         if (i.z3var instanceof BoolExpr) {
-            return SymbolicExecutionLab.createBoolExpr((BoolExpr) i.z3var, (BoolExpr) j.z3var, operator);
+            return SymbolicExecutionLab.createBoolExpr(i.expr, j.expr, operator);
         }
         if (i.z3var instanceof IntExpr) {
-            return SymbolicExecutionLab.createIntExpr((IntExpr) i.z3var, (IntExpr) j.z3var, operator);
+            return SymbolicExecutionLab.createIntExpr(i.expr, j.expr, operator);
         }
-        return new MyVar(ctx.mkFalse());
+        return new MyVar(ConstantCustomExpr.fromBool(false));
     }
 
     public static MyVar equals(MyVar i, MyVar j) {
-        return SymbolicExecutionLab.createStringExpr((SeqExpr) i.z3var, (SeqExpr) j.z3var, "==");
+        return SymbolicExecutionLab.createStringExpr(i.expr, j.expr, "==");
     }
 
     // We handle arrays, which needs an iterated if-then-else.
     public static MyVar arrayInd(MyVar[] name, MyVar index) {
-        Expr ite_expr = name[0].z3var;
+        CustomExpr ite_expr = name[0].expr;
         for (int i = 1; i < name.length; i++) {
-            ite_expr = ctx.mkITE(ctx.mkEq(ctx.mkInt(i), (IntExpr) index.z3var), name[i].z3var, ite_expr);
+            ite_expr = CustomExprOp.mkITE(
+                    CustomExprOp.mkEq(ConstantCustomExpr.fromInt(i), index.expr),
+                    name[i].expr, ite_expr);
         }
         return new MyVar(ite_expr);
     }
@@ -220,50 +229,52 @@ public class PathTracker {
     public static MyVar increment(MyVar i, String operator, boolean prefix) {
         if (prefix) {
             if (operator.equals("++"))
-                myAssign(i, new MyVar(ctx.mkAdd((IntExpr) i.z3var, ctx.mkInt(1))), "=");
+                myAssign(i, new MyVar(CustomExprOp.mkAdd(i.expr, ConstantCustomExpr.fromInt(1))), "=");
             if (operator.equals("--"))
-                myAssign(i, new MyVar(ctx.mkAdd((IntExpr) i.z3var, ctx.mkInt(-1))), "=");
+                myAssign(i, new MyVar(CustomExprOp.mkAdd(i.expr, ConstantCustomExpr.fromInt(-1))), "=");
             return i;
         } else {
-            MyVar old_var = new MyVar(i.z3var);
+            MyVar old_var = new MyVar(i.expr);
             if (operator.equals("++"))
-                myAssign(i, new MyVar(ctx.mkAdd((IntExpr) i.z3var, ctx.mkInt(1))), "=");
+                myAssign(i, new MyVar(CustomExprOp.mkAdd(i.expr, ConstantCustomExpr.fromInt(1))), "=");
             if (operator.equals("--"))
-                myAssign(i, new MyVar(ctx.mkAdd((IntExpr) i.z3var, ctx.mkInt(-1))), "=");
+                myAssign(i, new MyVar(CustomExprOp.mkAdd(i.expr, ConstantCustomExpr.fromInt(-1))), "=");
             return old_var;
         }
     }
 
     // We handle conditionals, which is an if-then-else.
     public static MyVar conditional(MyVar b, MyVar t, MyVar e) {
-        return new MyVar(ctx.mkITE((BoolExpr) b.z3var, t.z3var, e.z3var));
+        return new MyVar(CustomExprOp.mkITE(b.expr, t.expr, e.expr));
     }
 
     // Assignment changes the z3var in a MyVar variable.
     public static void myAssign(MyVar target, MyVar value, String operator) {
         // first add or subtract if necessary
-        Expr new_value = value.z3var;
+        CustomExpr new_value = value.expr;
         if (operator.equals("-="))
-            new_value = ctx.mkSub((IntExpr) target.z3var, (IntExpr) value.z3var);
+            new_value = CustomExprOp.mkSub(target.expr, value.expr);
         if (operator.equals("+="))
-            new_value = ctx.mkAdd((IntExpr) target.z3var, (IntExpr) value.z3var);
+            new_value = CustomExprOp.mkAdd(target.expr, value.expr);
 
-        SymbolicExecutionLab.assign(target, target.name, new_value, target.z3var.getSort());
+        SymbolicExecutionLab.assign(target, target.name, new_value);
     }
 
     // We handle arrays, again using if-then-else and call standard variable
     // assignment for all indices.
     public static void myAssign(MyVar[] name, MyVar index, MyVar value, String operator) {
         for (int i = 0; i < name.length; i++) {
-            Expr old_expr = name[i].z3var;
-            Expr new_value = value.z3var;
+            // Expr old_expr = name[i].z3var;
+            CustomExpr old_expr = name[i].expr;
+            // Expr new_value = value.z3var;
+            CustomExpr new_value = value.expr;
             if (operator.equals("-="))
-                new_value = ctx.mkSub((IntExpr) old_expr, (IntExpr) value.z3var);
+                new_value = CustomExprOp.mkSub(old_expr, value.expr);
             if (operator.equals("+="))
-                new_value = ctx.mkAdd((IntExpr) old_expr, (IntExpr) value.z3var);
+                new_value = CustomExprOp.mkAdd(old_expr, value.expr);
 
-            SymbolicExecutionLab.assign(name[i], name[i].name,
-                    ctx.mkITE(ctx.mkEq(ctx.mkInt(i), index.z3var), new_value, old_expr), name[i].z3var.getSort());
+            SymbolicExecutionLab.assign(name[i], name[i].name, CustomExprOp
+                    .mkITE(CustomExprOp.mkEq(ConstantCustomExpr.fromInt(i), index.expr), new_value, old_expr));
         }
     }
 

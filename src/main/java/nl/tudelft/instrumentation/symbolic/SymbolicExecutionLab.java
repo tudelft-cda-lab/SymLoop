@@ -6,6 +6,10 @@ import com.microsoft.z3.*;
 
 import nl.tudelft.instrumentation.fuzzing.BranchVisitedTracker;
 import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
+import nl.tudelft.instrumentation.symbolic.exprs.ConstantCustomExpr;
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp;
+import nl.tudelft.instrumentation.symbolic.exprs.NamedCustomExpr;
 
 /**
  * You should write your solution using this class.
@@ -72,7 +76,9 @@ public class SymbolicExecutionLab {
         return name + "_" + index;
     }
 
-    static MyVar createVar(String name, Expr value, Sort s) {
+    static MyVar createVar(String name, CustomExpr expr) {
+        Expr value = expr.toZ3();
+        Sort s = expr.type.toSort();
         Context c = PathTracker.ctx;
         /**
          * Create var, assign value and add to path constraint.
@@ -84,12 +90,13 @@ public class SymbolicExecutionLab {
         Expr z3var = c.mkConst(c.mkSymbol(createVarName(name)), s);
         PathTracker.addToModel(c.mkEq(z3var, value));
         // loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
-        MyVar myVar = new MyVar(z3var, name);
+        MyVar myVar = new MyVar(z3var, name, expr);
         vars.put(name, myVar);
         return myVar;
     }
 
-    static MyVar createInput(String name, Expr value, Sort s) {
+    static MyVar createInput(String name, ConstantCustomExpr expr) {
+        Sort s = expr.type.toSort();
         if (!skip && loopDetector.isIterationLooping()) {
             printfRed("STOPPING AT %s\n", processedInput);
             skip = true;
@@ -99,7 +106,7 @@ public class SymbolicExecutionLab {
         Context c = PathTracker.ctx;
         Expr intermediate = c.mkConst(c.mkSymbol(createVarName(name)), s);
         // intermediate = c.mkEq(intermediate, value);
-        MyVar input = new MyVar(intermediate, name);
+        MyVar input = new MyVar(intermediate, name, new NamedCustomExpr(name, expr.type));
         vars.put(name, input);
         PathTracker.inputs.add(input);
 
@@ -117,87 +124,66 @@ public class SymbolicExecutionLab {
 
         assert inputInIndex < currentTrace.size();
         // System.out.printf("inputInIndex: %d\n", inputInIndex);
-        processedInput += currentTrace.get(inputInIndex);
+        String next = currentTrace.get(inputInIndex);
+        assert next.equals(expr.value);
+        processedInput += next;
         inputInIndex++;
 
         return input;
     }
 
-    static MyVar createBoolExpr(BoolExpr var, String operator) {
+    static MyVar createBoolExpr(CustomExpr var, String operator) {
         // Any unary expression (!)
         if (operator.equals("!")) {
-            return new MyVar(PathTracker.ctx.mkNot(var));
+            CustomExpr c = CustomExprOp.mkNot(var);
+            return new MyVar(c.toZ3(), c);
         }
         throw new IllegalArgumentException(String.format("unary operator: %s not implement", operator));
     }
 
-    static MyVar createBoolExpr(BoolExpr left_var, BoolExpr right_var, String operator) {
+    static MyVar createBoolExpr(CustomExpr left_var, CustomExpr right_var, String operator) {
         // Any binary expression (&, &&, |, ||)
         if (operator.equals("&&") || operator.equals("&")) {
-            return new MyVar(PathTracker.ctx.mkAnd(left_var, right_var));
+            return new MyVar(CustomExprOp.mkAnd(left_var, right_var));
         } else if (operator.equals("||") || operator.equals("|")) {
-            return new MyVar(PathTracker.ctx.mkOr(left_var, right_var));
+            return new MyVar(CustomExprOp.mkOr(left_var, right_var));
         }
         throw new IllegalArgumentException(String.format("binary operator: %s not implement", operator));
     }
 
-    static MyVar createIntExpr(IntExpr var, String operator) {
+    static MyVar createIntExpr(CustomExpr var, String operator) {
         // Any unary expression (+, -)
         if (operator.equals("+")) {
             return new MyVar(var);
         } else if (operator.equals("-")) {
-            return new MyVar(PathTracker.ctx.mkUnaryMinus(var));
+            return new MyVar(CustomExprOp.mkUnaryMinus(var));
         }
 
         throw new IllegalArgumentException(String.format("unary int expression: %s not implement", operator));
     }
 
-    static MyVar createIntExpr(IntExpr left_var, IntExpr right_var, String operator) {
+    static MyVar createIntExpr(CustomExpr left_var, CustomExpr right_var, String operator) {
         // Any binary expression (+, -, /, etc)
-        Context ctx = PathTracker.ctx;
         if (operator.equals("==")) {
-            return new MyVar(PathTracker.ctx.mkEq(left_var, right_var));
+            return new MyVar(CustomExprOp.mkEq(left_var, right_var));
         } else if (operator.equals("<=")) {
-            return new MyVar(PathTracker.ctx.mkLe(left_var, right_var));
+            return new MyVar(CustomExprOp.mkLe(left_var, right_var));
         } else if (operator.equals(">=")) {
-            return new MyVar(PathTracker.ctx.mkGe(left_var, right_var));
+            return new MyVar(CustomExprOp.mkGe(left_var, right_var));
         } else if (operator.equals("<")) {
-            return new MyVar(PathTracker.ctx.mkLt(left_var, right_var));
+            return new MyVar(CustomExprOp.mkLt(left_var, right_var));
         } else if (operator.equals(">")) {
-            return new MyVar(PathTracker.ctx.mkGt(left_var, right_var));
+            return new MyVar(CustomExprOp.mkGt(left_var, right_var));
         } else if (operator.equals("*")) {
-            return new MyVar(PathTracker.ctx.mkMul(left_var, right_var));
+            return new MyVar(CustomExprOp.mkMul(left_var, right_var));
         } else if (operator.equals("-")) {
-            return new MyVar(PathTracker.ctx.mkSub(left_var, right_var));
+            return new MyVar(CustomExprOp.mkSub(left_var, right_var));
         } else if (operator.equals("+")) {
-            return new MyVar(PathTracker.ctx.mkAdd(left_var, right_var));
+            return new MyVar(CustomExprOp.mkAdd(left_var, right_var));
         } else if (operator.equals("%")) {
-            ArithExpr mod = PathTracker.ctx.mkMod(left_var, right_var);
-            if (Settings.getInstance().CORRECT_INTEGER_MODEL) {
-                return new MyVar(
-                        PathTracker.ctx.mkITE(
-                                PathTracker.ctx.mkOr(
-                                        PathTracker.ctx.mkGe(left_var,
-                                                (ArithExpr) PathTracker.ctx.mkInt(0)),
-                                        PathTracker.ctx.mkEq(mod,
-                                                (ArithExpr) PathTracker.ctx.mkInt(0))),
-
-                                mod,
-                                PathTracker.ctx.mkSub(mod, right_var)));
-            } else {
-                return new MyVar(mod);
-            }
+            return new MyVar(CustomExprOp.mkMod(left_var, right_var));
         } else if (operator.equals("/")) {
-            if (Settings.getInstance().CORRECT_INTEGER_MODEL) {
-                return new MyVar(ctx.mkMul(
-                        ctx.mkDiv(
-                                mkAbs(ctx, left_var),
-                                mkAbs(ctx, right_var)),
-                        mkSign(ctx, left_var),
-                        mkSign(ctx, right_var)));
-            } else {
-                return new MyVar(ctx.mkDiv(left_var, right_var));
-            }
+            return new MyVar(CustomExprOp.mkDiv(left_var, right_var));
         }
         throw new IllegalArgumentException(String.format("binary int expression: %s not implement", operator));
     }
@@ -216,17 +202,19 @@ public class SymbolicExecutionLab {
                         ctx.mkInt(-1)));
     }
 
-    static MyVar createStringExpr(SeqExpr left_var, SeqExpr right_var, String operator) {
+    static MyVar createStringExpr(CustomExpr left_var, CustomExpr right_var, String operator) {
         // We only support String.equals
         // return new MyVar(PathTracker.ctx.mkFalse());
         if (operator.equals("==")) {
-            return new MyVar(PathTracker.ctx.mkEq(left_var, right_var));
+            return new MyVar(CustomExprOp.mkEq(left_var, right_var));
 
         }
         throw new IllegalArgumentException(String.format("string operator: %s not implement", operator));
     }
 
-    static void assign(MyVar var, String name, Expr value, Sort s) {
+    static void assign(MyVar var, String name, CustomExpr expr) {
+        Expr value = expr.toZ3();
+        Sort s = expr.type.toSort();
         // All variable assignments, use single static assignment
         Context c = PathTracker.ctx;
         Expr z3var = c.mkConst(c.mkSymbol(createVarName(name)), s);

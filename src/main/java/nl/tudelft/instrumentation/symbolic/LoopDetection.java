@@ -9,6 +9,9 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+import nl.tudelft.instrumentation.symbolic.exprs.ExprType;
+import nl.tudelft.instrumentation.symbolic.exprs.NamedCustomExpr;
 
 public class LoopDetection {
 
@@ -244,8 +247,8 @@ public class LoopDetection {
         assert status == Status.SATISFIABLE;
 
         List<BoolExpr> onLoop = new ArrayList<>();
-        ArithExpr numberOfTimesTheLoopExecutes = (ArithExpr) ctx.mkConst("custom_loop_number_" + (currentLoopNumber++),
-                ctx.getIntSort());
+        CustomExpr n = new NamedCustomExpr("custom_loop_number_" + (currentLoopNumber++), ExprType.INT);
+        ArithExpr numberOfTimesTheLoopExecutes = n.toArithExpr();
         for (int i = 0; i < LOOP_UNROLLING_AMOUNT; i += 1) {
             List<BoolExpr> thisIteration = new ArrayList<>();
             for (Replacement r : replacements) {
@@ -255,7 +258,7 @@ public class LoopDetection {
             onLoop.add(history.mkAnd(thisIteration));
         }
         boolean onlyOneInputVariable = false;
-        MyVar myNVar = new MyVar(numberOfTimesTheLoopExecutes);
+        MyVar myNVar = new MyVar(n);
         for (Replacement r : replacements) {
             String varName = r.getName();
             String newName = SymbolicExecutionLab.getVarName(varName, r.getIndexAfter(0));
@@ -264,8 +267,7 @@ public class LoopDetection {
                 this.history.assignToVariable(varName, null);
             }
             MyVar v = SymbolicExecutionLab.vars.get(varName);
-            SymbolicExecutionLab.assign(v, varName, ctx.mkConst(ctx.mkSymbol(newName), v.z3var.getSort()),
-                    v.z3var.getSort());
+            SymbolicExecutionLab.assign(v, varName, new NamedCustomExpr(newName, ExprType.fromSort(v.z3var.getSort())));
             if (r.name.equals(inputName)) {
                 assert !onlyOneInputVariable;
                 onlyOneInputVariable = true;
