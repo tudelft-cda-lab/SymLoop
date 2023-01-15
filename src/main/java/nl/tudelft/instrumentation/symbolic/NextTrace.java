@@ -9,8 +9,8 @@ class NextTrace implements Comparable<NextTrace> {
     private boolean value;
     final String from;
 
-    static Comparator<NextTrace> comparator = Comparator.comparing(NextTrace::traceLength);
-           
+    static Comparator<NextTrace> comparator = Comparator.comparing(NextTrace::traceLength)
+            .thenComparing(NextTrace::getLineNr);
 
     public NextTrace(List<String> trace, int linenr, String from, boolean value) {
         this.trace = trace;
