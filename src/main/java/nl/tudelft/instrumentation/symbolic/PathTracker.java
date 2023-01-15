@@ -43,7 +43,7 @@ public class PathTracker {
     static HashMap<MyVar, Replacement> loopIterations = new HashMap<>();
 
     public static LinkedList<MyVar> inputs = new LinkedList<MyVar>();
-    // static ScheduledExecutorService executor = Executors.newScheduledThreadPool(3);
+    static ScheduledExecutorService executor = Executors.newScheduledThreadPool(3);
     static CallableTraceRunner<Void> problem;
     static String[] inputSymbols;
 
