@@ -4,6 +4,8 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Model;
 import com.microsoft.z3.Status;
 
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+
 interface SolverInterface {
 
     public static enum SolvingForType {
@@ -19,7 +21,7 @@ interface SolverInterface {
         }
     }
 
-    public abstract void add(BoolExpr... exprs);
+    public abstract void add(CustomExpr expr);
 
     public abstract Status check(SolvingForType type);
 

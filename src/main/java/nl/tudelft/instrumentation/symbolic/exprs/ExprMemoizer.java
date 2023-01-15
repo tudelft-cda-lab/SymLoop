@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import nl.tudelft.instrumentation.symbolic.InferringSolver;
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp.Operation;
 
 /**
@@ -15,34 +17,57 @@ public class ExprMemoizer {
 
     private Map<String, CustomExpr> memory = new HashMap<>();
 
-    public ExprMemoizer() {
+    private List<List<String>> history = new ArrayList<>();
+    private List<String> current = new ArrayList<>();
+
+    private InferringSolver solver;
+
+    public ExprMemoizer(InferringSolver s) {
+        this.solver = s;
     }
 
-    public CustomExpr addOptimized(String name, CustomExpr e) {
-        // return e;
-        // System.out.println("optimizing: " + name + ":" + e.toZ3().toString());
-        CustomExpr optimized = optimize(e);
-        // System.out.printf("%s optimized is \n", e.toZ3());
-        // System.out.println(optimized.toZ3());
-        memory.put(name, optimized);
-        return optimized;
+    public void push() {
+        history.add(current);
+        current = new ArrayList<>();
     }
 
-    public CustomExpr[] optimizeAll(CustomExpr... e) {
-        CustomExpr[] args = new CustomExpr[e.length];
-        for (int i = 0; i < args.length; i++) {
-            args[i] = optimize(e[i]);
+    public void pop() {
+        memory.keySet().removeAll(current);
+        assert history.size() > 0;
+        current = history.remove(history.size() - 1);
+    }
+
+    private boolean addToMemory(String name, CustomExpr value) {
+        if (!(value instanceof ConstantCustomExpr)) {
+            return false;
         }
-        return args;
+        if(memory.containsKey(name)) {
+            CustomExpr e = memory.get(name);
+            return !e.equals(value);
+        }
+        memory.put(name, value);
+        current.add(name);
+        solver.add(CustomExprOp.mkEq(new NamedCustomExpr(name, value.type), value));
+        return false;
     }
 
     public CustomExpr optimize(CustomExpr e) {
+        return optimize(e, false);
+    }
+
+    public CustomExpr optimize(CustomExpr e, boolean remember) {
         if (e instanceof ConstantCustomExpr) {
             return e;
         } else if (e instanceof NamedCustomExpr) {
             NamedCustomExpr named = (NamedCustomExpr) e;
             return memory.getOrDefault(named.name, e);
         } else if (e instanceof CustomExprOp) {
+            if (remember) {
+                CustomExpr scanned = scanForEq(e);
+                if(!scanned.equals(e)) {
+                    return scanned;
+                }
+            }
             return eval((CustomExprOp) e);
         }
         assert false;
@@ -104,6 +129,31 @@ public class ExprMemoizer {
         return CustomExprOp.mkOr(optimized);
     }
 
+    public CustomExpr scanForEq(CustomExpr andExpr) {
+        if (andExpr instanceof CustomExprOp) {
+            CustomExprOp c = (CustomExprOp) andExpr;
+            if (c.op.equals(Operation.AND)) {
+                for (CustomExpr e : c.args) {
+                    scanForEq(e);
+                }
+            } else if (c.op.equals(Operation.EQ)) {
+                CustomExpr left = c.args[0];
+                CustomExpr right = c.args[1];
+                if (left instanceof NamedCustomExpr) {
+                    right = optimize(right, true);
+                    if (right instanceof ConstantCustomExpr) {
+                        String name = ((NamedCustomExpr) left).name;
+                        boolean conflicts = addToMemory(name, right);
+                        if (conflicts) {
+                            return ConstantCustomExpr.FALSE;
+                        }
+                    }
+                }
+            }
+        }
+        return andExpr;
+    }
+
     public CustomExpr handleAnd(CustomExpr... args) {
         List<CustomExpr> optimized = new ArrayList<>(args.length);
         for (int i = 0; i < args.length; i++) {
@@ -134,9 +184,9 @@ public class ExprMemoizer {
         CustomExpr c = optimize(condition);
         if (c instanceof ConstantCustomExpr) {
             if (((ConstantCustomExpr) c).asBool()) {
-                return a;
+                return optimize(a);
             } else {
-                return b;
+                return optimize(b);
             }
         }
         return CustomExprOp.mkITE(c, optimize(a), optimize(b));
@@ -177,12 +227,22 @@ public class ExprMemoizer {
                 break;
         }
         System.out.println(e.op);
-        // assert false;
+        assert false;
         return e;
     }
 
     public void reset() {
         this.memory.clear();
+        this.current.clear();
+        this.history.clear();
+    }
+
+    public String toString() {
+        String output = "";
+        for (Entry<String, CustomExpr> e : memory.entrySet()) {
+            output += String.format("%s = %s, ", e.getKey(), e.getValue());
+        }
+        return output;
     }
 
 }

@@ -3,16 +3,18 @@ package nl.tudelft.instrumentation.symbolic;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.microsoft.z3.Optimize;
 import com.microsoft.z3.Status;
 import com.microsoft.z3.Optimize.Handle;
 
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+
 class OptimizingSolver implements SolverInterface {
 
     public static List<DataPoint> solverTimes = new ArrayList<>();
+
     public static class DataPoint {
         final int traceLength;
         final int numberOfLoops;
@@ -34,13 +36,14 @@ class OptimizingSolver implements SolverInterface {
     }
 
     @Override
-    public void add(BoolExpr... exprs) {
-        solver.Add(exprs);
+    public void add(CustomExpr expr) {
+        solver.Add(expr.toBoolExpr());
     }
 
     @Override
     public Status check(SolvingForType type) {
         long start = System.nanoTime();
+        // System.out.println(this.solver);
         Status s = solver.Check();
         long end = System.nanoTime();
         solverTimes.add(new DataPoint(type, end - start));

@@ -230,9 +230,7 @@ public class LoopDetection {
             loop.add(extended);
         }
         CustomExpr unrolledConstrained = CustomExprOp.mkAnd(loop.toArray(CustomExpr[]::new));
-        CustomExpr unrolledConstrainedOpt = SymbolicExecutionLab.memory.optimize(unrolledConstrained);
-
-        solver.add(unrolledConstrainedOpt.toBoolExpr());
+        solver.add(unrolledConstrained);
 
         Status status = solver.check(SolvingForType.IS_REATING_LOOP);
         if (status != Status.SATISFIABLE) {
@@ -287,7 +285,7 @@ public class LoopDetection {
         CustomExpr oneOfTheLoop = history.mkOr(onLoop);
         history.save();
         history.resetNumberOfSave();
-        PathTracker.addToBranches(oneOfTheLoop.toBoolExpr());
+        PathTracker.addToBranches(oneOfTheLoop);
         SymbolicExecutionLab.numberOfLoopsInPathConstraint += 1;
         return false;
     }

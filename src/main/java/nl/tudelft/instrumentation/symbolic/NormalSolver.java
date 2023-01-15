@@ -5,6 +5,8 @@ import com.microsoft.z3.Model;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+
 class NormalSolver implements SolverInterface {
 
     private Solver solver;
@@ -14,8 +16,8 @@ class NormalSolver implements SolverInterface {
     }
 
     @Override
-    public void add(BoolExpr... exprs) {
-        solver.add(exprs);
+    public void add(CustomExpr expr) {
+        solver.add(expr.toBoolExpr());
 
     }
 

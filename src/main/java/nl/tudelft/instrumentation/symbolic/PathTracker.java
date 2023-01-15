@@ -37,12 +37,13 @@ public class PathTracker {
 
     public static BoolExpr z3model = ctx.mkTrue();
     // private static BoolExpr z3branches = ctx.mkTrue();
-    public static OptimizingSolver solver = new OptimizingSolver();
+    public static OptimizingSolver solver = new InferringSolver();
+    // public static OptimizingSolver solver = new OptimizingSolver();
 
     static HashMap<MyVar, Replacement> loopIterations = new HashMap<>();
 
     public static LinkedList<MyVar> inputs = new LinkedList<MyVar>();
-    static ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+    // static ScheduledExecutorService executor = Executors.newScheduledThreadPool(3);
     static CallableTraceRunner<Void> problem;
     static String[] inputSymbols;
 
@@ -59,13 +60,13 @@ public class PathTracker {
         solver.reset();
     }
 
-    public static void addToBranches(BoolExpr expr) {
+    public static void addToBranches(CustomExpr expr) {
         // z3branches = ctx.mkAnd(expr, z3branches);
         solver.add(expr);
     }
 
-    public static void addToModel(BoolExpr expr) {
-        z3model = ctx.mkAnd(expr, z3model);
+    public static void addToModel(CustomExpr expr) {
+        z3model = ctx.mkAnd(expr.toBoolExpr(), z3model);
         solver.add(expr);
     }
 
@@ -84,22 +85,14 @@ public class PathTracker {
      *                   be printed in the terminal or not.
      */
     public static boolean solve(CustomExpr new_branch, SolvingForType type, boolean printModel, boolean isInput) {
-        CustomExpr optimized = SymbolicExecutionLab.memory.optimize(new_branch);
-        if (optimized instanceof ConstantCustomExpr) {
-            ConstantCustomExpr c = (ConstantCustomExpr) optimized;
-            if (!c.asBool()) {
-                return false;
-            }
-        }
-
         OptimizingSolver s = solver;
+        s.push();
         // Solver s = ctx.mkSolver();
         String output = "";
         // s.add(PathTracker.z3model);
         // s.add(PathTracker.z3branches);
         // s.push();
-        s.push();
-        s.add(optimized.toBoolExpr());
+        s.add(new_branch);
 
         if (printModel) {
             System.out.print("Model: ");

@@ -9,7 +9,6 @@ import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
 import nl.tudelft.instrumentation.symbolic.exprs.ConstantCustomExpr;
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp;
-import nl.tudelft.instrumentation.symbolic.exprs.ExprMemoizer;
 import nl.tudelft.instrumentation.symbolic.exprs.NamedCustomExpr;
 
 /**
@@ -52,8 +51,6 @@ public class SymbolicExecutionLab {
 
     private static Profiling profiler = new Profiling();
 
-    public static ExprMemoizer memory = new ExprMemoizer();
-
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         String[] initial = Settings.getInstance().INITIAL_TRACE;
@@ -91,9 +88,7 @@ public class SymbolicExecutionLab {
         String newName = createVarName(name);
         CustomExpr var = new NamedCustomExpr(newName, expr.type);
 
-        CustomExpr optimized = memory.addOptimized(newName, expr);
-        PathTracker.addToModel(CustomExprOp.mkEq(var, optimized).toBoolExpr());
-        // loopModel = c.mkAnd(c.mkEq(z3var, value), loopModel);
+        PathTracker.addToModel(CustomExprOp.mkEq(var, expr));
         MyVar myVar = new MyVar(name, var);
         vars.put(name, myVar);
         return myVar;
@@ -120,7 +115,7 @@ public class SymbolicExecutionLab {
 
         loopDetector.assignToVariable(name, intermediate);
         CustomExpr orred = CustomExprOp.mkOr(temp);
-        PathTracker.addToModel(orred.toBoolExpr());
+        PathTracker.addToModel(orred);
         // loopModel = PathTracker.ctx.mkTrue();
         // loopModel = c.mkAnd(c.mkOr(temp), loopModel);
         loopDetector.nextInput(orred, name);
@@ -223,13 +218,8 @@ public class SymbolicExecutionLab {
         loopDetector.assignToVariable(name, expr);
         var.assign(customVar);
         CustomExpr eq = CustomExprOp.mkEq(customVar, expr);
-        CustomExpr optimized = memory.addOptimized(newName, expr);
-        PathTracker.addToModel(CustomExprOp.mkEq(customVar, optimized).toBoolExpr());
-        // PathTracker.addToModel(eq.toBoolExpr());
+        PathTracker.addToModel(eq);
         loopDetector.addToLoopModel(eq);
-        // if (name.equals("my_i")) {
-        // System.exit(1);
-        // }
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {
@@ -253,7 +243,7 @@ public class SymbolicExecutionLab {
         if (!value) {
             branchCondition = CustomExprOp.mkNot(branchCondition);
         }
-        PathTracker.addToBranches((BoolExpr) memory.optimize(branchCondition).toZ3());
+        PathTracker.addToBranches(branchCondition);
         loopDetector.addToLoopModel(branchCondition);
     }
 
@@ -338,7 +328,6 @@ public class SymbolicExecutionLab {
     static void reset() {
         PathTracker.reset();
         loopDetector.reset();
-        memory.reset();
         nameCounts.clear();
         // System.gc();
         currentLineNumber = 0;
