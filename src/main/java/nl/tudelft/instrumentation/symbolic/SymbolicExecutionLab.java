@@ -16,6 +16,7 @@ import nl.tudelft.instrumentation.symbolic.exprs.NamedCustomExpr;
  */
 public class SymbolicExecutionLab {
 
+    static final int PRINT_EVERY = 2000;
     static final int INITIAL_TRACE_LENGTH = 1;
     static Random r = new Random(1);
     static Boolean isFinished = false;
@@ -26,6 +27,8 @@ public class SymbolicExecutionLab {
     static BranchVisitedTracker currentBranchTracker = new BranchVisitedTracker();
     static ErrorTracker errorTracker = new ErrorTracker();
     static final long START_TIME = System.currentTimeMillis();
+    static long lastPrint = System.currentTimeMillis();
+    static boolean printThisRun = true;
 
     static Set<String> errorTraces = new HashSet<>();
 
@@ -402,6 +405,7 @@ public class SymbolicExecutionLab {
             NextTrace trace = getNext();
             runNext(trace);
             isFinished = branchTracker.visitedAll();
+            printThisRun = shouldPrint();
         }
         if (timeLimitReached()) {
             printfYellow("TIME LIMIT REACHED\n");
@@ -416,12 +420,23 @@ public class SymbolicExecutionLab {
         System.exit(0);
     }
 
+    public static boolean shouldPrint() {
+        long current = System.currentTimeMillis();
+        if (current - lastPrint > PRINT_EVERY) {
+            lastPrint = current;
+            return true;
+        }
+        return false;
+    }
+
     public static void runNext(NextTrace trace) {
         if (!isStillUsefull(trace.trace)) {
             return;
         }
-        printfYellow("now doing line: %d, %b, %s\n", trace.getLineNr(), trace.getConditionValue(),
-                trace.trace);
+        if (printThisRun) {
+            printfYellow("now doing line: %d, %b, %s\n", trace.getLineNr(), trace.getConditionValue(),
+                    trace.trace);
+        }
         currentTrace = trace.trace;
         boolean completed = PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
         if (!skip && completed) {
@@ -431,7 +446,9 @@ public class SymbolicExecutionLab {
             checkIfSolverIsRight(trace);
             // saveTraces();
             // saveGraph(false);
-            printStatus();
+            if (printThisRun) {
+                printStatus();
+            }
         }
     }
 
