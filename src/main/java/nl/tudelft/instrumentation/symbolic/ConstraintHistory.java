@@ -153,7 +153,7 @@ public class ConstraintHistory {
         // getLast(loopModelList).add(condition);
         if (Settings.getInstance().UNFOLD_AND && condition instanceof CustomExprOp) {
             CustomExprOp c = (CustomExprOp) condition;
-            if (c.op == Operation.EQ) {
+            if (c.op == Operation.AND) {
                 for (CustomExpr arg : c.args) {
                     CustomExpr v = arg;
                     addToLoopModelList(v);
