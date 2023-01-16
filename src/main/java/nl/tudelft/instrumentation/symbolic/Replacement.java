@@ -2,7 +2,9 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.microsoft.z3.*;
 
@@ -35,12 +37,11 @@ class Replacement {
     }
 
     public static CustomExpr applyAllTo(List<Replacement> replacements, CustomExpr e, int amount) {
-        List<String> from = new ArrayList<>();
-        List<String> to = new ArrayList<>();
+        Map<String, String> changes = new HashMap<>();
         for (Replacement r : replacements) {
-            r.addApplyTo(from, to, amount);
+            r.addApplyTo(changes, amount);
         }
-        return (CustomExpr) e.substitute(from.toArray(String[]::new), to.toArray(String[]::new));
+        return (CustomExpr) e.substitute(changes);
     }
 
     public List<CustomExpr> getAllExprs(int amount) {
@@ -51,12 +52,11 @@ class Replacement {
         return exprs;
     }
 
-    public void addApplyTo(List<String> from, List<String> to, int amount) {
+    public void addApplyTo(Map<String, String> changes, int amount) {
         // Loop backwards to prevent repeated subsitution
         for (int i = this.start; i >= this.stop; i--) {
             int base = i + (this.added * amount);
-            from.add(getNameFor(base));
-            to.add(getNameFor(base + this.added));
+            changes.put(getNameFor(base), getNameFor(base + this.added));
         }
     }
 
@@ -74,6 +74,7 @@ class Replacement {
     private String getNameFor(int index) {
         return SymbolicExecutionLab.getVarName(this.name, index);
     }
+
     private CustomExpr getExprFor(int index) {
         return new NamedCustomExpr(getNameFor(index), ExprType.fromSort(this.sort));
     }

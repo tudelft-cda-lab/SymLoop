@@ -1,5 +1,8 @@
 package nl.tudelft.instrumentation.symbolic.exprs;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
@@ -41,9 +44,12 @@ public abstract class CustomExpr {
         return false;
     }
 
-    public abstract CustomExpr substitute(String[] from, String[] to);
+    public abstract CustomExpr substitute(Map<String, String> changes);
+
     public CustomExpr substitute(String from, String to) {
-        return substitute(new String[]{from}, new String[]{to});
+        Map<String, String> changes = new HashMap<>();
+        changes.put(from, to);
+        return substitute(changes);
     }
 
     public boolean isConst() {

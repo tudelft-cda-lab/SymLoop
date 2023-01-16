@@ -15,12 +15,10 @@ import nl.tudelft.instrumentation.symbolic.PathTracker;
 public class ConstantCustomExpr extends CustomExpr {
 
     public static final ConstantCustomExpr TRUE = new ConstantCustomExpr(ExprType.BOOL, true);
-    public static final ConstantCustomExpr FALSE =new ConstantCustomExpr(ExprType.BOOL, false);
+    public static final ConstantCustomExpr FALSE = new ConstantCustomExpr(ExprType.BOOL, false);
 
     public static final Map<String, Expr> stringCache = new HashMap<>();
     public Object value;
-
-
 
     Expr createString(String value) {
         if (stringCache.containsKey(value)) {
@@ -77,7 +75,7 @@ public class ConstantCustomExpr extends CustomExpr {
     }
 
     @Override
-    public CustomExpr substitute(String[] from, String[] to) {
+    public CustomExpr substitute(Map<String, String> changes) {
         return this;
     }
 

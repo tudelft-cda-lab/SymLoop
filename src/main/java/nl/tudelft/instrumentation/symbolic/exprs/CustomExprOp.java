@@ -1,6 +1,7 @@
 package nl.tudelft.instrumentation.symbolic.exprs;
 
 import java.util.Arrays;
+import java.util.Map;
 
 import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.BoolExpr;
@@ -276,13 +277,13 @@ public class CustomExprOp extends CustomExpr {
     }
 
     @Override
-    public CustomExpr substitute(String[] from, String[] to) {
+    public CustomExpr substitute(Map<String, String> changes) {
         CustomExpr[] newArgs = new CustomExpr[this.args.length];
         CustomExpr old;
         boolean self = true;
         for(int i = 0; i < newArgs.length; i++) {
             old = newArgs[i];
-            newArgs[i] = this.args[i].substitute(from, to);
+            newArgs[i] = this.args[i].substitute(changes);
             if (old != newArgs[i]) {
                 self = false;
             }

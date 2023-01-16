@@ -1,5 +1,7 @@
 package nl.tudelft.instrumentation.symbolic.exprs;
 
+import java.util.Map;
+
 import com.microsoft.z3.Expr;
 
 import nl.tudelft.instrumentation.symbolic.PathTracker;
@@ -23,11 +25,9 @@ public class NamedCustomExpr extends CustomExpr {
     }
 
     @Override
-    public CustomExpr substitute(String[] from, String[] to) {
-        for(int i = 0; i < from.length; i ++) {
-            if (this.name.equals(from[i])) {
-                return new NamedCustomExpr(to[i], type);
-            }
+    public CustomExpr substitute(Map<String, String> changes) {
+        if (changes.containsKey(name)) {
+            return new NamedCustomExpr(changes.get(name), type);
         }
         return this;
     }
