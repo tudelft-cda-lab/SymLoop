@@ -30,7 +30,17 @@ public class InferringSolver extends OptimizingSolver {
     }
 
     public void add(CustomExpr expr) {
-        CustomExpr e = memory.optimize(expr, true);
+        CustomExpr e;
+        try {
+            e = memory.optimize(expr, true);
+        } catch(ArithmeticException exception) {
+            SymbolicExecutionLab.printfRed("ArithmeticException\n");
+            exception.printStackTrace(System.out);
+            // exception.printStackTrace();
+            lastStatus = Status.UNSATISFIABLE;
+            changed = false;
+            return;
+        }
         // System.out.printf("expr:\n\t%s\noptimized is:\n\t%s\n", expr, e);
         if (e instanceof ConstantCustomExpr) {
             if (!e.asConst().asBool()) {
