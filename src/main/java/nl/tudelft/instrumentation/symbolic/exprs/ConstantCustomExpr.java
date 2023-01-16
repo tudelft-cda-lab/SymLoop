@@ -1,5 +1,8 @@
 package nl.tudelft.instrumentation.symbolic.exprs;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 
@@ -14,7 +17,19 @@ public class ConstantCustomExpr extends CustomExpr {
     public static final ConstantCustomExpr TRUE = new ConstantCustomExpr(ExprType.BOOL, true);
     public static final ConstantCustomExpr FALSE =new ConstantCustomExpr(ExprType.BOOL, false);
 
+    public static final Map<String, Expr> stringCache = new HashMap<>();
     public Object value;
+
+
+
+    Expr createString(String value) {
+        if (stringCache.containsKey(value)) {
+            return stringCache.get(value);
+        }
+        Expr e = PathTracker.ctx.mkString((String) value);
+        stringCache.put(value, e);
+        return e;
+    }
 
     private ConstantCustomExpr(ExprType type, Object value) {
         super(type);
@@ -45,7 +60,7 @@ public class ConstantCustomExpr extends CustomExpr {
             case INT:
                 return ctx.mkInt((int) value);
             case STRING:
-                return ctx.mkString((String) value);
+                return createString((String) value);
         }
         assert false;
         return null;
