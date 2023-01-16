@@ -14,6 +14,7 @@ public class Settings {
     private static final int DEFAULT_LOOP_DETECTION_DEPTH = 1;
     private static final int DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S = 600;
     private static final int DEFAULT_MAX_TIME_S = -1;
+    private static final int DEFAULT_SOLVER_TIMEOUT_S = -1;
     private static Settings singleton;
 
     public final boolean UNFOLD_AND;
@@ -23,6 +24,7 @@ public class Settings {
     // Longest a single testcase is allowed to run
     public final int MAX_RUNTIME_SINGLE_TRACE_S;
     public final int MAX_TIME_S;
+    public final int SOLVER_TIMEOUT_S;
     public final boolean STOP_ON_FIRST_TIMEOUT;
 
     public final String[] INITIAL_TRACE;
@@ -61,7 +63,7 @@ public class Settings {
 
     private Settings(boolean unfoldAnd, String initial,
             int loopUnrollingAmount,
-            int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE) {
+            int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE, int SOLVER_TIMEOUT_S) {
         this.UNFOLD_AND = unfoldAnd;
         this.INITIAL_TRACE = initial == null ? null : initial.split(",");
         this.LOOP_UNROLLING_AMOUNT = loopUnrollingAmount;
@@ -71,6 +73,7 @@ public class Settings {
         this.STOP_ON_FIRST_TIMEOUT = STOP_ON_FIRST_TIMEOUT;
         this.CORRECT_INTEGER_MODEL = CORRECT_INTEGER_MODEL;
         this.MINIMIZE = MINIMIZE;
+        this.SOLVER_TIMEOUT_S = SOLVER_TIMEOUT_S;
     }
 
     public static Settings create(String[] args) {
@@ -91,9 +94,10 @@ public class Settings {
                     .parseInt(cl.getOptionValue("max-runtime-single-trace",
                             String.valueOf(DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S)));
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
+            int SOLVER_TIMEOUT_S = parseTimeToS(cl.getOptionValue("solver-timeout", String.valueOf(DEFAULT_SOLVER_TIMEOUT_S)));
             Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
                     loopDetectionDepth,
-                    maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT, CORRECT_INTEGER_MODEL, MINIMIZE);
+                    maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S);
             singleton = s;
             return s;
         } else {
@@ -128,6 +132,9 @@ public class Settings {
         options.addOption("mrst", "max-runtime-single-trace", true,
                 String.format("The number of seconds a single trace can run before its gets killed. (Default: %d)",
                         DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S));
+        options.addOption("st", "solver-timeout", true,
+                String.format("The number of seconds a single call to the solver can take before its gets killed. Use -1 to have no limit. (Default: %d)",
+                        DEFAULT_SOLVER_TIMEOUT_S));
         options.addOption("m", "max-time", true,
                 String.format(
                         "The amount of time to keep running. Use -1 to run indefinetely (Default: %d)",

@@ -6,6 +6,7 @@ import java.util.List;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.microsoft.z3.Optimize;
+import com.microsoft.z3.Params;
 import com.microsoft.z3.Status;
 import com.microsoft.z3.Optimize.Handle;
 
@@ -68,6 +69,13 @@ class OptimizingSolver implements SolverInterface {
     @Override
     public void reset() {
         solver = PathTracker.ctx.mkOptimize();
+
+        Params p = PathTracker.ctx.mkParams();
+        int timeout = Settings.getInstance().SOLVER_TIMEOUT_S;;
+        if (timeout > 0) {
+            p.add("timeout", timeout * 1000);
+        }
+        this.solver.setParameters(p);
     }
 
     public Handle minimize(Expr e) {

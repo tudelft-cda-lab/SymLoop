@@ -33,7 +33,6 @@ public class PathTracker {
     public static HashMap<String, String> cfg = new HashMap<String, String>() {
         {
             put("model", "true");
-            put("timeout", "10000");
         }
     };
     private static final Map<String, Expr> constCache = new HashMap<>();
