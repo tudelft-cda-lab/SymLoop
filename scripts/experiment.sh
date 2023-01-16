@@ -26,9 +26,9 @@ run () {
   OUT=$DIR/problem$1
   mkdir -p $OUT
   cd $OUT
-  ARGS="--max-time 2h -max-runtime-single-trace 6000 $ARGS"
+  ARGS="$ARGS"
   echo $ARGS > args.txt
-  java -ea -agentpath:$HOME/projects/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=profile.html -XX:-UseGCOverheadLimit -Xmx4G -cp ../:../aistr.jar:$OLD/lib/com.microsoft.z3.jar:$OLD/instrumented:. Problem$1 $ARGS | tee out.txt
+  java -ea -agentpath:$HOME/projects/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=profile.html,title="Problem$1 $(date '+%T')",minwidth=0.2 -XX:-UseGCOverheadLimit -Xmx4G -cp ../:../aistr.jar:$OLD/lib/com.microsoft.z3.jar:$OLD/instrumented:. Problem$1 $ARGS | tee out.txt
   cd $OLD
 }
 
