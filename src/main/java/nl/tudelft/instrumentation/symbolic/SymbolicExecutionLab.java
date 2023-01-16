@@ -433,10 +433,8 @@ public class SymbolicExecutionLab {
         if (!isStillUsefull(trace.trace)) {
             return;
         }
-        if (printThisRun) {
-            printfYellow("now doing line: %d, %b, %s\n", trace.getLineNr(), trace.getConditionValue(),
-                    trace.trace);
-        }
+        printfYellow("now doing line: %d, %b, %s\n", trace.getLineNr(), trace.getConditionValue(),
+                trace.trace);
         currentTrace = trace.trace;
         boolean completed = PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
         if (!skip && completed) {
