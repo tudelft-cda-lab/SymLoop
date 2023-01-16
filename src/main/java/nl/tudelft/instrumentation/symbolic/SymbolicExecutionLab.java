@@ -332,7 +332,7 @@ public class SymbolicExecutionLab {
         PathTracker.reset();
         loopDetector.reset();
         nameCounts.clear();
-        // System.gc();
+        System.gc();
         currentLineNumber = 0;
         inputInIndex = 0;
         processedInput = "";
