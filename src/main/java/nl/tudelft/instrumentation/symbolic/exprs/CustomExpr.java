@@ -41,9 +41,9 @@ public abstract class CustomExpr {
         return false;
     }
 
-    public abstract CustomExpr substitute(CustomExpr[] from, CustomExpr[] to);
-    public CustomExpr substitute(CustomExpr from, CustomExpr to) {
-        return substitute(new CustomExpr[]{from}, new CustomExpr[]{to});
+    public abstract CustomExpr substitute(String[] from, String[] to);
+    public CustomExpr substitute(String from, String to) {
+        return substitute(new String[]{from}, new String[]{to});
     }
 
     public boolean isConst() {

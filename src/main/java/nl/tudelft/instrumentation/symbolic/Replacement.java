@@ -35,12 +35,12 @@ class Replacement {
     }
 
     public static CustomExpr applyAllTo(List<Replacement> replacements, CustomExpr e, int amount) {
-        List<CustomExpr> from = new ArrayList<>();
-        List<CustomExpr> to = new ArrayList<>();
+        List<String> from = new ArrayList<>();
+        List<String> to = new ArrayList<>();
         for (Replacement r : replacements) {
             r.addApplyTo(from, to, amount);
         }
-        return (CustomExpr) e.substitute(from.toArray(CustomExpr[]::new), to.toArray(CustomExpr[]::new));
+        return (CustomExpr) e.substitute(from.toArray(String[]::new), to.toArray(String[]::new));
     }
 
     public List<CustomExpr> getAllExprs(int amount) {
@@ -51,12 +51,12 @@ class Replacement {
         return exprs;
     }
 
-    public void addApplyTo(List<CustomExpr> from, List<CustomExpr> to, int amount) {
+    public void addApplyTo(List<String> from, List<String> to, int amount) {
         // Loop backwards to prevent repeated subsitution
         for (int i = this.start; i >= this.stop; i--) {
             int base = i + (this.added * amount);
-            from.add(getExprFor(base));
-            to.add(getExprFor(base + this.added));
+            from.add(getNameFor(base));
+            to.add(getNameFor(base + this.added));
         }
     }
 
@@ -65,14 +65,17 @@ class Replacement {
         for (int i = this.start; i >= this.stop; i--) {
             int base = i + (this.added * amount);
             expr = (CustomExpr) expr.substitute(
-                    getExprFor(base),
-                    getExprFor(base + this.added));
+                    getNameFor(base),
+                    getNameFor(base + this.added));
         }
         return expr;
     }
 
+    private String getNameFor(int index) {
+        return SymbolicExecutionLab.getVarName(this.name, index);
+    }
     private CustomExpr getExprFor(int index) {
-        return new NamedCustomExpr(SymbolicExecutionLab.getVarName(this.name, index), ExprType.fromSort(this.sort));
+        return new NamedCustomExpr(getNameFor(index), ExprType.fromSort(this.sort));
     }
 
     public CustomExpr isSelfLoopExpr() {

@@ -276,14 +276,8 @@ public class CustomExprOp extends CustomExpr {
     }
 
     @Override
-    public CustomExpr substitute(CustomExpr[] from, CustomExpr[] to) {
-        for(int i = 0; i < from.length; i ++) {
-            if (this.equals(from[i])) {
-                return to[i];
-            }
-        }
+    public CustomExpr substitute(String[] from, String[] to) {
         CustomExpr[] newArgs = new CustomExpr[this.args.length];
-        boolean changed = false;
         CustomExpr old;
         boolean self = true;
         for(int i = 0; i < newArgs.length; i++) {

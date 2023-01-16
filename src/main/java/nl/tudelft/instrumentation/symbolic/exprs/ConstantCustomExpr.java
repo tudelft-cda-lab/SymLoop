@@ -77,12 +77,7 @@ public class ConstantCustomExpr extends CustomExpr {
     }
 
     @Override
-    public CustomExpr substitute(CustomExpr[] from, CustomExpr[] to) {
-        for (int i = 0; i < from.length; i++) {
-            if (this.equals(from[i])) {
-                return to[i];
-            }
-        }
+    public CustomExpr substitute(String[] from, String[] to) {
         return this;
     }
 
