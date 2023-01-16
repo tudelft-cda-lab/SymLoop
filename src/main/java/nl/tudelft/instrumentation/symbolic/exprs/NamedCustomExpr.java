@@ -20,8 +20,7 @@ public class NamedCustomExpr extends CustomExpr {
 
     @Override
     public Expr toZ3() {
-        Context ctx = PathTracker.ctx;
-        return ctx.mkConst(name, this.type.toSort());
+        return PathTracker.createConst(name, this.type.toSort());
     }
 
     @Override

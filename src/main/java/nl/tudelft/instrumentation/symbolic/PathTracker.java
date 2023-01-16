@@ -2,6 +2,7 @@ package nl.tudelft.instrumentation.symbolic;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -11,7 +12,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+import com.microsoft.z3.Sort;
 import com.microsoft.z3.Status;
 
 import nl.tudelft.instrumentation.runner.CallableTraceRunner;
@@ -33,6 +36,8 @@ public class PathTracker {
             put("timeout", "10000");
         }
     };
+    private static final Map<String, Expr> constCache = new HashMap<>();
+
     public static Context ctx = new Context(cfg);
 
     public static BoolExpr z3model = ctx.mkTrue();
@@ -48,6 +53,19 @@ public class PathTracker {
     static String[] inputSymbols;
 
     static int lastLength = -1;
+
+    public static Expr createConst(String name, Sort s) {
+        if (constCache.containsKey(name)) {
+            Expr e = constCache.get(name);
+            // assert e.getSort().equals(s);
+            return e;
+        } else {
+            Context ctx = PathTracker.ctx;
+            Expr c =  ctx.mkConst(name, s);
+            constCache.put(name, c);
+            return c;
+        }
+    }
 
     /**
      * Used to reset the constraints and everything else of z3 before running the
