@@ -253,17 +253,17 @@ public class SymbolicExecutionLab {
     static boolean isStillUsefull(Iterable<String> input) {
         String s = String.join("", input);
         if (errorTraces.contains(s)) {
-            printfRed("contained in  errorTraces: %s\n", s);
+            // printfRed("contained in  errorTraces: %s\n", s);
             return false;
         }
         for (String e : errorTraces) {
             if (s.startsWith(e)) {
-                printfRed("startswith error: %s\n", e);
+                // printfRed("startswith error: %s\n", e);
                 return false;
             }
         }
         if (loopDetector.isSelfLooping(s)) {
-            printfRed("isSelfLooping: %s\n", s);
+            // printfRed("isSelfLooping: %s\n", s);
             return false;
         }
         return true;
