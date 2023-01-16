@@ -40,6 +40,9 @@ public class Settings {
         if (m.matches()) {
             int amount = Integer.parseInt(m.group("amount"));
             String multiplier = m.group("multiplier");
+            if (multiplier == null) {
+                multiplier = "s";
+            }
             int seconds_multiplier = 1;
             switch (multiplier) {
                 case "s":
@@ -90,8 +93,7 @@ public class Settings {
             int loopDetectionDepth = Integer
                     .parseInt(cl.getOptionValue("loop-detection-depth",
                             String.valueOf(DEFAULT_LOOP_DETECTION_DEPTH)));
-            int maxRuntimeTraceMs = Integer
-                    .parseInt(cl.getOptionValue("max-runtime-single-trace",
+            int maxRuntimeTraceMs = parseTimeToS(cl.getOptionValue("max-runtime-single-trace",
                             String.valueOf(DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S)));
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
             int SOLVER_TIMEOUT_S = parseTimeToS(cl.getOptionValue("solver-timeout", String.valueOf(DEFAULT_SOLVER_TIMEOUT_S)));
