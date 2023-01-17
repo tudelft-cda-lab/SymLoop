@@ -47,7 +47,7 @@ public class ExprMemoizer {
         }
         memory.put(name, value);
         current.add(name);
-        solver.add(CustomExprOp.mkEq(new NamedCustomExpr(name, value.type), value));
+        // solver.add(CustomExprOp.mkEq(new NamedCustomExpr(name, value.type), value));
         return false;
     }
 
