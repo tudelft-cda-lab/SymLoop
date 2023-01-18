@@ -28,6 +28,10 @@ public class Settings {
 
     public final boolean CORRECT_INTEGER_MODEL;
 
+    public String parameters() {
+            return String.format("Settings: d=%d,l=%d,m=%d,st=%d,u=%b", MAX_LOOP_DETECTION_DEPTH, LOOP_UNROLLING_AMOUNT, MAX_TIME_S, SOLVER_TIMEOUT_S, UNFOLD_AND);
+    }
+
     private static int parseTimeToS(String s) {
         if (s.equals("-1")) {
             return -1;

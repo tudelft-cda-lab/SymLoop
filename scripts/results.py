@@ -17,10 +17,22 @@ def read(filename):
     with open(filename) as file:
         return file.read()
 
+
+def get_params(filename):
+    lines = read(filename)
+    settings = re.findall(r'Settings: (.*)', lines)
+    if len(settings) == 1:
+        params = re.findall(r'\w+=[a-zA-Z0-9]+', settings[0])
+        params = [p.split('=') for p in params]
+        return dict(params)
+    else:
+        assert len(settings) == 0
+        return None
 def parse(filename):
     lines = read(filename)
     for err, seconds in re.findall(r'Error\s+(\d+):\s+(\S*)', lines):
         yield (int(err), float(seconds))
+    # print(lines)
 
 problemOutput = dict[str, dict[int, float]]
 
@@ -34,15 +46,26 @@ def print_header(header):
         header = pad + header + pad
     print(f'  --===#### {header} ####===--')
 
-def write_results_to_latex(problem, output: problemOutput):
+def short_name(program):
+    split = [p for p in program.split('-') if p.isalpha() or p.startswith('v')]
+    return '-'.join(split)
+def write_results_to_latex(problem, output: problemOutput, params):
     data = output
     errors = set()
     for program in sorted(data.keys()):
         errors.update(data[program].keys())
+
+    all_params = ['d', 'l', 'm', 'st']
+
     errors = sorted(list(errors))
-    rows = [['Program / Error', *errors]]
+    rows = [['Program', *all_params, *errors]]
     for program in sorted(data.keys()):
-        row = [program]
+        row = [short_name(program)]
+        for p in all_params:
+            if p in params[program]:
+                row.append(params[program][p])
+            else:
+                row.append('')
         for error in errors:
             if error in data[program]:
                 v = data[program][error]
@@ -53,6 +76,8 @@ def write_results_to_latex(problem, output: problemOutput):
             else:
                 row.append('-')
         rows.append(row)
+
+    rows.sort()
     f = open(f'/home/bram/projects/thesis/chapters/results/{problem}.tex', 'w')
     f.write(tabulate(rows, tablefmt='latex', headers='firstrow'))
     f.close()
@@ -118,6 +143,7 @@ if __name__ == '__main__':
     outputs:dict[str, dict[str, dict[int, float]]] = defaultdict(dict)
     # problem / program / error -> time
     per_problem:dict[str, dict[str, dict[int, float]]] = defaultdict(dict)
+    params_per_solution:dict[str, dict[str, str]] = defaultdict(dict)
     rows = []
     for folder in folders:
         t = '+01:00'
@@ -127,6 +153,9 @@ if __name__ == '__main__':
         folder = name
         for problem, f in files:
             timings = dict(parse(f))
+            params = get_params(f)
+            if params is not None:
+                params_per_solution[folder] = params
             outputs[folder][problem] = timings
             per_problem[problem][folder] = timings
             for e, t in timings.items():
@@ -157,7 +186,7 @@ if __name__ == '__main__':
 
 
     for problem, data in sorted(per_problem.items()):
-        write_results_to_latex(problem, data)
+        write_results_to_latex(problem, data, params_per_solution)
         generate_bar_chart(problem, data)
 
 

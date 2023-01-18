@@ -401,7 +401,8 @@ public class SymbolicExecutionLab {
     }
 
     static void run(String[] args) {
-        Settings.create(args);
+        Settings s = Settings.create(args);
+        System.out.println(s.parameters());
         initialize(PathTracker.inputSymbols);
         nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
         while (!isFinished && !isEmpty() && !timeLimitReached()) {
