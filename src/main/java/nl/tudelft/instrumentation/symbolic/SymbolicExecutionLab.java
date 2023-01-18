@@ -400,11 +400,8 @@ public class SymbolicExecutionLab {
         return timeLeftMillis() < 0;
     }
 
-    static void run(String[] args) {
-        Settings s = Settings.create(args);
-        System.out.println(s.parameters());
-        initialize(PathTracker.inputSymbols);
-        nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
+
+    static void symbolic_execution() {
         while (!isFinished && !isEmpty() && !timeLimitReached()) {
             reset();
             NextTrace trace = getNext();
@@ -423,6 +420,43 @@ public class SymbolicExecutionLab {
         // saveTraces();
         // saveGraph(true);
         System.exit(0);
+    }
+
+    static void verify_loop(String[] VERIFY_LOOP) {
+        Settings s = Settings.getInstance();
+        printfGreen("Verifying loop: %s\n", String.join("", VERIFY_LOOP));
+        assert VERIFY_LOOP != null;
+        reset();
+        List<String> input = new ArrayList<>();
+        for(int i = 0; i < s.INITIAL_TRACE.length; i ++){
+            input.add( s.INITIAL_TRACE[i]);
+        }
+        for(int i = 0; i < s.LOOP_TRACE.length * 2; i++) {
+            input.add(s.LOOP_TRACE[i % s.LOOP_TRACE.length]); 
+
+        }
+        printfGreen("Full loop trace: %s\n", String.join("", input));
+        NextTrace trace = new NextTrace(new ArrayList<>(input), currentLineNumber, "<initial>", false);
+        // NextTrace trace = new N
+        runNext(trace);
+        if (loopDetector.isSelfLooping(String.join("", trace.trace))) {
+            printfGreen("IS SELF LOOPING\n");
+        } else {
+            printfYellow("NOT KNOWN YET\n");
+        }
+        System.exit(0);
+    }
+
+    static void run(String[] args) {
+        Settings s = Settings.create(args);
+        System.out.println(s.parameters());
+        initialize(PathTracker.inputSymbols);
+        nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
+        if (s.LOOP_TRACE != null) {
+            verify_loop(s.LOOP_TRACE);
+        } else {
+            symbolic_execution();
+        }
     }
 
     public static boolean shouldPrint() {

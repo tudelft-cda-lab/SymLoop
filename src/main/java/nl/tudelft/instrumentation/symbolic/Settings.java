@@ -25,6 +25,8 @@ public class Settings {
     public final int SOLVER_TIMEOUT_S;
 
     public final String[] INITIAL_TRACE;
+    public final String[] LOOP_TRACE;
+    public final boolean VERIFY_LOOP;
 
     public final boolean CORRECT_INTEGER_MODEL;
 
@@ -67,9 +69,11 @@ public class Settings {
 
     private Settings(boolean unfoldAnd, String initial,
             int loopUnrollingAmount,
-            int maxLoopDetectionDepth, int maxTimeS, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE, int SOLVER_TIMEOUT_S) {
+            int maxLoopDetectionDepth, int maxTimeS, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE, int SOLVER_TIMEOUT_S, String verifyLoop) {
         this.UNFOLD_AND = unfoldAnd;
         this.INITIAL_TRACE = initial == null ? null : initial.split(",");
+        this.VERIFY_LOOP = verifyLoop != null;
+        this.LOOP_TRACE = verifyLoop == null ? null : verifyLoop.split(",");
         this.LOOP_UNROLLING_AMOUNT = loopUnrollingAmount;
         this.MAX_LOOP_DETECTION_DEPTH = maxLoopDetectionDepth;
         this.MAX_TIME_S = maxTimeS;
@@ -85,6 +89,7 @@ public class Settings {
             boolean CORRECT_INTEGER_MODEL = !cl.hasOption("incorrect-integer-model");
             boolean MINIMIZE = !cl.hasOption("no-minimize");
             String initialTrace = cl.getOptionValue("initial-trace", null);
+            String VERIFY_LOOP = cl.getOptionValue("verify-loop", null);
             int loopUnrollingAmount = Integer
                     .parseInt(cl.getOptionValue("unroll-loops",
                             String.valueOf(DEFAULT_LOOP_UNROLLING)));
@@ -94,7 +99,7 @@ public class Settings {
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
             int SOLVER_TIMEOUT_S = parseTimeToS(cl.getOptionValue("solver-timeout", String.valueOf(DEFAULT_SOLVER_TIMEOUT_S)));
             Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
-                    loopDetectionDepth, maxTime, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S);
+                    loopDetectionDepth, maxTime, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S, VERIFY_LOOP);
             singleton = s;
             return s;
         } else {
@@ -117,6 +122,8 @@ public class Settings {
         options.addOption("h", "help", false, "Show this help message");
         options.addOption("i", "initial-trace", true,
                 "The initial trace to run the program on. Use commas to seperate input symbols. (Example: 'A,B,C')");
+        options.addOption("v", "verify-loop", true,
+                "The looping part of a trace to verify is infinitely repeating. Use commas to seperate input symbols. (Example: 'A,B,C')");
         options.addOption("l", "unroll-loops", true,
                 String.format(
                         "Amount of times to unroll a loop before continuing with execution. This also is the amount of times a loop is verified to run. (Default: %d)",
