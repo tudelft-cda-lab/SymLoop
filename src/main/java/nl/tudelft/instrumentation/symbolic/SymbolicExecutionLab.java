@@ -387,13 +387,17 @@ public class SymbolicExecutionLab {
         }
     }
 
-    static boolean timeLimitReached() {
+    static long timeLeftMillis() {
         Settings settings = Settings.getInstance();
         if (settings.MAX_TIME_S == -1) {
-            return false;
+            return 99999999999999999l;
         }
         long elapsed = (System.currentTimeMillis() - START_TIME);
-        return elapsed > (settings.MAX_TIME_S * 1000);
+        return (settings.MAX_TIME_S * 1000) - elapsed;
+    }
+
+    static boolean timeLimitReached() {
+        return timeLeftMillis() < 0;
     }
 
     static void run(String[] args) {
@@ -457,7 +461,7 @@ public class SymbolicExecutionLab {
                 errorTracker.summary());
     }
 
-    private static void printFinalStatus() {
+    public static void printFinalStatus() {
         printStatus();
         // System.out.println(errorTracker.summary());
     }

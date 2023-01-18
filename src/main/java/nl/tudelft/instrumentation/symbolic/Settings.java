@@ -12,7 +12,6 @@ import org.apache.commons.cli.ParseException;
 public class Settings {
     private static final int DEFAULT_LOOP_UNROLLING = 10;
     private static final int DEFAULT_LOOP_DETECTION_DEPTH = 1;
-    private static final int DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S = 600;
     private static final int DEFAULT_MAX_TIME_S = -1;
     private static final int DEFAULT_SOLVER_TIMEOUT_S = -1;
     private static Settings singleton;
@@ -22,10 +21,8 @@ public class Settings {
     public final int LOOP_UNROLLING_AMOUNT;
     public final int MAX_LOOP_DETECTION_DEPTH;
     // Longest a single testcase is allowed to run
-    public final int MAX_RUNTIME_SINGLE_TRACE_S;
     public final int MAX_TIME_S;
     public final int SOLVER_TIMEOUT_S;
-    public final boolean STOP_ON_FIRST_TIMEOUT;
 
     public final String[] INITIAL_TRACE;
 
@@ -66,14 +63,12 @@ public class Settings {
 
     private Settings(boolean unfoldAnd, String initial,
             int loopUnrollingAmount,
-            int maxLoopDetectionDepth, int maxRuntimeTraceS, int maxTimeS, boolean STOP_ON_FIRST_TIMEOUT, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE, int SOLVER_TIMEOUT_S) {
+            int maxLoopDetectionDepth, int maxTimeS, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE, int SOLVER_TIMEOUT_S) {
         this.UNFOLD_AND = unfoldAnd;
         this.INITIAL_TRACE = initial == null ? null : initial.split(",");
         this.LOOP_UNROLLING_AMOUNT = loopUnrollingAmount;
         this.MAX_LOOP_DETECTION_DEPTH = maxLoopDetectionDepth;
-        this.MAX_RUNTIME_SINGLE_TRACE_S = maxRuntimeTraceS;
         this.MAX_TIME_S = maxTimeS;
-        this.STOP_ON_FIRST_TIMEOUT = STOP_ON_FIRST_TIMEOUT;
         this.CORRECT_INTEGER_MODEL = CORRECT_INTEGER_MODEL;
         this.MINIMIZE = MINIMIZE;
         this.SOLVER_TIMEOUT_S = SOLVER_TIMEOUT_S;
@@ -83,7 +78,6 @@ public class Settings {
         if (singleton == null) {
             CommandLine cl = parseArguments(args);
             boolean unfoldAnd = cl.hasOption("unfold-and");
-            boolean STOP_ON_FIRST_TIMEOUT = !cl.hasOption("continue-on-timeout");
             boolean CORRECT_INTEGER_MODEL = !cl.hasOption("incorrect-integer-model");
             boolean MINIMIZE = !cl.hasOption("no-minimize");
             String initialTrace = cl.getOptionValue("initial-trace", null);
@@ -93,13 +87,10 @@ public class Settings {
             int loopDetectionDepth = Integer
                     .parseInt(cl.getOptionValue("loop-detection-depth",
                             String.valueOf(DEFAULT_LOOP_DETECTION_DEPTH)));
-            int maxRuntimeTraceMs = parseTimeToS(cl.getOptionValue("max-runtime-single-trace",
-                            String.valueOf(DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S)));
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
             int SOLVER_TIMEOUT_S = parseTimeToS(cl.getOptionValue("solver-timeout", String.valueOf(DEFAULT_SOLVER_TIMEOUT_S)));
             Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
-                    loopDetectionDepth,
-                    maxRuntimeTraceMs, maxTime, STOP_ON_FIRST_TIMEOUT, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S);
+                    loopDetectionDepth, maxTime, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S);
             singleton = s;
             return s;
         } else {
@@ -119,8 +110,6 @@ public class Settings {
                 "Unfold 'AND' expressions to possibly make the loop constraints shorter.");
         options.addOption("icim", "incorrect-integer-model", false,
                 "By default, the mod and division operators are not fully correct for negative values. Enabling this flag makes the model correct, but might lead to a degredation in performance.");
-        options.addOption("c", "continue-on-timeout", false,
-                "Continue execution whenever a single trace times out. (Note: this may lead to missing paths)");
         options.addOption("h", "help", false, "Show this help message");
         options.addOption("i", "initial-trace", true,
                 "The initial trace to run the program on. Use commas to seperate input symbols. (Example: 'A,B,C')");
@@ -131,9 +120,6 @@ public class Settings {
         options.addOption("d", "loop-detection-depth", true,
                 String.format("The number of steps to look back into the history to try to detect loops. (Default: %d)",
                         DEFAULT_LOOP_DETECTION_DEPTH));
-        options.addOption("mrst", "max-runtime-single-trace", true,
-                String.format("The number of seconds a single trace can run before its gets killed. (Default: %d)",
-                        DEFAULT_MAX_RUNTIME_SINGLE_TRACE_S));
         options.addOption("st", "solver-timeout", true,
                 String.format("The number of seconds a single call to the solver can take before its gets killed. Use -1 to have no limit. (Default: %d)",
                         DEFAULT_SOLVER_TIMEOUT_S));

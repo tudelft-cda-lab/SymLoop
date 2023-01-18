@@ -360,16 +360,15 @@ public class PathTracker {
         final Future handler = executor.submit(problem);
         executor.schedule(() -> {
             handler.cancel(false);
-        }, Settings.getInstance().MAX_RUNTIME_SINGLE_TRACE_S, TimeUnit.SECONDS);
+        }, SymbolicExecutionLab.timeLeftMillis()*2, TimeUnit.MILLISECONDS);
 
         // Wait for it to be completed
         try {
             handler.get();
         } catch (CancellationException e) {
-            SymbolicExecutionLab.printfYellow("TIMEOUT!");
-            if (Settings.getInstance().STOP_ON_FIRST_TIMEOUT) {
-                System.exit(-1);
-            }
+            SymbolicExecutionLab.printfYellow("TIMEOUT!\n");
+            SymbolicExecutionLab.printFinalStatus();
+            System.exit(0);
             return false;
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
