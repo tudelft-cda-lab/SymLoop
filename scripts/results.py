@@ -131,6 +131,7 @@ if __name__ == '__main__':
             per_problem[problem][folder] = timings
             for e, t in timings.items():
                 rows.append((folder, problem, e, t))
+        continue
         overall = pd.DataFrame()
         for problem, f in get_output_profile_names(fname):
             df = pd.DataFrame(pd.read_csv(f, delimiter='\t'))
