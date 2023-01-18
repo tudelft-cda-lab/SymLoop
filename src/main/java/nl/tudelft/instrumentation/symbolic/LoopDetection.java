@@ -175,8 +175,8 @@ public class LoopDetection {
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 2, -1);
                 if (selfLoops.add(SymbolicExecutionLab.processedInput)) {
                     selfLoopPatterns.add(currentPattern);
-                    // SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
-                    // SymbolicExecutionLab.processedInput, lastNSaves - 1);
+                    SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
+                            SymbolicExecutionLab.processedInput, lastNSaves - 1);
                 }
 
                 return false;
