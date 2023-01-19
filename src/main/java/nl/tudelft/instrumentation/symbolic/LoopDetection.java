@@ -132,14 +132,14 @@ public class LoopDetection {
             Matcher m = currentPattern.matcher(INPUT);
             boolean isFullMatch = m.matches();
             if (isFullMatch) {
-                // System.out.printf("'%s' is still part of current pattern '%s'\n", INPUT,
-                // currentPattern);
+                System.out.printf("'%s' is still part of current pattern '%s'\n", INPUT,
+                currentPattern);
                 // Set it to true on the last input symbol
                 SymbolicExecutionLab.shouldSolve = SymbolicExecutionLab.isLastCharacter();
                 return false;
             } else {
-                // System.out.printf("'%s' not part of current pattern '%s' %d\n", INPUT,
-                // currentPattern, INPUT.length());
+                System.out.printf("'%s' not part of current pattern '%s' %d\n", INPUT,
+                currentPattern, INPUT.length());
                 currentPattern = null;
             }
         }
