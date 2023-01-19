@@ -25,10 +25,11 @@ def get_errors(directory: str, binary: str):
         if not crash_file.startswith('id:'):
             continue
         crash_file = os.path.join(crash_path, crash_file)
-        p = subprocess.Popen([binary], stdin=subprocess.PIPE, stdout=subprocess.PIPE,stderr=subprocess.PIPE, text=True)
-        with open(crash_file) as f:
+        p = subprocess.Popen([binary], stdin=subprocess.PIPE, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        with open(crash_file, "rb") as f:
             content = f.read()
             _, err = p.communicate(content)
+            err = err.decode()
             for err in re.findall(r'(error_\d+)', err):
                 print(f'Found: "{err}" for {content=}')
                 yield (err, os.path.getctime(crash_file))
