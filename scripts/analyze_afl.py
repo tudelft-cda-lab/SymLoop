@@ -8,14 +8,13 @@ import re
 def get_start_time(directory: str):
     stats_file = os.path.join(directory, 'fuzzer_stats')
     assert os.path.exists(stats_file), 'AFL\'s fuzzer_stats not found'
-    print('created at', os.path.getctime(stats_file))
     with open(stats_file) as f:
         start_times = re.findall(r'start_time\s+:\s+(\d+)', f.read())
         assert len(start_times) == 1
         return float(start_times[0])
 
 def get_errors(directory: str, binary: str):
-    print('getting errors from', directory)
+    print('[INFO] getting errors from', directory)
     assert os.path.isfile(binary), "Binary must be a file"
     assert os.path.isdir(directory), "Directory must be a directory"
     crash_path = os.path.join(directory, 'crashes')
@@ -30,9 +29,12 @@ def get_errors(directory: str, binary: str):
             content = f.read()
             _, err = p.communicate(content)
             err = err.decode()
-            for err in re.findall(r'(error_\d+)', err):
-                print(f'Found: "{err}" for {content=}')
+            errs = re.findall(r'(error_\d+)', err)
+            for err in errs:
+                print(f'[INFO] Found: "{err}" for {content=}')
                 yield (err, os.path.getctime(crash_file))
+            if len(errs) == 0:
+                print(f'[WARN] no error found in {crash_file=}')
 
 
 def print_errors(errors, directory, start_time: float):
