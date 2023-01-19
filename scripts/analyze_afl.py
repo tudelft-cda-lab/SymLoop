@@ -26,17 +26,20 @@ def get_errors(directory: str, binary: str):
         crash_file = os.path.join(crash_path, crash_file)
         # Run the binary
         p = subprocess.Popen([binary], stdin=subprocess.PIPE, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        print(f'[INFO] running {crash_file=}')
         with open(crash_file, "rb") as f:
             content = f.read()
             # Give crash file contents to the binary
             _, err = p.communicate(content)
             err = err.decode()
+            print('[INFO] stderr:', err)
             # Try to find errors in stderr
             errs = re.findall(r'(error_\d+)', err)
             for err in errs:
-                print(f'[INFO] Found: "{err}" for {content=}')
+                time = os.path.getctime(crash_file)
+                print(f'[INFO] Found: "{err}" at "{time=:.2f}" for {content=}')
                 # Return the error and the time at which the crash file has been created
-                yield (err, os.path.getctime(crash_file))
+                yield (err, time)
             if len(errs) == 0:
                 print(f'[WARN] no error found in {crash_file=}')
 
@@ -50,7 +53,7 @@ def print_errors(errors, directory, start_time: float):
     print('\nSummary:')
     errors = set(errors)
     for error, time in sorted(error_dict.items()):
-        print(f'{error} found in {time-start_time}')
+        print(f'{error} found in {time-start_time:.2f}s')
     print(f'Found {len(error_dict)} unique errors in "{directory}"')
 
 
