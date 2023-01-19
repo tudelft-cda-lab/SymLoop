@@ -164,6 +164,9 @@ if __name__ == '__main__':
         overall = pd.DataFrame()
         for problem, f in get_output_profile_names(fname):
             df = pd.DataFrame(pd.read_csv(f, delimiter='\t'))
+            print(df.columns)
+            if 'TYPE' not in df.columns:
+                continue
             ns = df['NS']
             assert ns is not None
             df['S'] = ns / 1000000000
@@ -178,6 +181,8 @@ if __name__ == '__main__':
             #     assert data is not None
             #     print(problem, a, f'{np.average(data.to_numpy()):10.0f}')
             # print()
+        if 'TYPE' not in overall.columns:
+            continue
         print_header('all problems')
         print(aggregate_times(overall))
         print()
