@@ -20,15 +20,18 @@ def get_errors(directory: str, binary: str):
     crash_path = os.path.join(directory, 'crashes')
     assert os.path.isdir(crash_path), "AFL output dir must contain a 'crashes' directory"
     for crash_file in os.listdir(crash_path):
-        # Skip files tat are not crash files
+        # Skip files that are not crash files
         if not crash_file.startswith('id:'):
             continue
         crash_file = os.path.join(crash_path, crash_file)
+        # Run the binary
         p = subprocess.Popen([binary], stdin=subprocess.PIPE, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         with open(crash_file, "rb") as f:
             content = f.read()
+            # Give crash file contents to the binary
             _, err = p.communicate(content)
             err = err.decode()
+            # Try to find errors in stderr
             errs = re.findall(r'(error_\d+)', err)
             for err in errs:
                 print(f'[INFO] Found: "{err}" for {content=}')
@@ -50,6 +53,7 @@ def print_errors(errors, directory, start_time: float):
 
 
 def main():
+    # Creat CLI interface
     parser = argparse.ArgumentParser(description="Utility for finding error codes after running AFL on the RERS challenges")
     parser.add_argument('directory', type=str, help='the output directory of afl')
     parser.add_argument('binary', type=str, help='the binary to run the test files through')
