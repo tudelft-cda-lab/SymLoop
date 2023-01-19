@@ -54,6 +54,8 @@ public class SymbolicExecutionLab {
 
     private static Profiling profiler = new Profiling();
 
+    public static HashMap<String, Boolean> branchSatisfiable = new HashMap<>();
+
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         String[] initial = Settings.getInstance().INITIAL_TRACE;
@@ -129,8 +131,21 @@ public class SymbolicExecutionLab {
         assert next.equals(expr.value);
         processedInput += next;
         inputInIndex++;
-
+        printfBlue("Solving: %s - %b\n", processedInput, isNotVerifyingOrCanSkip());
         return input;
+    }
+
+    static boolean isNotVerifyingOrCanSkip() {
+        Settings s = Settings.getInstance();
+        if (!s.VERIFY_LOOP) {
+            return true;
+        }
+        int basePart = s.INITIAL_TRACE.length;
+        int loopPart = s.LOOP_TRACE.length;
+        if (inputInIndex > basePart) {
+            return true;
+        }
+        return false;
     }
 
     static MyVar createBoolExpr(CustomExpr var, String operator) {
@@ -236,11 +251,26 @@ public class SymbolicExecutionLab {
         }
         if (
         // currentTrace.size() <= processedInput.length() &&
-        shouldSolve &&
+        isNotVerifyingOrCanSkip() &&
+                shouldSolve &&
                 alreadySolvedBranches.add(newPathString)) {
             // Call the solver
-            PathTracker.solve(CustomExprOp.mkEq(ConstantCustomExpr.fromBool(!value), condition.expr),
+            boolean sat = PathTracker.solve(CustomExprOp.mkEq(ConstantCustomExpr.fromBool(!value), condition.expr),
                     SolvingForType.BRANCH, false, true);
+            Settings s = Settings.getInstance();
+            // if (s.VERIFY_LOOP) {
+            //     String branchString = String.format("%d, %b, %d", line_nr, value,
+            //             (inputInIndex - s.INITIAL_TRACE.length) % s.LOOP_TRACE.length);
+            //     // System.out.println("branchString: " + branchString);
+            //     if (branchSatisfiable.containsKey(branchString)) {
+            //         if (branchSatisfiable.get(branchString) != sat) {
+            //             printfRed("NOT LOOPING %s %s\n", branchString, String.join("", lastTrace));
+            //             System.exit(1);
+            //         }
+            //     } else {
+            //         branchSatisfiable.put(branchString, sat);
+            //     }
+            // }
         }
         CustomExpr branchCondition = condition.expr;
         if (!value) {
@@ -253,7 +283,7 @@ public class SymbolicExecutionLab {
     static boolean isStillUsefull(Iterable<String> input) {
         String s = String.join("", input);
         if (errorTraces.contains(s)) {
-            // printfRed("contained in  errorTraces: %s\n", s);
+            // printfRed("contained in errorTraces: %s\n", s);
             return false;
         }
         for (String e : errorTraces) {
@@ -269,17 +299,31 @@ public class SymbolicExecutionLab {
         return true;
     }
 
-    static void newSatisfiableInput(LinkedList<String> new_inputs, String output) {
+    static List<String> lastTrace;
+
+    static void newSatisfiableInput(LinkedList<String> new_inputs, String output, List<Integer> loopCounts) {
+
         // Hurray! found a new branch using these new inputs!
         LinkedList<String> temp = new LinkedList<String>();
         for (String s : new_inputs) {
             temp.add(s.replaceAll("\"", ""));
         }
+        lastTrace = temp;
+
+        if (Settings.getInstance().VERIFY_LOOP) {
+            for (Integer c : loopCounts) {
+                if (c > 0) {
+                    printfRed("NOT LOOPING: %s\n", String.join(",", temp));
+                    System.err.println(String.join(",", temp));
+                    System.exit(1);
+                }
+            }
+        }
 
         // Add a random input at the end to allow solving new paths
         String alreadyFound = String.join("", temp);
+        // System.out.printf("New satisfiable input: %s\n", temp);
         if (!skip && alreadyFoundTraces.add(alreadyFound) && isStillUsefull(temp)) {
-            // System.out.printf("New satisfiable input: %s\n", temp);
             temp.add(newRandomInputChar());
             // temp.add("A");
             String newInput = String.join("", temp);
@@ -400,7 +444,6 @@ public class SymbolicExecutionLab {
         return timeLeftMillis() < 0;
     }
 
-
     static void symbolic_execution() {
         while (!isFinished && !isEmpty() && !timeLimitReached()) {
             reset();
@@ -428,22 +471,34 @@ public class SymbolicExecutionLab {
         assert VERIFY_LOOP != null;
         reset();
         List<String> input = new ArrayList<>();
-        for(int i = 0; i < s.INITIAL_TRACE.length; i ++){
-            input.add( s.INITIAL_TRACE[i]);
+        for (int i = 0; i < s.INITIAL_TRACE.length; i++) {
+            input.add(s.INITIAL_TRACE[i]);
         }
-        for(int i = 0; i < s.LOOP_TRACE.length * 2; i++) {
-            input.add(s.LOOP_TRACE[i % s.LOOP_TRACE.length]); 
-
+        for (int i = 0; i < s.LOOP_TRACE.length; i++) {
+            input.add(s.LOOP_TRACE[i]);
         }
-        printfGreen("Full loop trace: %s\n", String.join("", input));
-        NextTrace trace = new NextTrace(new ArrayList<>(input), currentLineNumber, "<initial>", false);
-        // NextTrace trace = new N
-        runNext(trace);
-        if (loopDetector.isSelfLooping(String.join("", trace.trace))) {
-            printfGreen("IS SELF LOOPING\n");
-        } else {
-            printfYellow("NOT KNOWN YET\n");
+        String full = String.join("", input);
+        printfGreen("Full loop trace: %s\n", full);
+        for (int i = 0; i < s.LOOP_TRACE.length; i++) {
+            if (i > 0) {
+                input.add(s.LOOP_TRACE[i - 1]);
+            }
+            for (String sym : PathTracker.inputSymbols) {
+                List<String> in = new ArrayList<>(input);
+                in.add(sym);
+                printfGreen("Current loop trace: %s\n", String.join("", in));
+                NextTrace trace = new NextTrace(in, currentLineNumber, "<initial>", false);
+                // NextTrace trace = new N
+                reset();
+                branchSatisfiable.clear();
+                runNext(trace);
+                if (loopDetector.isSelfLooping(full)) {
+                    printfGreen("IS SELF LOOPING\n");
+                    System.exit(0);
+                }
+            }
         }
+        printfYellow("PROBABLY LOOPING\n");
         System.exit(0);
     }
 
@@ -536,6 +591,7 @@ public class SymbolicExecutionLab {
         }
         if (out.contains("Invalid")) {
             errorTraces.add(SymbolicExecutionLab.processedInput);
+            System.out.println("INVALID:" + out);
             skip = true;
             if (!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {
                 System.out.println(out);

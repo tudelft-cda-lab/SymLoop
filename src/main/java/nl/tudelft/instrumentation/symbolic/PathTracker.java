@@ -1,7 +1,9 @@
 package nl.tudelft.instrumentation.symbolic;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -125,12 +127,14 @@ public class PathTracker {
             Model m = s.getModel();
             output += m;
             LinkedList<String> new_inputs = new LinkedList<String>();
+            List<Integer> loopCounts = new ArrayList<>();
             for (MyVar v : PathTracker.inputs) {
                 if (loopIterations.containsKey(v)) {
                     Replacement r = loopIterations.get(v);
                     String amountAsString = m.evaluate(v.z3var(), true).toString();
                     // SymbolicExecutionLab.printfBlue("loopVar %s: %s\n", v.z3var, amountAsString);
                     int amount = Integer.parseInt(amountAsString);
+                    loopCounts.add(amount);
                     for (CustomExpr e : r.getAllExprs(amount)) {
                         String value = m.evaluate(e.toZ3(), true).toString();
                         new_inputs.add(value);
@@ -140,7 +144,7 @@ public class PathTracker {
                 }
             }
             if (isInput) {
-                SymbolicExecutionLab.newSatisfiableInput(new_inputs, output);
+                SymbolicExecutionLab.newSatisfiableInput(new_inputs, output, loopCounts);
             }
             s.pop();
             return true;
