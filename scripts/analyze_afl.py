@@ -35,6 +35,7 @@ def get_errors(directory: str, binary: str):
             errs = re.findall(r'(error_\d+)', err)
             for err in errs:
                 print(f'[INFO] Found: "{err}" for {content=}')
+                # Return the error and the time at which the crash file has been created
                 yield (err, os.path.getctime(crash_file))
             if len(errs) == 0:
                 print(f'[WARN] no error found in {crash_file=}')
@@ -42,6 +43,7 @@ def get_errors(directory: str, binary: str):
 
 def print_errors(errors, directory, start_time: float):
     error_dict = dict()
+    # Save the first time an error has been found
     for error, time in errors:
         if error not in error_dict or time < error_dict[error]:
             error_dict[error] = time
