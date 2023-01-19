@@ -2,14 +2,13 @@
 set -e
 ln -sf "$PWD/rers2020_test_cases/Problem$1Testcases.txt" src/main/resources/tests.txt
 modified=$(find src/ | grep src/main/java | xargs stat -c "%Y" | sort -n | tail -n 1)
-echo "modified: $modified"
 lastmodified=$(cat scripts/lastmodified || echo "0")
-echo "lastmodified: $lastmodified"
-echo "modified:" $modified
 if [ "$modified" -gt "$lastmodified" ]; then
    # mvn -q clean package -
-   mvn -q clean package -DskipTests
+   mvn -q -T1C --offline package -DskipTests
   # clear
+else
+   echo "SKIPPING BUILD"
 fi
 echo $modified > scripts/lastmodified
 
