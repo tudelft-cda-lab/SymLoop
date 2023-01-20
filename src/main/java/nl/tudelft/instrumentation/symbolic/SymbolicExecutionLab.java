@@ -140,7 +140,7 @@ public class SymbolicExecutionLab {
         }
         int basePart = s.INITIAL_TRACE.length;
         int loopPart = s.LOOP_TRACE.length;
-        if (inputInIndex > basePart) {
+        if (inputInIndex > basePart + loopPart) {
             return true;
         }
         return false;
