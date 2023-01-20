@@ -127,6 +127,10 @@ public class LoopDetection {
             return false;
         }
 
+        if (!SymbolicExecutionLab.shouldLoopCheck) {
+            return false;
+        }
+
         SymbolicExecutionLab.shouldSolve = true;
         if (currentPattern != null) {
             Matcher m = currentPattern.matcher(INPUT);

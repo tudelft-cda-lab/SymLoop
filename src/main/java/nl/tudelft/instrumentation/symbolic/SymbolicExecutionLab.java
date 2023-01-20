@@ -54,6 +54,8 @@ public class SymbolicExecutionLab {
 
     private static Profiling profiler = new Profiling();
 
+    public static boolean shouldLoopCheck = true;
+
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         String[] initial = Settings.getInstance().INITIAL_TRACE;
@@ -129,7 +131,8 @@ public class SymbolicExecutionLab {
         assert next.equals(expr.value);
         processedInput += next;
         inputInIndex++;
-        printfBlue("Solving: %s - %b\n", processedInput, isNotVerifyingOrCanSkip());
+        shouldLoopCheck = isNotVerifyingOrCanSkip();
+        printfBlue("Solving: %s - %b\n", processedInput, shouldLoopCheck);
         return input;
     }
 
@@ -140,7 +143,7 @@ public class SymbolicExecutionLab {
         }
         int basePart = s.INITIAL_TRACE.length;
         int loopPart = s.LOOP_TRACE.length;
-        if (inputInIndex > basePart + loopPart) {
+        if (inputInIndex >= basePart + loopPart) {
             return true;
         }
         return false;
@@ -285,6 +288,17 @@ public class SymbolicExecutionLab {
 
     static List<String> lastTrace;
 
+    static void printQs() {
+        System.out.println("NextTraces");
+        for (NextTrace t : nextTraces) {
+            System.out.println(String.join("", t.trace));
+        }
+        System.out.println("Backlog");
+        for (NextTrace t : backLog) {
+            System.out.println(String.join("", t.trace));
+        }
+    }
+
     static void newSatisfiableInput(LinkedList<String> new_inputs, String output, List<Integer> loopCounts) {
 
         // Hurray! found a new branch using these new inputs!
@@ -297,6 +311,7 @@ public class SymbolicExecutionLab {
         if (Settings.getInstance().VERIFY_LOOP) {
             for (Integer c : loopCounts) {
                 if (c > 0) {
+                    printQs();
                     printfRed("NOT LOOPING: %s\n", String.join(",", temp));
                     System.err.println(String.join(",", temp));
                     System.exit(1);
@@ -308,7 +323,9 @@ public class SymbolicExecutionLab {
         String alreadyFound = String.join("", temp);
         // System.out.printf("New satisfiable input: %s\n", temp);
         if (!skip && alreadyFoundTraces.add(alreadyFound) && isStillUsefull(temp)) {
-            temp.add(newRandomInputChar());
+            if(!Settings.getInstance().VERIFY_LOOP) {
+                temp.add(newRandomInputChar());
+            }
             // temp.add("A");
             String newInput = String.join("", temp);
             if (!loopDetector.isSelfLooping(newInput)) {
@@ -379,6 +396,20 @@ public class SymbolicExecutionLab {
             backLog.add(trace);
         } else {
             nextTraces.add(trace);
+        }
+    }
+
+    static NextTrace getNextFromNext() {
+        if (nextTraces.isEmpty()) {
+            return null;
+        } else {
+            NextTrace trace = nextTraces.poll();
+            if (branchTracker.hasVisitedBoth(trace.getLineNr())) {
+                backLog.add(trace);
+                return getNextFromNext();
+            } else {
+                return trace;
+            }
         }
     }
 
@@ -461,38 +492,52 @@ public class SymbolicExecutionLab {
         for (int i = 0; i < s.LOOP_TRACE.length; i++) {
             input.add(s.LOOP_TRACE[i]);
         }
-        String full = String.join("", input);
-        printfGreen("Full loop trace: %s\n", full);
         for (int i = 0; i < s.LOOP_TRACE.length; i++) {
-            if (i > 0) {
-                input.add(s.LOOP_TRACE[i - 1]);
-            }
-            for (String sym : PathTracker.inputSymbols) {
-                List<String> in = new ArrayList<>(input);
-                in.add(sym);
-                printfGreen("Current loop trace: %s\n", String.join("", in));
-                NextTrace trace = new NextTrace(in, currentLineNumber, "<initial>", false);
-                // NextTrace trace = new N
-                reset();
-                runNext(trace);
-                if (loopDetector.isSelfLooping(full)) {
-                    printfGreen("IS SELF LOOPING\n");
-                    System.exit(0);
-                }
+            input.add(s.LOOP_TRACE[i]);
+        }
+        String full = String.join("", input);
+        printfBlue("full: %s\n", full);
+        NextTrace trace = new NextTrace(input, currentLineNumber, "<initial>", false);
+        nextTraces.add(trace);
+        NextTrace t;
+        while ((t=getNextFromNext()) != null) {
+            reset();
+            runNext(t);
+            if (loopDetector.isSelfLooping(full)) {
+                printfGreen("IS SELF LOOPING\n");
+                System.err.println("GUARANTEED");
+                System.exit(0);
             }
         }
+        // printfGreen("Full loop trace: %s\n", full);
+        // for (int i = 0; i < s.LOOP_TRACE.length; i++) {
+        //     if (i > 0) {
+        //         input.add(s.LOOP_TRACE[i - 1]);
+        //     }
+        //     for (String sym : PathTracker.inputSymbols) {
+        //         List<String> in = new ArrayList<>(input);
+        //         in.add(sym);
+        //         printfGreen("Current loop trace: %s\n", String.join("", in));
+        //         NextTrace trace = new NextTrace(in, currentLineNumber, "<initial>", false);
+        //         // NextTrace trace = new N
+        //         reset();
+        //         runNext(trace);
+        //     }
+        // }
+        printQs();
         printfYellow("PROBABLY LOOPING\n");
+        System.err.println("PROBABLY");
         System.exit(0);
     }
 
     static void run(String[] args) {
         Settings s = Settings.create(args);
         System.out.println(s.parameters());
-        initialize(PathTracker.inputSymbols);
-        nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
         if (s.LOOP_TRACE != null) {
             verify_loop(s.LOOP_TRACE);
         } else {
+            initialize(PathTracker.inputSymbols);
+            nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
             symbolic_execution();
         }
     }
@@ -510,8 +555,8 @@ public class SymbolicExecutionLab {
         if (!isStillUsefull(trace.trace)) {
             return;
         }
-        printfYellow("now doing line: %d, %b, %s\n", trace.getLineNr(), trace.getConditionValue(),
-                trace.trace);
+        printfYellow("now doing line: %d, %b, %s, from: %s\n", trace.getLineNr(), trace.getConditionValue(),
+                trace.trace, trace.from.split("\n")[0]);
         currentTrace = trace.trace;
         boolean completed = PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
         if (!skip && completed) {
@@ -574,7 +619,6 @@ public class SymbolicExecutionLab {
         }
         if (out.contains("Invalid")) {
             errorTraces.add(SymbolicExecutionLab.processedInput);
-            System.out.println("INVALID:" + out);
             skip = true;
             if (!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {
                 System.out.println(out);
