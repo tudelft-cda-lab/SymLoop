@@ -54,8 +54,6 @@ public class SymbolicExecutionLab {
 
     private static Profiling profiler = new Profiling();
 
-    public static HashMap<String, Boolean> branchSatisfiable = new HashMap<>();
-
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
         String[] initial = Settings.getInstance().INITIAL_TRACE;
@@ -255,22 +253,8 @@ public class SymbolicExecutionLab {
                 shouldSolve &&
                 alreadySolvedBranches.add(newPathString)) {
             // Call the solver
-            boolean sat = PathTracker.solve(CustomExprOp.mkEq(ConstantCustomExpr.fromBool(!value), condition.expr),
+            PathTracker.solve(CustomExprOp.mkEq(ConstantCustomExpr.fromBool(!value), condition.expr),
                     SolvingForType.BRANCH, false, true);
-            Settings s = Settings.getInstance();
-            // if (s.VERIFY_LOOP) {
-            //     String branchString = String.format("%d, %b, %d", line_nr, value,
-            //             (inputInIndex - s.INITIAL_TRACE.length) % s.LOOP_TRACE.length);
-            //     // System.out.println("branchString: " + branchString);
-            //     if (branchSatisfiable.containsKey(branchString)) {
-            //         if (branchSatisfiable.get(branchString) != sat) {
-            //             printfRed("NOT LOOPING %s %s\n", branchString, String.join("", lastTrace));
-            //             System.exit(1);
-            //         }
-            //     } else {
-            //         branchSatisfiable.put(branchString, sat);
-            //     }
-            // }
         }
         CustomExpr branchCondition = condition.expr;
         if (!value) {
@@ -490,7 +474,6 @@ public class SymbolicExecutionLab {
                 NextTrace trace = new NextTrace(in, currentLineNumber, "<initial>", false);
                 // NextTrace trace = new N
                 reset();
-                branchSatisfiable.clear();
                 runNext(trace);
                 if (loopDetector.isSelfLooping(full)) {
                     printfGreen("IS SELF LOOPING\n");
