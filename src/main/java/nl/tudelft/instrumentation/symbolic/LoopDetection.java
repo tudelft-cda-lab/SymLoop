@@ -137,13 +137,14 @@ public class LoopDetection {
             boolean isFullMatch = m.matches();
             if (isFullMatch) {
                 System.out.printf("'%s' is still part of current pattern '%s'\n", INPUT,
-                currentPattern);
+                        currentPattern);
                 // Set it to true on the last input symbol
-                // SymbolicExecutionLab.shouldSolve = SymbolicExecutionLab.isLastCharacter() || Settings.getInstance().VERIFY_LOOP;
+                // SymbolicExecutionLab.shouldSolve = SymbolicExecutionLab.isLastCharacter() ||
+                // Settings.getInstance().VERIFY_LOOP;
                 return false;
             } else {
                 System.out.printf("'%s' not part of current pattern '%s' %d\n", INPUT,
-                currentPattern, INPUT.length());
+                        currentPattern, INPUT.length());
                 currentPattern = null;
             }
         }
@@ -223,7 +224,7 @@ public class LoopDetection {
     }
 
     boolean isFiniteLoop(CustomExpr extended, List<Replacement> replacements) {
-        final int LOOP_UNROLLING_AMOUNT = Settings.getInstance().LOOP_UNROLLING_AMOUNT;
+        int LOOP_UNROLLING_AMOUNT = Settings.getInstance().LOOP_UNROLLING_AMOUNT;
         OptimizingSolver solver = PathTracker.solver;
         solver.push();
 
@@ -238,7 +239,9 @@ public class LoopDetection {
 
         Status status = solver.check(SolvingForType.IS_REATING_LOOP);
         if (status != Status.SATISFIABLE) {
+            System.out.println("IS NOT A LOOP THAT WORKS");
             solver.pop();
+
         }
         if (status == Status.UNSATISFIABLE) {
             // SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on
@@ -247,7 +250,26 @@ public class LoopDetection {
             // //
             // TODO: Create a constraint that goes up to the number of times that it is
             // possible to go through the loop.
-            return true;
+
+            if(Settings.getInstance().DO_HALF_LOOPS) {
+                solver.push();
+                int maxPossible = 0;
+                for (int i = 0; i < LOOP_UNROLLING_AMOUNT; i += 1) {
+                    solver.add(loop.get(i));
+                    if (Status.SATISFIABLE != solver.check(SolvingForType.IS_REATING_LOOP)) {
+                        System.out.println();
+                        LOOP_UNROLLING_AMOUNT = i-1;
+                        maxPossible = i - 1;
+                        break;
+                    }
+                }
+                solver.pop();
+                // TODO THIS was a RUSH job
+                solver.add(CustomExprOp.mkAnd(loop.subList(0, maxPossible).toArray(CustomExpr[]::new)));
+            } else {
+                return true;
+            }
+
         } else if (status == Status.UNKNOWN) {
             SymbolicExecutionLab.printfYellow("Solver exited with status: %s\n", status);
             return true;

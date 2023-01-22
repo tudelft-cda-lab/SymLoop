@@ -16,6 +16,7 @@ public class Settings {
     private static final int DEFAULT_SOLVER_TIMEOUT_S = -1;
     private static Settings singleton;
 
+    public final boolean DO_HALF_LOOPS = true;
     public final boolean UNFOLD_AND;
     public final boolean MINIMIZE;
     public final int LOOP_UNROLLING_AMOUNT;
