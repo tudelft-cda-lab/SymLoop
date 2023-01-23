@@ -73,7 +73,15 @@ public class Settings {
             int loopUnrollingAmount,
             int maxLoopDetectionDepth, int maxTimeS, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE, int SOLVER_TIMEOUT_S, String verifyLoop, String suffix) {
         this.UNFOLD_AND = unfoldAnd;
-        this.INITIAL_TRACE = initial == null ? null : initial.split(",");
+        String[] initial_arr = null;
+        if (initial != null) {
+                if(initial.length() == 0) {
+                        initial_arr = new String[]{};
+                } else {
+                        initial_arr = initial.split(",");
+                }
+        }
+        this.INITIAL_TRACE = initial_arr;
         this.SUFFIX = suffix == null ? null : suffix.split(",");
         this.VERIFY_LOOP = verifyLoop != null;
         this.LOOP_TRACE = verifyLoop == null ? null : verifyLoop.split(",");
