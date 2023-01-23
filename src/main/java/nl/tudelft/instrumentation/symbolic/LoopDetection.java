@@ -41,6 +41,10 @@ public class LoopDetection {
         return false;
     }
 
+    public boolean containsLoop(String input) {
+        return isLooping(input, loopPatterns);
+    }
+
     public boolean isSelfLooping(String input) {
         return isLooping(input, selfLoopPatterns);
     }
@@ -139,8 +143,7 @@ public class LoopDetection {
                 System.out.printf("'%s' is still part of current pattern '%s'\n", INPUT,
                         currentPattern);
                 // Set it to true on the last input symbol
-                // SymbolicExecutionLab.shouldSolve = SymbolicExecutionLab.isLastCharacter() ||
-                // Settings.getInstance().VERIFY_LOOP;
+                SymbolicExecutionLab.shouldSolve = SymbolicExecutionLab.isLastCharacter();
                 return false;
             } else {
                 System.out.printf("'%s' not part of current pattern '%s' %d\n", INPUT,
@@ -151,7 +154,13 @@ public class LoopDetection {
         if (isSelfLooping(INPUT)) {
             return true;
         }
-        int depth = Math.min(Settings.getInstance().MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
+        Settings s = Settings.getInstance();
+        int depth = Math.min(s.MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
+
+        if (s.VERIFY_LOOP) {
+            lastNSaves = s.LOOP_TRACE.length+1;
+            depth = Math.min(depth, lastNSaves);
+        }
 
         for (; lastNSaves <= depth; lastNSaves++) {
             List<Replacement> replacements = history.getReplacementsForLastSaves(lastNSaves);
@@ -159,8 +168,8 @@ public class LoopDetection {
             CustomExpr extended = Replacement.applyAllTo(replacements, loopModel);
             CustomExpr selfLoopExpr = history.getSelfLoopExpr(lastNSaves);
             if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr, SolvingForType.IS_SELF_LOOP, false, false)) {
-                // System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d", INPUT,
-                // lastNSaves));
+                System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d", INPUT,
+                lastNSaves));
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, -1);
                 selfLoopPatterns.add(currentPattern);
                 return true;

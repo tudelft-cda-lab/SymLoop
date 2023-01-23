@@ -132,7 +132,7 @@ public class SymbolicExecutionLab {
         processedInput += next;
         inputInIndex++;
         shouldLoopCheck = isNotVerifyingOrCanSkip();
-        printfBlue("Solving: %s - %b\n", processedInput, shouldLoopCheck);
+        printfBlue("Solving: '%s' - shouldLoopCheck: %b, solve: %b\n", processedInput, shouldLoopCheck, shouldSolve);
         return input;
     }
 
@@ -144,8 +144,13 @@ public class SymbolicExecutionLab {
         int basePart = s.INITIAL_TRACE.length;
         int loopPart = s.LOOP_TRACE.length;
         if (inputInIndex >= basePart + loopPart) {
-            return true;
+            shouldSolve = true;
+            if (inputInIndex == basePart + loopPart) {
+                return true;
+            }
+            return false;
         }
+        shouldSolve = false;
         return false;
     }
 
@@ -252,7 +257,6 @@ public class SymbolicExecutionLab {
         }
         if (
         // currentTrace.size() <= processedInput.length() &&
-        isNotVerifyingOrCanSkip() &&
                 shouldSolve &&
                 alreadySolvedBranches.add(newPathString)) {
             // Call the solver
@@ -480,61 +484,45 @@ public class SymbolicExecutionLab {
         System.exit(0);
     }
 
-    static void verify_loop(String[] VERIFY_LOOP) {
+    static void verifyLoop(String[] VERIFY_LOOP) {
         Settings s = Settings.getInstance();
         printfGreen("Verifying loop: %s\n", String.join("", VERIFY_LOOP));
         assert VERIFY_LOOP != null;
         reset();
         List<String> input = new ArrayList<>();
-        for (int i = 0; i < s.INITIAL_TRACE.length; i++) {
-            input.add(s.INITIAL_TRACE[i]);
-        }
-        for (int i = 0; i < s.LOOP_TRACE.length; i++) {
-            input.add(s.LOOP_TRACE[i]);
-        }
-        for (int i = 0; i < s.LOOP_TRACE.length; i++) {
-            input.add(s.LOOP_TRACE[i]);
+        input.addAll(Arrays.asList(s.INITIAL_TRACE));
+        input.addAll(Arrays.asList(s.LOOP_TRACE));
+        if(s.SUFFIX != null && s.SUFFIX.length > 0) {
+            input.addAll(Arrays.asList(s.SUFFIX));
+        } else {
+            input.addAll(Arrays.asList(s.LOOP_TRACE));
         }
         String full = String.join("", input);
         printfBlue("full: %s\n", full);
         NextTrace trace = new NextTrace(input, currentLineNumber, "<initial>", false);
         nextTraces.add(trace);
-        NextTrace t;
-        while ((t=getNextFromNext()) != null) {
-            reset();
-            runNext(t);
-            if (loopDetector.isSelfLooping(full)) {
-                printfGreen("IS SELF LOOPING\n");
-                System.err.println("GUARANTEED");
-                System.exit(0);
-            }
+        runNext(trace);
+        if (loopDetector.isSelfLooping(full)) {
+            printfGreen("IS SELF LOOPING\n");
+            System.err.println("GUARANTEED");
+            System.exit(0);
+        } else if (loopDetector.containsLoop(full)) {
+            printfYellow("PROBABLY LOOPING\n");
+            System.err.println("PROBABLY");
+            System.exit(0);
+        } else {
+            printfYellow("NO LOOP FOUND\n");
+            System.err.println("NO LOOP FOUND");
+            System.exit(0);
         }
-        // printfGreen("Full loop trace: %s\n", full);
-        // for (int i = 0; i < s.LOOP_TRACE.length; i++) {
-        //     if (i > 0) {
-        //         input.add(s.LOOP_TRACE[i - 1]);
-        //     }
-        //     for (String sym : PathTracker.inputSymbols) {
-        //         List<String> in = new ArrayList<>(input);
-        //         in.add(sym);
-        //         printfGreen("Current loop trace: %s\n", String.join("", in));
-        //         NextTrace trace = new NextTrace(in, currentLineNumber, "<initial>", false);
-        //         // NextTrace trace = new N
-        //         reset();
-        //         runNext(trace);
-        //     }
-        // }
         printQs();
-        printfYellow("PROBABLY LOOPING\n");
-        System.err.println("PROBABLY");
-        System.exit(0);
     }
 
     static void run(String[] args) {
         Settings s = Settings.create(args);
         System.out.println(s.parameters());
         if (s.LOOP_TRACE != null) {
-            verify_loop(s.LOOP_TRACE);
+            verifyLoop(s.LOOP_TRACE);
         } else {
             initialize(PathTracker.inputSymbols);
             nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
