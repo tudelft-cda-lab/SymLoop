@@ -248,24 +248,16 @@ public class LoopDetection {
 
         Status status = solver.check(SolvingForType.IS_REATING_LOOP);
         if (status != Status.SATISFIABLE) {
-            System.out.println("IS NOT A LOOP THAT WORKS");
             solver.pop();
-
         }
         if (status == Status.UNSATISFIABLE) {
-            // SymbolicExecutionLab.printfGreen("loop ends with %s, after %d iterations on
-            // model %s\n", status,
-            // i, extended);
-            // //
-            // TODO: Create a constraint that goes up to the number of times that it is
-            // possible to go through the loop.
-
             if(Settings.getInstance().DO_HALF_LOOPS) {
                 solver.push();
                 int maxPossible = 0;
                 for (int i = 0; i < LOOP_UNROLLING_AMOUNT; i += 1) {
                     solver.add(loop.get(i));
-                    if (Status.SATISFIABLE != solver.check(SolvingForType.IS_REATING_LOOP)) {
+                    status = solver.check(SolvingForType.IS_REATING_LOOP);
+                    if (Status.SATISFIABLE != status) {
                         System.out.println();
                         LOOP_UNROLLING_AMOUNT = i-1;
                         maxPossible = i - 1;
@@ -273,8 +265,9 @@ public class LoopDetection {
                     }
                 }
                 solver.pop();
-                // TODO THIS was a RUSH job
                 solver.add(CustomExprOp.mkAnd(loop.subList(0, maxPossible).toArray(CustomExpr[]::new)));
+                status = solver.check(SolvingForType.IS_REATING_LOOP);
+                assert status == Status.SATISFIABLE;
             } else {
                 return true;
             }
