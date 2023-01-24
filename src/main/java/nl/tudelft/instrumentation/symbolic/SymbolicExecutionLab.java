@@ -132,7 +132,7 @@ public class SymbolicExecutionLab {
         processedInput += next;
         inputInIndex++;
         shouldLoopCheck = isNotVerifyingOrCanSkip();
-        printfBlue("Solving: '%s' - shouldLoopCheck: %b, solve: %b\n", processedInput, shouldLoopCheck, shouldSolve);
+        // printfBlue("Solving: '%s' - shouldLoopCheck: %b, solve: %b\n", processedInput, shouldLoopCheck, shouldSolve);
         return input;
     }
 
