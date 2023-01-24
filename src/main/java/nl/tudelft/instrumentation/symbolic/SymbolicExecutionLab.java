@@ -607,7 +607,9 @@ public class SymbolicExecutionLab {
         }
         if (out.contains("Invalid")) {
             errorTraces.add(SymbolicExecutionLab.processedInput);
-            skip = true;
+            if (!Settings.getInstance().VERIFY_LOOP) {
+                skip = true;
+            }
             if (!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {
                 System.out.println(out);
             }
