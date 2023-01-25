@@ -12,7 +12,8 @@ interface SolverInterface {
         BRANCH('B'),
         IS_LOOP('L'),
         IS_REATING_LOOP('R'),
-        IS_SELF_LOOP('S');
+        IS_SELF_LOOP('S'),
+        EQUIVALENCE('Q');
 
         final char c;
 

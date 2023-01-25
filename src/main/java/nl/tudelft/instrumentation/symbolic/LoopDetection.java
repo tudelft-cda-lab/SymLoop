@@ -21,7 +21,7 @@ public class LoopDetection {
     private SortedSet<String> foundLoops = new TreeSet<>();
     private SortedSet<String> selfLoops = new TreeSet<>();
     private Context ctx = PathTracker.ctx;
-    private String inputName = "unknown";
+    public String inputName = "unknown";
 
     protected ConstraintHistory history = new ConstraintHistory();
     private int currentLoopNumber = 0;
@@ -139,7 +139,13 @@ public class LoopDetection {
             System.out.println("CURRENTLY HAS PROCESSED EVERYTING");
         }
 
-        if (!SymbolicExecutionLab.shouldLoopCheck) {
+        if (SymbolicExecutionLab.isCreatingPaths && SymbolicExecutionLab.processedInputList.size() == SymbolicExecutionLab.save_at_input) {
+            SymbolicExecutionLab.indexBefore = history.getNumberOfSaves();
+            System.out.printf("CURRENTLY Right before end: %d\n", SymbolicExecutionLab.indexBefore);
+            SymbolicExecutionLab.fromVarCounts.add(history.getVariables());
+        }
+
+        if (!SymbolicExecutionLab.shouldLoopCheck || SymbolicExecutionLab.isCreatingPaths) {
             return false;
         }
 
@@ -324,12 +330,6 @@ public class LoopDetection {
         PathTracker.addToBranches(oneOfTheLoop);
         SymbolicExecutionLab.numberOfLoopsInPathConstraint += 1;
 
-        if (SymbolicExecutionLab.isCreatingPaths
-                && SymbolicExecutionLab.processedInputList.size() == SymbolicExecutionLab.currentTrace.size() - 1) {
-            SymbolicExecutionLab.indexBefore = history.getNumberOfSaves();
-            System.out.printf("CURRENTLY Right before end: %d\n", SymbolicExecutionLab.indexBefore);
-            SymbolicExecutionLab.fromVarCounts.add(history.getVariables());
-        }
 
         return false;
     }

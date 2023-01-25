@@ -56,7 +56,10 @@ class Replacement {
         // Loop backwards to prevent repeated subsitution
         for (int i = this.start; i >= this.stop; i--) {
             int base = i + (this.added * amount);
-            changes.put(getNameFor(base), getNameFor(base + this.added));
+            String from = getNameFor(base);
+            String to = getNameFor(base + this.added);
+            System.out.printf("%s -> %s\n", from, to);
+            changes.put(from, to);
         }
     }
 
