@@ -4,6 +4,8 @@ package nl.tudelft.instrumentation.symbolic;
 import java.util.*;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import com.microsoft.z3.*;
 
 import nl.tudelft.instrumentation.symbolic.exprs.ConstantCustomExpr;
@@ -18,6 +20,7 @@ public class ConstraintHistory {
     private final Context ctx = PathTracker.ctx;
 
     private List<List<CustomExpr>> loopModelList = new ArrayList<>();
+    private List<List<Boolean>> isAssignment = new ArrayList<>();
     private int numberOfSaves = 0;
 
     private HashSet<String> existing = new HashSet<>();
@@ -76,6 +79,25 @@ public class ConstraintHistory {
         return mkAnd(expressions);
     }
 
+    public Pair<CustomExpr, CustomExpr> getSeperateAssignAndBranches(int lastNSaves) {
+        assert lastNSaves <= loopModelList.size();
+        List<CustomExpr> branches = new ArrayList<>();
+        List<CustomExpr> assigns = new ArrayList<>();
+        int amountOfSaves = loopModelList.size();
+        for (int i = amountOfSaves - lastNSaves; i < amountOfSaves; i++) {
+            List<CustomExpr> c = loopModelList.get(i);
+            List<Boolean> a = isAssignment.get(i);
+            for(int j = 0; j < c.size(); j++){
+                if (a.get(j)) {
+                    assigns.add(c.get(j));
+                } else {
+                    branches.add(c.get(j));
+                }
+            }
+        }
+        return Pair.of(mkAnd(assigns), mkAnd(branches));
+    }
+
     private int getLastVariableLength(String name, int lastN) {
         List<Integer> list = lastVariables.get(name);
         assert lastN <= list.size();
@@ -84,6 +106,7 @@ public class ConstraintHistory {
 
     public void save() {
         loopModelList.add(new ArrayList<>());
+        isAssignment.add(new ArrayList<>());
         for (String name : variables.keySet()) {
             lastVariables.get(name).add(variables.get(name).size());
         }
@@ -129,6 +152,7 @@ public class ConstraintHistory {
         variables.clear();
         lastVariables.clear();
         loopModelList.clear();
+        isAssignment.clear();
         this.numberOfSaves = 0;
         this.existing.clear();
     }
@@ -155,27 +179,28 @@ public class ConstraintHistory {
     }
 
     void nextInput(CustomExpr inputConstraint) {
-        addToLoopModel(inputConstraint);
+        addToLoopModel(inputConstraint, true);
     }
 
-    private void addToLoopModelList(CustomExpr condition) {
+    private void addToLoopModelList(CustomExpr condition, boolean isAssign) {
         // getLast(loopModelList).add(condition);
         if (Settings.getInstance().UNFOLD_AND && condition instanceof CustomExprOp) {
             CustomExprOp c = (CustomExprOp) condition;
             if (c.op == Operation.AND) {
                 for (CustomExpr arg : c.args) {
                     CustomExpr v = arg;
-                    addToLoopModelList(v);
+                    addToLoopModelList(v, isAssign);
                 }
                 return;
             }
 
         }
         getLast(loopModelList).add(condition);
+        getLast(isAssignment).add(isAssign);
     }
 
-    void addToLoopModel(CustomExpr condition) {
-        addToLoopModelList(condition);
+    void addToLoopModel(CustomExpr condition, boolean isAssign) {
+        addToLoopModelList(condition, isAssign);
     }
 
 }

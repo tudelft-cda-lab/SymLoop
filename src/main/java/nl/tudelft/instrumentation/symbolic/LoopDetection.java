@@ -70,8 +70,8 @@ public class LoopDetection {
         history.nextInput(inputConstraint);
     }
 
-    void addToLoopModel(CustomExpr condition) {
-        history.addToLoopModel(condition);
+    void addToLoopModel(CustomExpr condition, boolean isAssign) {
+        history.addToLoopModel(condition, isAssign);
     }
 
     boolean isSelfLoop(List<Replacement> replacements, CustomExpr extended) {
