@@ -2,6 +2,7 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
+import java.util.Map.Entry;
 
 import com.microsoft.z3.*;
 
@@ -34,6 +35,14 @@ public class ConstraintHistory {
 
     public CustomExpr mkOr(List<CustomExpr> exprs) {
         return CustomExprOp.mkOr(exprs.toArray(CustomExpr[]::new));
+    }
+
+    public Map<String, Integer> getVariables() {
+        Map<String, Integer> vars = new HashMap<>();
+        for (Entry<String, List<CustomExpr>> e : variables.entrySet()) {
+            vars.put(e.getKey(), e.getValue().size());
+        }
+        return vars;
     }
 
     public CustomExpr getExtendedConstraint(int lastNSaves, List<Replacement> replacements) {

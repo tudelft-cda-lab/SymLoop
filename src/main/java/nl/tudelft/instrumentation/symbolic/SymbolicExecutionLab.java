@@ -1,6 +1,7 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
+import java.util.Map.Entry;
 
 import com.microsoft.z3.*;
 
@@ -40,6 +41,7 @@ public class SymbolicExecutionLab {
 
     static int inputInIndex = 0;
     static String processedInput = "";
+    static List<String> processedInputList = new ArrayList<>();
 
     static boolean skip = false;
     static LoopDetection loopDetector = new LoopDetection();
@@ -55,6 +57,7 @@ public class SymbolicExecutionLab {
     private static Profiling profiler = new Profiling();
 
     public static boolean shouldLoopCheck = true;
+    public static boolean isCreatingPaths = false;
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -130,6 +133,7 @@ public class SymbolicExecutionLab {
         String next = currentTrace.get(inputInIndex);
         assert next.equals(expr.value);
         processedInput += next;
+        processedInputList.add(next);
         inputInIndex++;
         shouldLoopCheck = isNotVerifyingOrCanSkip();
         // printfBlue("Solving: '%s' - shouldLoopCheck: %b, solve: %b\n", processedInput, shouldLoopCheck, shouldSolve);
@@ -378,8 +382,10 @@ public class SymbolicExecutionLab {
     }
 
     static void reset() {
+        indexBefore = -1;
         PathTracker.reset();
         loopDetector.reset();
+        processedInputList.clear();
         nameCounts.clear();
         System.gc();
         currentLineNumber = 0;
@@ -483,22 +489,54 @@ public class SymbolicExecutionLab {
         // saveGraph(true);
         System.exit(0);
     }
+    
+    static int indexBefore = -1;
+    static List<Map<String, Integer>> fromVarCounts =  new ArrayList<>();
+    static List<Map<String, Integer>> toVarCounts =  new ArrayList<>();
+    static List<CustomExpr> paths = new ArrayList<>();
+
+    static void collectPaths(List<String> base){
+        isCreatingPaths = true;
+        for(String s: PathTracker.inputSymbols) {
+            List<String> inputs = new ArrayList<>(); 
+            inputs.addAll(base);
+            inputs.add(s);
+            NextTrace trace = new NextTrace(inputs, currentLineNumber, "<collect paths>", false);
+            nextTraces.add(trace);
+            runNext(trace);
+            assert indexBefore != -1;
+            int currentIndex = loopDetector.history.getNumberOfSaves();
+            printfBlue("Before: %d\nAfter: %d\n", indexBefore, currentIndex);
+            CustomExpr c = loopDetector.history.getConstraint(currentIndex - indexBefore+1);
+            paths.add(c);
+
+            toVarCounts.add(loopDetector.history.getVariables());
+            assert fromVarCounts.size() == toVarCounts.size();
+            for (Entry<String, Integer> e : loopDetector.history.getVariables().entrySet()) {
+                System.out.printf("%s: %d\n", e.getKey(), e.getValue());
+            }
+
+            System.out.println(c);
+            System.exit(1);
+        }
+        isCreatingPaths = false;
+    }
 
     static void verifyLoop(String[] VERIFY_LOOP) {
         Settings s = Settings.getInstance();
         printfGreen("Verifying loop: %s\n", String.join("", VERIFY_LOOP));
         assert VERIFY_LOOP != null;
-        reset();
         List<String> input = new ArrayList<>();
         input.addAll(Arrays.asList(s.INITIAL_TRACE));
         input.addAll(Arrays.asList(s.LOOP_TRACE));
+        collectPaths(input);
         if(s.SUFFIX != null && s.SUFFIX.length > 0) {
             input.addAll(Arrays.asList(s.SUFFIX));
         } else {
             input.addAll(Arrays.asList(s.LOOP_TRACE));
         }
+
         String full = String.join("", input);
-        printfBlue("full: %s\n", full);
         NextTrace trace = new NextTrace(input, currentLineNumber, "<initial>", false);
         nextTraces.add(trace);
         runNext(trace);
@@ -545,9 +583,10 @@ public class SymbolicExecutionLab {
         }
         printfYellow("now doing line: %d, %b, %s, from: %s\n", trace.getLineNr(), trace.getConditionValue(),
                 trace.trace, trace.from.split("\n")[0]);
+        reset();
         currentTrace = trace.trace;
         boolean completed = PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
-        if (!skip && completed) {
+        if ((!skip || isCreatingPaths) && completed) {
             loopDetector.isIterationLooping();
         }
         if (completed) {

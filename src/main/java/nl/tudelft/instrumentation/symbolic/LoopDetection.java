@@ -2,6 +2,7 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -22,7 +23,7 @@ public class LoopDetection {
     private Context ctx = PathTracker.ctx;
     private String inputName = "unknown";
 
-    private ConstraintHistory history = new ConstraintHistory();
+    protected ConstraintHistory history = new ConstraintHistory();
     private int currentLoopNumber = 0;
     private Set<Pattern> selfLoopPatterns = new HashSet<>();
     private Set<Pattern> loopPatterns = new HashSet<>();
@@ -131,6 +132,13 @@ public class LoopDetection {
             return false;
         }
 
+        System.out.println(SymbolicExecutionLab.processedInput);
+
+        if (SymbolicExecutionLab.processedInput.equals(
+                String.join("", SymbolicExecutionLab.currentTrace))) {
+            System.out.println("CURRENTLY HAS PROCESSED EVERYTING");
+        }
+
         if (!SymbolicExecutionLab.shouldLoopCheck) {
             return false;
         }
@@ -158,7 +166,7 @@ public class LoopDetection {
         int depth = Math.min(s.MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
 
         if (s.VERIFY_LOOP) {
-            lastNSaves = s.LOOP_TRACE.length+1;
+            lastNSaves = s.LOOP_TRACE.length + 1;
             depth = Math.min(depth, lastNSaves);
         }
 
@@ -170,7 +178,7 @@ public class LoopDetection {
             if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr, SolvingForType.IS_SELF_LOOP, false, false)) {
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, -1);
                 System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d, pattern: %s", INPUT,
-                lastNSaves, currentPattern));
+                        lastNSaves, currentPattern));
                 selfLoopPatterns.add(currentPattern);
                 return true;
             }
@@ -186,7 +194,7 @@ public class LoopDetection {
             foundLoops.add(SymbolicExecutionLab.processedInput);
 
             if (isSelfLoop(replacements, extended)) {
-                currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 2, -1);
+                currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, -1);
                 if (selfLoops.add(SymbolicExecutionLab.processedInput)) {
                     selfLoopPatterns.add(currentPattern);
                     SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
@@ -251,7 +259,7 @@ public class LoopDetection {
             solver.pop();
         }
         if (status == Status.UNSATISFIABLE) {
-            if(Settings.getInstance().DO_HALF_LOOPS) {
+            if (Settings.getInstance().DO_HALF_LOOPS) {
                 solver.push();
                 int maxPossible = 0;
                 for (int i = 0; i < LOOP_UNROLLING_AMOUNT; i += 1) {
@@ -259,7 +267,7 @@ public class LoopDetection {
                     status = solver.check(SolvingForType.IS_REATING_LOOP);
                     if (Status.SATISFIABLE != status) {
                         System.out.println();
-                        LOOP_UNROLLING_AMOUNT = i-1;
+                        LOOP_UNROLLING_AMOUNT = i - 1;
                         maxPossible = i - 1;
                         break;
                     }
@@ -315,6 +323,14 @@ public class LoopDetection {
         history.resetNumberOfSave();
         PathTracker.addToBranches(oneOfTheLoop);
         SymbolicExecutionLab.numberOfLoopsInPathConstraint += 1;
+
+        if (SymbolicExecutionLab.isCreatingPaths
+                && SymbolicExecutionLab.processedInputList.size() == SymbolicExecutionLab.currentTrace.size() - 1) {
+            SymbolicExecutionLab.indexBefore = history.getNumberOfSaves();
+            System.out.printf("CURRENTLY Right before end: %d\n", SymbolicExecutionLab.indexBefore);
+            SymbolicExecutionLab.fromVarCounts.add(history.getVariables());
+        }
+
         return false;
     }
 }
