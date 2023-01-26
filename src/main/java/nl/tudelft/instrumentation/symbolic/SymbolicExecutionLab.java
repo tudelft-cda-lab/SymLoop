@@ -270,6 +270,7 @@ public class SymbolicExecutionLab {
         if (
         // currentTrace.size() <= processedInput.length() &&
         shouldSolve &&
+        !isCreatingPaths &&
                 alreadySolvedBranches.add(newPathString)) {
             // Call the solver
             PathTracker.solve(CustomExprOp.mkEq(ConstantCustomExpr.fromBool(!value), condition.expr),
@@ -325,7 +326,7 @@ public class SymbolicExecutionLab {
         lastTrace = temp;
 
         if (Settings.getInstance().VERIFY_LOOP) {
-            System.out.printf("SAT: '%s'\n", String.join(",", temp));
+            // System.out.printf("SAT: '%s'\n", String.join(",", temp));
             for (Integer c : loopCounts) {
                 if (c > 0) {
                     printQs();
@@ -507,7 +508,7 @@ public class SymbolicExecutionLab {
     static List<Map<String, Integer>> uptoVarCounts = new ArrayList<>();
     static List<CustomExpr> paths = new ArrayList<>();
     static List<CustomExpr> assigns = new ArrayList<>();
-    static int save_at_input = -1;
+    static int saveAtIndex = -1;
 
     static void collectPaths(List<String> base) {
         isCreatingPaths = true;
@@ -516,12 +517,11 @@ public class SymbolicExecutionLab {
             inputs.addAll(base);
             inputs.add(s);
             NextTrace trace = new NextTrace(inputs, currentLineNumber, "<collect paths>", false);
-            save_at_input = inputs.size() - 1;
+            saveAtIndex = inputs.size() - 1;
             nextTraces.add(trace);
             runNext(trace);
             assert indexBefore != -1;
             int currentIndex = loopDetector.history.getNumberOfSaves();
-            printfBlue("Before: %d\nAfter: %d\n", indexBefore, currentIndex);
             Pair<CustomExpr, CustomExpr> c = loopDetector.history.getSeperateAssignAndBranches(currentIndex - indexBefore + 1);
             // CustomExpr c = loopDetector.history.getConstraint(currentIndex - indexBefore + 1);
             assigns.add(c.getKey());
@@ -529,13 +529,6 @@ public class SymbolicExecutionLab {
 
             uptoVarCounts.add(loopDetector.history.getVariables());
             assert fromVarCounts.size() == uptoVarCounts.size();
-            for (Entry<String, Integer> e : uptoVarCounts.get(uptoVarCounts.size() - 1).entrySet()) {
-                System.out.printf("%s: from %d to %d\n", e.getKey(),
-                        fromVarCounts.get(fromVarCounts.size() - 1).get(e.getKey()), e.getValue());
-            }
-
-            // System.out.println(c);
-            // System.exit(1);
         }
         isCreatingPaths = false;
     }
@@ -552,7 +545,7 @@ public class SymbolicExecutionLab {
         NamedCustomExpr input = new NamedCustomExpr(inputName, ExprType.STRING);
         PathTracker.inputs.add(new MyVar(input));
         constraint.add(createInputConstraint(input));
-            System.out.printf("input count %d, varname: %s\n", toCounts.get(loopDetector.inputName), inputName);
+        System.out.printf("input count %d, varname: %s\n", toCounts.get(loopDetector.inputName), inputName);
 
         for (int i = 0; i < PathTracker.inputSymbols.length; i++) {
             CustomExpr path = paths.get(i);
@@ -578,16 +571,24 @@ public class SymbolicExecutionLab {
             // printfBlue("newPath %s\n", newPath);
             // printfBlue("newAssign %s\n", newAssign);
 
-            CustomExpr p = CustomExprOp.mkOr(
-                    CustomExprOp.mkNot(CustomExprOp.mkEq(input, ConstantCustomExpr.fromString(PathTracker.inputSymbols[i]))),
+            CustomExpr multiple = CustomExprOp.mkOr(
+                    CustomExprOp.mkNot(CustomExprOp.mkEq(ConstantCustomExpr.fromString(PathTracker.inputSymbols[i]),input)),
                     CustomExprOp.mkAnd(CustomExprOp.mkNot(newPath), newAssign));
-            constraint.add(p);
+            constraint.add(multiple);
+
+            CustomExpr single = CustomExprOp.mkAnd(
+                    CustomExprOp.mkEq(ConstantCustomExpr.fromString(PathTracker.inputSymbols[i]), input),
+                    CustomExprOp.mkAnd(CustomExprOp.mkNot(newPath), newAssign));
+
+            System.out.printf("Now doing %s\n", PathTracker.inputSymbols[i]);
+            // System.out.printf(""
+            System.out.printf("possible: %b\n", PathTracker.solve(single, SolvingForType.EQUIVALENCE, false, true));
         }
-        CustomExpr together = CustomExprOp.mkAnd(constraint.toArray(CustomExpr[]::new));
+        // CustomExpr together = CustomExprOp.mkAnd(constraint.toArray(CustomExpr[]::new));
         // printfYellow("oldpath %s\n", loopDetector.history.getConstraint(2));
         // printfYellow("together %s\n", together);
-        boolean possible = PathTracker.solve(together, SolvingForType.EQUIVALENCE, false, true);
-        System.out.printf("possible %b\n", possible);
+        // boolean possible = PathTracker.solve(together, SolvingForType.EQUIVALENCE, false, true);
+        // System.out.printf("possible %b\n", possible);
     }
 
     static void verifyLoop(String[] VERIFY_LOOP) {
@@ -597,14 +598,20 @@ public class SymbolicExecutionLab {
         List<String> input = new ArrayList<>();
         input.addAll(Arrays.asList(s.INITIAL_TRACE));
         input.addAll(Arrays.asList(s.LOOP_TRACE));
-        collectPaths(input);
+
+
+        String full = String.join("", input);
+        printfBlue("Full: %s\n", full);
         if (s.SUFFIX != null && s.SUFFIX.length > 0) {
             input.addAll(Arrays.asList(s.SUFFIX));
         } else {
             input.addAll(Arrays.asList(s.LOOP_TRACE));
         }
 
-        String full = String.join("", input);
+        if(s.COLLECT_PATHS) {
+            collectPaths(input);
+        }
+
         NextTrace trace = new NextTrace(input, currentLineNumber, "<initial>", false);
         nextTraces.add(trace);
         runNext(trace);
@@ -614,7 +621,9 @@ public class SymbolicExecutionLab {
             System.err.println("GUARANTEED");
             System.exit(0);
         } else if (loopDetector.containsLoop(full)) {
-            handleAfterLooop();
+            if(s.COLLECT_PATHS) {
+                handleAfterLooop();
+            }
             printfYellow("PROBABLY LOOPING\n");
             System.err.println("PROBABLY");
             System.exit(0);
@@ -648,7 +657,7 @@ public class SymbolicExecutionLab {
     }
 
     public static void runNext(NextTrace trace) {
-        if (!isStillUsefull(trace.trace)) {
+        if (!isCreatingPaths && !Settings.getInstance().VERIFY_LOOP && !isStillUsefull(trace.trace)) {
             return;
         }
         printfYellow("now doing line: %d, %b, %s, from: %s\n", trace.getLineNr(), trace.getConditionValue(),

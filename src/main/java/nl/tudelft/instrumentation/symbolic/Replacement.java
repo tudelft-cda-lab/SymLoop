@@ -58,7 +58,6 @@ class Replacement {
             int base = i + (this.added * amount);
             String from = getNameFor(base);
             String to = getNameFor(base + this.added);
-            System.out.printf("%s -> %s\n", from, to);
             changes.put(from, to);
         }
     }

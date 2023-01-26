@@ -132,20 +132,14 @@ public class LoopDetection {
             return false;
         }
 
-        System.out.println(SymbolicExecutionLab.processedInput);
-
-        if (SymbolicExecutionLab.processedInput.equals(
-                String.join("", SymbolicExecutionLab.currentTrace))) {
-            System.out.println("CURRENTLY HAS PROCESSED EVERYTING");
-        }
-
-        if (SymbolicExecutionLab.isCreatingPaths && SymbolicExecutionLab.processedInputList.size() == SymbolicExecutionLab.save_at_input) {
+        if (SymbolicExecutionLab.isCreatingPaths && SymbolicExecutionLab.processedInputList.size() == SymbolicExecutionLab.saveAtIndex) {
+            System.out.println("SAVING");
             SymbolicExecutionLab.indexBefore = history.getNumberOfSaves();
-            System.out.printf("CURRENTLY Right before end: %d\n", SymbolicExecutionLab.indexBefore);
             SymbolicExecutionLab.fromVarCounts.add(history.getVariables());
         }
 
         if (!SymbolicExecutionLab.shouldLoopCheck || SymbolicExecutionLab.isCreatingPaths) {
+            // System.out.printf("skipping loopchecking: '%s'\n", SymbolicExecutionLab.processedInput);
             return false;
         }
 
