@@ -135,7 +135,7 @@ public class LoopDetection {
         if (SymbolicExecutionLab.isCreatingPaths && SymbolicExecutionLab.processedInputList.size() == SymbolicExecutionLab.saveAtIndex) {
             System.out.println("SAVING");
             SymbolicExecutionLab.indexBefore = history.getNumberOfSaves();
-            SymbolicExecutionLab.fromVarCounts.add(history.getVariables());
+            SymbolicExecutionLab.from = history.getVariables();
         }
 
         if (!SymbolicExecutionLab.shouldLoopCheck || SymbolicExecutionLab.isCreatingPaths) {
@@ -197,7 +197,7 @@ public class LoopDetection {
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, -1);
                 if (selfLoops.add(SymbolicExecutionLab.processedInput)) {
                     selfLoopPatterns.add(currentPattern);
-                    SymbolicExecutionLab.printfRed("SELF LOOP DETECTED for %s over %d\n",
+                    SymbolicExecutionLab.printfGreen("SELF LOOP DETECTED for %s over %d\n",
                             SymbolicExecutionLab.processedInput, lastNSaves - 1);
                 }
 
@@ -206,7 +206,7 @@ public class LoopDetection {
 
             String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
 
-            SymbolicExecutionLab.printfRed(
+            SymbolicExecutionLab.printfGreen(
                     "loop detected over %d iterations with vars %s: on input '%s'. \n", lastNSaves - 1, output,
                     SymbolicExecutionLab.processedInput);
 

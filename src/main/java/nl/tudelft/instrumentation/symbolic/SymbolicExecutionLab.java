@@ -270,7 +270,7 @@ public class SymbolicExecutionLab {
         if (
         // currentTrace.size() <= processedInput.length() &&
         shouldSolve &&
-        !isCreatingPaths &&
+                !isCreatingPaths &&
                 alreadySolvedBranches.add(newPathString)) {
             // Call the solver
             PathTracker.solve(CustomExprOp.mkEq(ConstantCustomExpr.fromBool(!value), condition.expr),
@@ -326,7 +326,7 @@ public class SymbolicExecutionLab {
         lastTrace = temp;
 
         if (Settings.getInstance().VERIFY_LOOP) {
-            // System.out.printf("SAT: '%s'\n", String.join(",", temp));
+            System.out.printf("SAT: '%s'\n", String.join(",", temp));
             for (Integer c : loopCounts) {
                 if (c > 0) {
                     printQs();
@@ -504,92 +504,75 @@ public class SymbolicExecutionLab {
     }
 
     static int indexBefore = -1;
-    static List<Map<String, Integer>> fromVarCounts = new ArrayList<>();
-    static List<Map<String, Integer>> uptoVarCounts = new ArrayList<>();
-    static List<CustomExpr> paths = new ArrayList<>();
-    static List<CustomExpr> assigns = new ArrayList<>();
+    static Map<String, Integer> from;
     static int saveAtIndex = -1;
 
     static void collectPaths(List<String> base) {
+        NextTrace trace = new NextTrace(base, currentLineNumber, "<collect solver>", false);
+        runNext(trace);
+        OptimizingSolver solver = PathTracker.solver;
+        PathTracker.solver = new InferringSolver();
+        LinkedList<MyVar> trackerInputs = new LinkedList<>(PathTracker.inputs);
+        Map<String, Integer> toCounts = loopDetector.history.getVariables();
+        String inputName = getVarName(loopDetector.inputName, toCounts.get(loopDetector.inputName));
+        NamedCustomExpr input = new NamedCustomExpr(inputName, ExprType.STRING);
+        trackerInputs.add(new MyVar(input));
+        HashMap<MyVar, Replacement> loopIterations = PathTracker.loopIterations;
+        PathTracker.loopIterations = new HashMap<>();
+
         isCreatingPaths = true;
         for (String s : PathTracker.inputSymbols) {
             List<String> inputs = new ArrayList<>();
             inputs.addAll(base);
             inputs.add(s);
-            NextTrace trace = new NextTrace(inputs, currentLineNumber, "<collect paths>", false);
+            trace = new NextTrace(inputs, currentLineNumber, "<collect paths>", false);
             saveAtIndex = inputs.size() - 1;
-            nextTraces.add(trace);
             runNext(trace);
             assert indexBefore != -1;
-            int currentIndex = loopDetector.history.getNumberOfSaves();
-            Pair<CustomExpr, CustomExpr> c = loopDetector.history.getSeperateAssignAndBranches(currentIndex - indexBefore + 1);
-            // CustomExpr c = loopDetector.history.getConstraint(currentIndex - indexBefore + 1);
-            assigns.add(c.getKey());
-            paths.add(c.getValue());
 
-            uptoVarCounts.add(loopDetector.history.getVariables());
-            assert fromVarCounts.size() == uptoVarCounts.size();
+            int currentIndex = loopDetector.history.getNumberOfSaves();
+            Pair<CustomExpr, CustomExpr> c = loopDetector.history
+                    .getSeperateAssignAndBranches(currentIndex - indexBefore + 1);
+
+            PathTracker.inputs = trackerInputs;
+            PathTracker.loopIterations = loopIterations;
+            checkAfterLoop(solver, s, c.getKey(), c.getValue(), toCounts, input, loopDetector.history.getVariables());
+            PathTracker.inputs = new LinkedList<>();
+            PathTracker.loopIterations = new HashMap<>();
         }
         isCreatingPaths = false;
     }
 
-    static void handleAfterLooop() {
-        Map<String, Integer> toCounts = loopDetector.history.getVariables();
-        assert fromVarCounts.size() == uptoVarCounts.size();
-        assert paths.size() == uptoVarCounts.size();
-        assert paths.size() == PathTracker.inputSymbols.length;
-        assert paths.size() == assigns.size();
+    static void checkAfterLoop(OptimizingSolver s, String inputSymbol, CustomExpr assign, CustomExpr path,
+            Map<String, Integer> toCounts, CustomExpr input, Map<String, Integer> upto) {
+        List<Replacement> rs = new ArrayList<>();
 
-        List<CustomExpr> constraint = new ArrayList<>();
-        String inputName = getVarName(loopDetector.inputName, toCounts.get(loopDetector.inputName));
-        NamedCustomExpr input = new NamedCustomExpr(inputName, ExprType.STRING);
-        PathTracker.inputs.add(new MyVar(input));
-        constraint.add(createInputConstraint(input));
-        System.out.printf("input count %d, varname: %s\n", toCounts.get(loopDetector.inputName), inputName);
-
-        for (int i = 0; i < PathTracker.inputSymbols.length; i++) {
-            CustomExpr path = paths.get(i);
-            CustomExpr assign = assigns.get(i);
-            Map<String, Integer> from = fromVarCounts.get(i);
-            Map<String, Integer> upto = uptoVarCounts.get(i);
-            List<Replacement> rs = new ArrayList<>();
-            for (Entry<String, Integer> e : from.entrySet()) {
-                String name = e.getKey();
-                int f = e.getValue();
-                int up = upto.get(name);
-                int added = toCounts.get(name) - f;
-                // System.out.printf("%s added: %d, f: %d, up: %d\n", name, added, f, up);
-                rs.add(new Replacement(
-                        name,
-                        null,
-                        up,
-                        added,
-                        f-1));
-            }
-            CustomExpr newPath = Replacement.applyAllTo(rs, path);
-            CustomExpr newAssign = Replacement.applyAllTo(rs, assign);
-            // printfBlue("newPath %s\n", newPath);
-            // printfBlue("newAssign %s\n", newAssign);
-
-            CustomExpr multiple = CustomExprOp.mkOr(
-                    CustomExprOp.mkNot(CustomExprOp.mkEq(ConstantCustomExpr.fromString(PathTracker.inputSymbols[i]),input)),
-                    CustomExprOp.mkAnd(CustomExprOp.mkNot(newPath), newAssign));
-            constraint.add(multiple);
-
-            CustomExpr single = CustomExprOp.mkAnd(
-                    CustomExprOp.mkEq(ConstantCustomExpr.fromString(PathTracker.inputSymbols[i]), input),
-                    CustomExprOp.mkAnd(CustomExprOp.mkNot(newPath), newAssign));
-
-            System.out.printf("Now doing %s\n", PathTracker.inputSymbols[i]);
-            // System.out.printf(""
-            System.out.printf("possible: %b\n", PathTracker.solve(single, SolvingForType.EQUIVALENCE, false, true));
+        for (Entry<String, Integer> e : from.entrySet()) {
+            String name = e.getKey();
+            int f = e.getValue();
+            int up = upto.get(name);
+            int added = toCounts.get(name) - f;
+            rs.add(new Replacement(
+                    name,
+                    null,
+                    up,
+                    added,
+                    f - 1));
         }
-        // CustomExpr together = CustomExprOp.mkAnd(constraint.toArray(CustomExpr[]::new));
-        // printfYellow("oldpath %s\n", loopDetector.history.getConstraint(2));
-        // printfYellow("together %s\n", together);
-        // boolean possible = PathTracker.solve(together, SolvingForType.EQUIVALENCE, false, true);
-        // System.out.printf("possible %b\n", possible);
+        CustomExpr newPath = Replacement.applyAllTo(rs, path);
+        CustomExpr newAssign = Replacement.applyAllTo(rs, assign);
+
+        CustomExpr single = CustomExprOp.mkAnd(
+                CustomExprOp.mkEq(input, ConstantCustomExpr.fromString(inputSymbol)),
+                CustomExprOp.mkNot(newPath), newAssign);
+
+        OptimizingSolver old = PathTracker.solver;
+        PathTracker.solver = s;
+        System.out.printf("Now doing %s\n", inputSymbol);
+        System.out.printf("possible: %b\n", PathTracker.solve(single, SolvingForType.EQUIVALENCE, false, true));
+        PathTracker.solver = old;
     }
+
 
     static void verifyLoop(String[] VERIFY_LOOP) {
         Settings s = Settings.getInstance();
@@ -599,16 +582,15 @@ public class SymbolicExecutionLab {
         input.addAll(Arrays.asList(s.INITIAL_TRACE));
         input.addAll(Arrays.asList(s.LOOP_TRACE));
 
-
         String full = String.join("", input);
         printfBlue("Full: %s\n", full);
         if (s.SUFFIX != null && s.SUFFIX.length > 0) {
             input.addAll(Arrays.asList(s.SUFFIX));
         } else {
-            input.addAll(Arrays.asList(s.LOOP_TRACE));
+            // input.addAll(Arrays.asList(s.LOOP_TRACE));
         }
 
-        if(s.COLLECT_PATHS) {
+        if (s.COLLECT_PATHS) {
             collectPaths(input);
         }
 
@@ -621,8 +603,8 @@ public class SymbolicExecutionLab {
             System.err.println("GUARANTEED");
             System.exit(0);
         } else if (loopDetector.containsLoop(full)) {
-            if(s.COLLECT_PATHS) {
-                handleAfterLooop();
+            if (s.COLLECT_PATHS) {
+                // handleAfterLooop();
             }
             printfYellow("PROBABLY LOOPING\n");
             System.err.println("PROBABLY");
