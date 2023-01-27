@@ -617,7 +617,6 @@ public class SymbolicExecutionLab {
             for(String sym: PathTracker.inputSymbols) {
                 List<String> a = new ArrayList<>();
                 a.add(sym);
-                a.add(sym);
                 distinguishers.add(a);
             }
             collectPaths(input, distinguishers);
