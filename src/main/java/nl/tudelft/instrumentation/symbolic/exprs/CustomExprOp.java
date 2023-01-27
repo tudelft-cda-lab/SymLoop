@@ -1,6 +1,7 @@
 package nl.tudelft.instrumentation.symbolic.exprs;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import com.microsoft.z3.ArithExpr;
@@ -83,6 +84,9 @@ public class CustomExprOp extends CustomExpr {
         return new CustomExprOp(ExprType.BOOL, Operation.EQ, a, b);
     }
 
+    public static CustomExprOp mkAnd(List<CustomExpr> args) {
+        return mkAnd(args.toArray(CustomExprOp[]::new));
+    }
     public static CustomExprOp mkAnd(CustomExpr... args) {
         for (CustomExpr e : args) {
             assertType(e, ExprType.BOOL);

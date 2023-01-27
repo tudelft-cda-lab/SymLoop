@@ -507,26 +507,36 @@ public class SymbolicExecutionLab {
     static Map<String, Integer> from;
     static int saveAtIndex = -1;
 
-    static void collectPaths(List<String> base) {
+    static void collectPaths(List<String> base, List<List<String>> distinguishers) {
         NextTrace trace = new NextTrace(base, currentLineNumber, "<collect solver>", false);
         runNext(trace);
         OptimizingSolver solver = PathTracker.solver;
         PathTracker.solver = new InferringSolver();
         LinkedList<MyVar> trackerInputs = new LinkedList<>(PathTracker.inputs);
         Map<String, Integer> toCounts = loopDetector.history.getVariables();
-        String inputName = getVarName(loopDetector.inputName, toCounts.get(loopDetector.inputName));
-        NamedCustomExpr input = new NamedCustomExpr(inputName, ExprType.STRING);
-        trackerInputs.add(new MyVar(input));
         HashMap<MyVar, Replacement> loopIterations = PathTracker.loopIterations;
         PathTracker.loopIterations = new HashMap<>();
 
+
+        String full = String.join("",base);
+        full += String.join("", Settings.getInstance().LOOP_TRACE);
+        if (loopDetector.isSelfLooping(full)) {
+            printfGreen("IS SELF LOOPING\n");
+            System.err.println("GUARANTEED");
+            System.exit(0);
+        } else if (!loopDetector.containsLoop(full)) {
+            printfYellow("NO LOOP FOUND\n");
+            System.err.println("NO LOOP FOUND");
+            System.exit(0);
+        }
+
         isCreatingPaths = true;
-        for (String s : PathTracker.inputSymbols) {
+        for (List<String> d : distinguishers) {
             List<String> inputs = new ArrayList<>();
             inputs.addAll(base);
-            inputs.add(s);
+            inputs.addAll(d);
             trace = new NextTrace(inputs, currentLineNumber, "<collect paths>", false);
-            saveAtIndex = inputs.size() - 1;
+            saveAtIndex = inputs.size() - d.size();
             runNext(trace);
             assert indexBefore != -1;
 
@@ -534,17 +544,15 @@ public class SymbolicExecutionLab {
             Pair<CustomExpr, CustomExpr> c = loopDetector.history
                     .getSeperateAssignAndBranches(currentIndex - indexBefore + 1);
 
-            PathTracker.inputs = trackerInputs;
             PathTracker.loopIterations = loopIterations;
-            checkAfterLoop(solver, s, c.getKey(), c.getValue(), toCounts, input, loopDetector.history.getVariables());
-            PathTracker.inputs = new LinkedList<>();
+            checkAfterLoop(solver, d, c.getKey(), c.getValue(), toCounts, trackerInputs, loopDetector.history.getVariables());
             PathTracker.loopIterations = new HashMap<>();
         }
         isCreatingPaths = false;
     }
 
-    static void checkAfterLoop(OptimizingSolver s, String inputSymbol, CustomExpr assign, CustomExpr path,
-            Map<String, Integer> toCounts, CustomExpr input, Map<String, Integer> upto) {
+    static void checkAfterLoop(OptimizingSolver s, List<String> symbols, CustomExpr assign, CustomExpr path,
+            Map<String, Integer> toCounts, LinkedList<MyVar> inputs, Map<String, Integer> upto) {
         List<Replacement> rs = new ArrayList<>();
 
         for (Entry<String, Integer> e : from.entrySet()) {
@@ -559,18 +567,33 @@ public class SymbolicExecutionLab {
                     added,
                     f - 1));
         }
+
         CustomExpr newPath = Replacement.applyAllTo(rs, path);
         CustomExpr newAssign = Replacement.applyAllTo(rs, assign);
 
+        PathTracker.inputs = new LinkedList<>(inputs);
+        List<CustomExpr> inputConstraints = new ArrayList<>();
+
+
+        for(int i = 0; i < symbols.size(); i++) {
+            String sym = symbols.get(i);
+            String inputName = getVarName(loopDetector.inputName, toCounts.get(loopDetector.inputName)+i);
+            System.out.printf("sym: %s, inputName: %s\n", sym, inputName);
+            NamedCustomExpr input = new NamedCustomExpr(inputName, ExprType.STRING);
+            PathTracker.inputs.add(new MyVar(input));
+            inputConstraints.add(CustomExprOp.mkEq(ConstantCustomExpr.fromString(sym), input));
+        }
+
         CustomExpr single = CustomExprOp.mkAnd(
-                CustomExprOp.mkEq(input, ConstantCustomExpr.fromString(inputSymbol)),
+                CustomExprOp.mkAnd(inputConstraints),
                 CustomExprOp.mkNot(newPath), newAssign);
 
         OptimizingSolver old = PathTracker.solver;
         PathTracker.solver = s;
-        System.out.printf("Now doing %s\n", inputSymbol);
+        System.out.printf("Now doing %s\n", String.join(",", symbols));
         System.out.printf("possible: %b\n", PathTracker.solve(single, SolvingForType.EQUIVALENCE, false, true));
         PathTracker.solver = old;
+        PathTracker.inputs = new LinkedList<>();
     }
 
     static void verifyLoop(String[] VERIFY_LOOP) {
@@ -590,12 +613,19 @@ public class SymbolicExecutionLab {
         }
 
         if (s.COLLECT_PATHS) {
-            collectPaths(input);
+            List<List<String>> distinguishers = new ArrayList<>();
+            for(String sym: PathTracker.inputSymbols) {
+                List<String> a = new ArrayList<>();
+                a.add(sym);
+                a.add(sym);
+                distinguishers.add(a);
+            }
+            collectPaths(input, distinguishers);
+        } else {
+            NextTrace trace = new NextTrace(input, currentLineNumber, "<initial>", false);
+            nextTraces.add(trace);
+            runNext(trace);
         }
-
-        NextTrace trace = new NextTrace(input, currentLineNumber, "<initial>", false);
-        nextTraces.add(trace);
-        runNext(trace);
 
         if (loopDetector.isSelfLooping(full)) {
             printfGreen("IS SELF LOOPING\n");
