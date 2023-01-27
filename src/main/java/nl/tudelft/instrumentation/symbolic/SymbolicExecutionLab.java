@@ -573,7 +573,6 @@ public class SymbolicExecutionLab {
         PathTracker.solver = old;
     }
 
-
     static void verifyLoop(String[] VERIFY_LOOP) {
         Settings s = Settings.getInstance();
         printfGreen("Verifying loop: %s\n", String.join("", VERIFY_LOOP));
