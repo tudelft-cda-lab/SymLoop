@@ -2,7 +2,6 @@
 package nl.tudelft.instrumentation.symbolic;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -20,7 +19,6 @@ public class LoopDetection {
 
     private SortedSet<String> foundLoops = new TreeSet<>();
     private SortedSet<String> selfLoops = new TreeSet<>();
-    private Context ctx = PathTracker.ctx;
     public String inputName = "unknown";
 
     protected ConstraintHistory history = new ConstraintHistory();
