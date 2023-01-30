@@ -607,8 +607,6 @@ public class SymbolicExecutionLab {
         printfBlue("Full: %s\n", full);
         if (s.SUFFIX != null && s.SUFFIX.length > 0) {
             input.addAll(Arrays.asList(s.SUFFIX));
-        } else {
-            // input.addAll(Arrays.asList(s.LOOP_TRACE));
         }
 
         if (s.COLLECT_PATHS) {
@@ -630,9 +628,6 @@ public class SymbolicExecutionLab {
             System.err.println("GUARANTEED");
             System.exit(0);
         } else if (loopDetector.containsLoop(full)) {
-            if (s.COLLECT_PATHS) {
-                // handleAfterLooop();
-            }
             printfYellow("PROBABLY LOOPING\n");
             System.err.println("PROBABLY");
             System.exit(0);

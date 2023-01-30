@@ -171,7 +171,7 @@ public class Settings {
                 String.format(
                         "The amount of time to keep running. Use -1 to run indefinetely (Default: %d)",
                         DEFAULT_MAX_TIME_S));
-        options.addOption("g", "distinguishing-traces", true,
+        options.addOption("x", "distinguishing-traces", true,
                 "The distinguishing traces to use for verification of the loop. Specify this argument multiple times to input multiple traces and , (comma) to seperate symbols in each trace");
         return options;
     }
