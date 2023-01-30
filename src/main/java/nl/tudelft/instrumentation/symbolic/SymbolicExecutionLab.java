@@ -517,8 +517,7 @@ public class SymbolicExecutionLab {
         HashMap<MyVar, Replacement> loopIterations = PathTracker.loopIterations;
         PathTracker.loopIterations = new HashMap<>();
 
-
-        String full = String.join("",base);
+        String full = String.join("", base);
         full += String.join("", Settings.getInstance().LOOP_TRACE);
         if (loopDetector.isSelfLooping(full)) {
             printfGreen("IS SELF LOOPING\n");
@@ -545,7 +544,8 @@ public class SymbolicExecutionLab {
                     .getSeperateAssignAndBranches(currentIndex - indexBefore + 1);
 
             PathTracker.loopIterations = loopIterations;
-            checkAfterLoop(solver, d, c.getKey(), c.getValue(), toCounts, trackerInputs, loopDetector.history.getVariables());
+            checkAfterLoop(solver, d, c.getKey(), c.getValue(), toCounts, trackerInputs,
+                    loopDetector.history.getVariables());
             PathTracker.loopIterations = new HashMap<>();
         }
         isCreatingPaths = false;
@@ -574,10 +574,9 @@ public class SymbolicExecutionLab {
         PathTracker.inputs = new LinkedList<>(inputs);
         List<CustomExpr> inputConstraints = new ArrayList<>();
 
-
-        for(int i = 0; i < symbols.size(); i++) {
+        for (int i = 0; i < symbols.size(); i++) {
             String sym = symbols.get(i);
-            String inputName = getVarName(loopDetector.inputName, toCounts.get(loopDetector.inputName)+i);
+            String inputName = getVarName(loopDetector.inputName, toCounts.get(loopDetector.inputName) + i);
             System.out.printf("sym: %s, inputName: %s\n", sym, inputName);
             NamedCustomExpr input = new NamedCustomExpr(inputName, ExprType.STRING);
             PathTracker.inputs.add(new MyVar(input));
@@ -614,13 +613,13 @@ public class SymbolicExecutionLab {
 
         if (s.COLLECT_PATHS) {
             List<List<String>> distinguishers = new ArrayList<>();
-            for(String sym: PathTracker.inputSymbols) {
-                List<String> a = new ArrayList<>();
-                a.add(sym);
+            for (String[] ds : s.DISTINGUISHING_TRACES) {
+                List<String> a = Arrays.asList(ds);
                 distinguishers.add(a);
             }
             collectPaths(input, distinguishers);
         } else {
+            input.addAll(Arrays.asList(s.LOOP_TRACE));
             NextTrace trace = new NextTrace(input, currentLineNumber, "<initial>", false);
             nextTraces.add(trace);
             runNext(trace);

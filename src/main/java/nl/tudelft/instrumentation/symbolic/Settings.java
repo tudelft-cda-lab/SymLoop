@@ -27,15 +27,16 @@ public class Settings {
 
     public final String[] INITIAL_TRACE;
     public final String[] SUFFIX;
+    public final String[][] DISTINGUISHING_TRACES;
     public final String[] LOOP_TRACE;
     public final boolean VERIFY_LOOP;
 
     public final boolean CORRECT_INTEGER_MODEL;
-    public final boolean COLLECT_PATHS = true;
-
+    public final boolean COLLECT_PATHS;
 
     public String parameters() {
-            return String.format("Settings: d=%d,l=%d,m=%d,st=%d,u=%b", MAX_LOOP_DETECTION_DEPTH, LOOP_UNROLLING_AMOUNT, MAX_TIME_S, SOLVER_TIMEOUT_S, UNFOLD_AND);
+        return String.format("Settings: d=%d,l=%d,m=%d,st=%d,u=%b", MAX_LOOP_DETECTION_DEPTH, LOOP_UNROLLING_AMOUNT,
+                MAX_TIME_S, SOLVER_TIMEOUT_S, UNFOLD_AND);
     }
 
     private static int parseTimeToS(String s) {
@@ -73,15 +74,16 @@ public class Settings {
 
     private Settings(boolean unfoldAnd, String initial,
             int loopUnrollingAmount,
-            int maxLoopDetectionDepth, int maxTimeS, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE, int SOLVER_TIMEOUT_S, String verifyLoop, String suffix) {
+            int maxLoopDetectionDepth, int maxTimeS, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE,
+            int SOLVER_TIMEOUT_S, String verifyLoop, String suffix, String[] DISTINGUISHING_TRACES) {
         this.UNFOLD_AND = unfoldAnd;
         String[] initial_arr = null;
         if (initial != null) {
-                if(initial.length() == 0) {
-                        initial_arr = new String[]{};
-                } else {
-                        initial_arr = initial.split(",");
-                }
+            if (initial.length() == 0) {
+                initial_arr = new String[] {};
+            } else {
+                initial_arr = initial.split(",");
+            }
         }
         this.INITIAL_TRACE = initial_arr;
         this.SUFFIX = suffix == null ? null : suffix.split(",");
@@ -93,6 +95,17 @@ public class Settings {
         this.CORRECT_INTEGER_MODEL = CORRECT_INTEGER_MODEL;
         this.MINIMIZE = MINIMIZE;
         this.SOLVER_TIMEOUT_S = SOLVER_TIMEOUT_S;
+        this.COLLECT_PATHS = DISTINGUISHING_TRACES != null;
+        if (this.COLLECT_PATHS) {
+            this.DISTINGUISHING_TRACES = new String[DISTINGUISHING_TRACES.length][];
+            for (int i = 0; i < DISTINGUISHING_TRACES.length; i++) {
+                System.out.printf("Distinguisher %d: %s\n", i, DISTINGUISHING_TRACES[i]);
+                this.DISTINGUISHING_TRACES[i] = DISTINGUISHING_TRACES[i].split(",");
+
+            }
+        } else {
+            this.DISTINGUISHING_TRACES = null;
+        }
     }
 
     public static Settings create(String[] args) {
@@ -111,9 +124,12 @@ public class Settings {
                     .parseInt(cl.getOptionValue("loop-detection-depth",
                             String.valueOf(DEFAULT_LOOP_DETECTION_DEPTH)));
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
-            int SOLVER_TIMEOUT_S = parseTimeToS(cl.getOptionValue("solver-timeout", String.valueOf(DEFAULT_SOLVER_TIMEOUT_S)));
+            String[] DISTINGUISHING_TRACES = cl.getOptionValues("distinguishing-traces");
+            int SOLVER_TIMEOUT_S = parseTimeToS(
+                    cl.getOptionValue("solver-timeout", String.valueOf(DEFAULT_SOLVER_TIMEOUT_S)));
             Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
-                    loopDetectionDepth, maxTime, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S, VERIFY_LOOP, suffix);
+                    loopDetectionDepth, maxTime, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S, VERIFY_LOOP, suffix,
+                    DISTINGUISHING_TRACES);
             singleton = s;
             return s;
         } else {
@@ -148,12 +164,15 @@ public class Settings {
                 String.format("The number of steps to look back into the history to try to detect loops. (Default: %d)",
                         DEFAULT_LOOP_DETECTION_DEPTH));
         options.addOption("st", "solver-timeout", true,
-                String.format("The number of seconds a single call to the solver can take before its gets killed. Use -1 to have no limit. (Default: %d)",
+                String.format(
+                        "The number of seconds a single call to the solver can take before its gets killed. Use -1 to have no limit. (Default: %d)",
                         DEFAULT_SOLVER_TIMEOUT_S));
         options.addOption("m", "max-time", true,
                 String.format(
                         "The amount of time to keep running. Use -1 to run indefinetely (Default: %d)",
                         DEFAULT_MAX_TIME_S));
+        options.addOption("g", "distinguishing-traces", true,
+                "The distinguishing traces to use for verification of the loop. Specify this argument multiple times to input multiple traces and , (comma) to seperate symbols in each trace");
         return options;
     }
 
