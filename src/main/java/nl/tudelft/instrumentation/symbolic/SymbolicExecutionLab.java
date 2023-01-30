@@ -153,6 +153,10 @@ public class SymbolicExecutionLab {
         if (!s.VERIFY_LOOP) {
             return true;
         }
+        shouldSolve = false;
+        if (s.COLLECT_PATHS) {
+            return true;
+        }
         int basePart = s.INITIAL_TRACE.length;
         int loopPart = s.LOOP_TRACE.length;
         if (inputInIndex >= basePart + loopPart) {
