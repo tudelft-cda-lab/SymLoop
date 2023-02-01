@@ -64,6 +64,8 @@ def write_results_to_latex(problem, output: problemOutput, params):
         for p in all_params:
             if p in params[program]:
                 row.append(params[program][p])
+                if p == 'm':
+                    row[-1] = str(int(row[-1]) // 60)+'m'
             else:
                 row.append('')
         for error in errors:
