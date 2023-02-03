@@ -471,7 +471,7 @@ public class PathVisitorTest {
                 "                MyVar my_s = PathTracker.myInputVar(s, \"input\");\n" +
                 "                cp.calculateOutput(s, my_s);\n" +
                 "            } catch (IllegalArgumentException | IllegalStateException e) {\n" +
-                "                SymbolicExecutionLab.output(\"Invalid input: \" + e.getMessage());\n" +
+                "                PathTracker.output(\"Invalid input: \" + e.getMessage());\n" +
                 "            }\n" +
                 "        }\n" +
                 "        return null;\n" +

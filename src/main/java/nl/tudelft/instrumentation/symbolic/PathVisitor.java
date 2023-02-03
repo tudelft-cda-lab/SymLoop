@@ -316,7 +316,7 @@ public class PathVisitor extends ModifierVisitor<Object> {
     public Node visit(ClassOrInterfaceDeclaration node, Object arg){
         this.class_name = node.getName().toString();
 
-        BodyDeclaration bd1 = StaticJavaParser.parseBodyDeclaration("public Void call(){ " + class_name + " cp = new " + class_name + "(); for(String s : sequence){ try { MyVar my_s = PathTracker.myInputVar(s, \"input\"); cp.calculateOutput(s); } catch (IllegalArgumentException | IllegalStateException e) { SymbolicExecutionLab.output(\"Invalid input: \" + e.getMessage()); } } return null;}");
+        BodyDeclaration bd1 = StaticJavaParser.parseBodyDeclaration("public Void call(){ " + class_name + " cp = new " + class_name + "(); for(String s : sequence){ try { MyVar my_s = PathTracker.myInputVar(s, \"input\"); cp.calculateOutput(s); } catch (IllegalArgumentException | IllegalStateException e) { PathTracker.output(\"Invalid input: \" + e.getMessage()); } } return null;}");
         BodyDeclaration bd2 = StaticJavaParser.parseBodyDeclaration(" public void setSequence(String[] trace){ sequence = trace; } ");
         BodyDeclaration fd = StaticJavaParser.parseBodyDeclaration("public String[] sequence;");
         node.getMembers().add(fd);
