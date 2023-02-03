@@ -1,5 +1,7 @@
 package nl.tudelft.instrumentation.symbolic;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
@@ -24,6 +26,8 @@ import de.learnlib.api.oracle.MembershipOracle;
 import de.learnlib.api.oracle.MembershipOracle.MealyMembershipOracle;
 import de.learnlib.datastructure.observationtable.OTUtils;
 import de.learnlib.datastructure.observationtable.writer.ObservationTableASCIIWriter;
+import de.learnlib.filter.cache.mealy.MealyCacheOracle;
+import de.learnlib.filter.statistic.oracle.MealyCounterOracle;
 import de.learnlib.oracle.equivalence.MealyWMethodEQOracle;
 import de.learnlib.util.Experiment.MealyExperiment;
 import de.learnlib.util.statistics.SimpleProfiler;
@@ -768,14 +772,12 @@ public class SymbolicExecutionLab {
 
     public static void learn() throws IOException {
 
-        int EXPLORATION_DEPTH = 0;
+        int EXPLORATION_DEPTH = 1;
         Alphabet<String> inputs = Alphabets.fromArray(PathTracker.inputSymbols);
 
-        // construct a simulator membership query oracle
-        // input - Character (determined by example)
-
         MealyMembershipOracle<String, String> sul = new RersOracle();
-        // SUL<String, String> sul = new RersOracle();
+        MealyCounterOracle<String, String> mCounter = new MealyCounterOracle<String, String>(sul, "membership queries");
+        MealyCacheOracle<String, String> m = MealyCacheOracle.createDAGCacheOracle(inputs, mCounter.asOracle());
 
         // oracle for counting queries wraps SUL
         // MealyCounterOracle<String, String> mqOracle = new MealyCounterOracle<>(sul,
@@ -787,7 +789,7 @@ public class SymbolicExecutionLab {
         // ClassicLStarMealyBuilder<String, String>()
         ExtensibleLStarMealy<String, String> lstar = new ExtensibleLStarMealyBuilder<String, String>()
                 .withAlphabet(inputs) // input
-                .withOracle(sul)
+                .withOracle(m)
                 .create();
         // // alphabet
         // .withOracle(sul) // membership oracle
@@ -827,7 +829,7 @@ public class SymbolicExecutionLab {
 
         // learning statistics
         System.out.println(experiment.getRounds().getSummary());
-        // System.out.println(sul.getStatisticalData().getSummary());
+        System.out.println(mCounter.getStatisticalData().getSummary());
 
         // model statistics
         System.out.println("States: " + result.size());
@@ -836,7 +838,7 @@ public class SymbolicExecutionLab {
         // show model
         System.out.println();
         System.out.println("Model: ");
-        GraphDOT.write(result, inputs, System.out); // may throw IOException!
+        GraphDOT.write(result, inputs, new BufferedWriter(new FileWriter("hyp.dot"))); // may throw IOException!
 
         // Visualization.visualize(result, inputs, new MealyVisualizationHelper<String,
         // String>());
@@ -847,9 +849,9 @@ public class SymbolicExecutionLab {
         System.out.println("Final observation table:");
         new ObservationTableASCIIWriter<>().write(lstar.getObservationTable(), System.out);
 
-        OTUtils.displayHTMLInBrowser(lstar.getObservationTable());
+        // OTUtils.displayHTMLInBrowser(lstar.getObservationTable());
         // OTUtils.displayHTMLInBrowser(lstar.getHypothesisModel());
-        System.exit(1);
+        System.exit(0);
     }
 
     /**
