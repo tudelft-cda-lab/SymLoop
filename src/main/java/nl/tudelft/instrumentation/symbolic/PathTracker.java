@@ -54,15 +54,27 @@ public class PathTracker {
     static String[] inputSymbols;
 
     static int lastLength = -1;
+    private static String lastOutput;
+
+    private static enum RunMode {
+        Symbolic,
+        Membership,
+    }
+
+    private static RunMode mode = RunMode.Symbolic;
+    private static List<String> outputs = new ArrayList<>();
 
     public static Expr createConst(String name, Sort s) {
+        if (mode == RunMode.Membership) {
+            return null;
+        }
         if (constCache.containsKey(name)) {
             Expr e = constCache.get(name);
             // assert e.getSort().equals(s);
             return e;
         } else {
             Context ctx = PathTracker.ctx;
-            Expr c =  ctx.mkConst(name, s);
+            Expr c = ctx.mkConst(name, s);
             constCache.put(name, c);
             return c;
         }
@@ -80,23 +92,26 @@ public class PathTracker {
     }
 
     public static void addToBranches(CustomExpr expr) {
+        if (mode == RunMode.Membership) {
+            return;
+        }
         // z3branches = ctx.mkAnd(expr, z3branches);
         solver.add(expr);
     }
 
     public static void addToModel(CustomExpr expr) {
+        if (mode == RunMode.Membership) {
+            return;
+        }
         z3model = ctx.mkAnd(expr.toBoolExpr(), z3model);
         solver.add(expr);
     }
 
     /**
      * This method contains code that calls the Z3 solver and check whether it solve
-     * the path
-     * constraint that is constructed for the new branch. The solver will try to
-     * find inputs
-     * that can satisfy the path constraint. We can use these inputs to reach this
-     * newly
-     * discovered branch.
+     * the path constraint that is constructed for the new branch. The solver will
+     * try to find inputs that can satisfy the path constraint. We can use these
+     * inputs to reach this newly discovered branch.
      * 
      * @param new_branch the branch that we have discovered and want to visit.
      * @param printModel boolean value that specifies whether the path constraint
@@ -104,6 +119,9 @@ public class PathTracker {
      *                   be printed in the terminal or not.
      */
     public static boolean solve(CustomExpr new_branch, SolvingForType type, boolean printModel, boolean isInput) {
+        if (mode == RunMode.Membership) {
+            return false;
+        }
         OptimizingSolver s = solver;
         s.push();
         // Solver s = ctx.mkSolver();
@@ -160,41 +178,70 @@ public class PathTracker {
 
     // Making temporary variables, i.e., within if-conditions
     public static MyVar tempVar(boolean value) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         return new MyVar(ConstantCustomExpr.fromBool(value));
     }
 
     public static MyVar tempVar(int value) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         return new MyVar(ConstantCustomExpr.fromInt(value));
     }
 
     public static MyVar tempVar(String value) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         return new MyVar(ConstantCustomExpr.fromString(value));
     }
 
     // Making new stored variables
     public static MyVar myVar(boolean value, String name) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         return SymbolicExecutionLab.createVar(name, ConstantCustomExpr.fromBool(value));
     }
 
     public static MyVar myVar(int value, String name) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         return SymbolicExecutionLab.createVar(name, ConstantCustomExpr.fromInt(value));
     }
 
     public static MyVar myVar(String value, String name) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         return SymbolicExecutionLab.createVar(name, ConstantCustomExpr.fromString(value));
     }
 
     public static MyVar myVar(MyVar value, String name) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         return SymbolicExecutionLab.createVar(name, value.expr);
     }
 
     // Making a new input variable
     public static MyVar myInputVar(String value, String name) {
+        outputs.add(lastOutput);
+        lastOutput = "?";
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         return SymbolicExecutionLab.createInput(name, ConstantCustomExpr.fromString(value));
     }
 
     // for assigning an array to a variable.
     public static MyVar[] myVar(MyVar[] value, String name) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         MyVar[] vars = new MyVar[value.length];
         for (int i = 0; i < value.length; i++) {
             vars[i] = value[i];
@@ -207,6 +254,9 @@ public class PathTracker {
      * this assignment creates a reference and does not need new variables
      */
     public static MyVar[] myVar(MyVar[] value) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         MyVar[] vars = new MyVar[value.length];
         for (int i = 0; i < value.length; i++) {
             vars[i] = value[i];
@@ -219,6 +269,9 @@ public class PathTracker {
      * This part is for handling arithmetic and boolean logic.
      */
     public static MyVar unaryExpr(MyVar i, String operator) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         if (i.expr.type == ExprType.BOOL) {
             return SymbolicExecutionLab.createBoolExpr(i.expr, operator);
         }
@@ -233,6 +286,9 @@ public class PathTracker {
     }
 
     public static MyVar binaryExpr(MyVar i, MyVar j, String operator) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         if (i.expr.type == ExprType.BOOL) {
             return SymbolicExecutionLab.createBoolExpr(i.expr, j.expr, operator);
         }
@@ -244,11 +300,17 @@ public class PathTracker {
     }
 
     public static MyVar equals(MyVar i, MyVar j) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         return SymbolicExecutionLab.createStringExpr(i.expr, j.expr, "==");
     }
 
     // We handle arrays, which needs an iterated if-then-else.
     public static MyVar arrayInd(MyVar[] name, MyVar index) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         CustomExpr ite_expr = name[0].expr;
         for (int i = 1; i < name.length; i++) {
             ite_expr = CustomExprOp.mkITE(
@@ -260,6 +322,9 @@ public class PathTracker {
 
     // We handle increments, forwarded to assignments.
     public static MyVar increment(MyVar i, String operator, boolean prefix) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         if (prefix) {
             if (operator.equals("++"))
                 myAssign(i, new MyVar(CustomExprOp.mkAdd(i.expr, ConstantCustomExpr.fromInt(1))), "=");
@@ -278,11 +343,17 @@ public class PathTracker {
 
     // We handle conditionals, which is an if-then-else.
     public static MyVar conditional(MyVar b, MyVar t, MyVar e) {
+        if(mode == RunMode.Membership) {
+            return null;
+        }
         return new MyVar(CustomExprOp.mkITE(b.expr, t.expr, e.expr));
     }
 
     // Assignment changes the z3var in a MyVar variable.
     public static void myAssign(MyVar target, MyVar value, String operator) {
+        if(mode == RunMode.Membership) {
+            return;
+        }
         // first add or subtract if necessary
         CustomExpr new_value = value.expr;
         if (operator.equals("-="))
@@ -296,6 +367,9 @@ public class PathTracker {
     // We handle arrays, again using if-then-else and call standard variable
     // assignment for all indices.
     public static void myAssign(MyVar[] name, MyVar index, MyVar value, String operator) {
+        if(mode == RunMode.Membership) {
+            return;
+        }
         for (int i = 0; i < name.length; i++) {
             // Expr old_expr = name[i].z3var;
             CustomExpr old_expr = name[i].expr;
@@ -313,6 +387,9 @@ public class PathTracker {
 
     // Direct assign for array references
     public static void myAssign(MyVar[] name1, MyVar[] name2, String operator) {
+        if(mode == RunMode.Membership) {
+            return;
+        }
         for (int i = 0; i < name1.length; i++) {
             name1[i] = name2[i];
         }
@@ -328,6 +405,9 @@ public class PathTracker {
      * @param line_nr   the line number of the if-statement.
      */
     public static void myIf(MyVar condition, boolean value, int line_nr) {
+        if(mode == RunMode.Membership) {
+            return;
+        }
         SymbolicExecutionLab.encounteredNewBranch(condition, value, line_nr);
     }
 
@@ -337,6 +417,7 @@ public class PathTracker {
      * @param out the string that has been outputted in the standard out.
      */
     public static void output(String out) {
+        lastOutput = out;
         SymbolicExecutionLab.output(out);
     }
 
@@ -360,11 +441,26 @@ public class PathTracker {
      * @param sequence the fuzzed sequence that needs top be run.
      */
     public static boolean runNextFuzzedSequence(String[] sequence) {
+        mode = RunMode.Symbolic;
+        return startRun(sequence);
+    }
+
+    public static List<String> processInput(String[] sequence) {
+        lastOutput = "start";
+        mode = RunMode.Membership;
+        startRun(sequence);
+        outputs.add(lastOutput);
+        outputs.remove(0);
+        return outputs;
+    }
+
+    private static boolean startRun(String[] sequence) {
         problem.setSequence(sequence);
+        outputs.clear();
         final Future handler = executor.submit(problem);
         executor.schedule(() -> {
             handler.cancel(false);
-        }, SymbolicExecutionLab.timeLeftMillis()*2, TimeUnit.MILLISECONDS);
+        }, SymbolicExecutionLab.timeLeftMillis() * 2, TimeUnit.MILLISECONDS);
 
         // Wait for it to be completed
         try {

@@ -15,14 +15,17 @@ public class ProblemTripleLoop {
     public void calculateOutput(String input) {
         cf = true;
         if (cf && input.equals("<") && !open) {
+            System.out.println("<");
             open = true;
             cf = false;
         }
         if (cf && input.equals("-") && open && middle < MIDDLE_AMOUNT) {
+            System.out.println("-");
             middle += 1;
             cf = false;
         }
         if (cf && input.equals(">") && open && middle >= MIDDLE_AMOUNT) {
+            System.out.println(">");
             open = false;
             middle = 0;
             i += 1;
@@ -33,6 +36,11 @@ public class ProblemTripleLoop {
             if (i > 4) {
                 Errors.__VERIFIER_error(0);
             }
+            System.out.println("p");
+        }
+
+        if(cf) {
+            System.out.println("X");
         }
     }
 

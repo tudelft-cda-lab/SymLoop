@@ -1,5 +1,6 @@
 package nl.tudelft.instrumentation.symbolic;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -14,6 +15,24 @@ import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp;
 import nl.tudelft.instrumentation.symbolic.exprs.ExprType;
 import nl.tudelft.instrumentation.symbolic.exprs.NamedCustomExpr;
+import de.learnlib.algorithms.lstar.mealy.ClassicLStarMealy;
+import de.learnlib.algorithms.lstar.mealy.ClassicLStarMealyBuilder;
+import de.learnlib.algorithms.lstar.mealy.ExtensibleLStarMealy;
+import de.learnlib.algorithms.lstar.mealy.ExtensibleLStarMealyBuilder;
+import de.learnlib.api.SUL;
+import de.learnlib.api.oracle.MembershipOracle;
+import de.learnlib.api.oracle.MembershipOracle.MealyMembershipOracle;
+import de.learnlib.datastructure.observationtable.OTUtils;
+import de.learnlib.datastructure.observationtable.writer.ObservationTableASCIIWriter;
+import de.learnlib.oracle.equivalence.MealyWMethodEQOracle;
+import de.learnlib.util.Experiment.MealyExperiment;
+import de.learnlib.util.statistics.SimpleProfiler;
+import net.automatalib.automata.fsa.impl.compact.CompactDFA;
+import net.automatalib.automata.transducers.MealyMachine;
+import net.automatalib.serialization.dot.GraphDOT;
+import net.automatalib.util.automata.builders.AutomatonBuilders;
+import net.automatalib.words.Alphabet;
+import net.automatalib.words.impl.Alphabets;
 
 /**
  * You should write your solution using this class.
@@ -487,6 +506,11 @@ public class SymbolicExecutionLab {
     }
 
     static void symbolic_execution() {
+        try {
+            learn();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         while (!isFinished && !isEmpty() && !timeLimitReached()) {
             reset();
             NextTrace trace = getNext();
@@ -740,6 +764,122 @@ public class SymbolicExecutionLab {
                 System.out.println(out);
             }
         }
+    }
+
+    public static void learn() throws IOException {
+
+        int EXPLORATION_DEPTH = 0;
+        Alphabet<String> inputs = Alphabets.fromArray(PathTracker.inputSymbols);
+
+        // construct a simulator membership query oracle
+        // input - Character (determined by example)
+
+        MealyMembershipOracle<String, String> sul = new RersOracle();
+        // SUL<String, String> sul = new RersOracle();
+
+        // oracle for counting queries wraps SUL
+        // MealyCounterOracle<String, String> mqOracle = new MealyCounterOracle<>(sul,
+        // "membership queries");
+
+        // construct L* instance
+        // ClassicLStarMealy
+        // ClassicLStarMealy<String, String> lstar = new
+        // ClassicLStarMealyBuilder<String, String>()
+        ExtensibleLStarMealy<String, String> lstar = new ExtensibleLStarMealyBuilder<String, String>()
+                .withAlphabet(inputs) // input
+                .withOracle(sul)
+                .create();
+        // // alphabet
+        // .withOracle(sul) // membership oracle
+        // .create();
+
+        // construct a W-method conformance test
+        // exploring the system up to depth 4 from
+        // every state of a hypothesis
+        MealyWMethodEQOracle<String, String> wMethod = new MealyWMethodEQOracle<String, String>(sul, EXPLORATION_DEPTH);
+
+        // construct a learning experiment from
+        // the learning algorithm and the conformance test.
+        // The experiment will execute the main loop of
+        // active learning
+        // DFAExperiment<Character> experiment = new DFAExperiment<>(lstar, wMethod,
+        // inputs);
+        MealyExperiment<String, String> experiment = new MealyExperiment<String, String>(lstar, wMethod, inputs);
+
+        // turn on time profiling
+        experiment.setProfile(true);
+
+        // enable logging of models
+        experiment.setLogModels(true);
+
+        // run experiment
+        experiment.run();
+        System.out.println("Done running");
+
+        // get learned model
+        MealyMachine<?, String, ?, String> result = experiment.getFinalHypothesis();
+
+        // report results
+        System.out.println("-------------------------------------------------------");
+
+        // profiling
+        System.out.println(SimpleProfiler.getResults());
+
+        // learning statistics
+        System.out.println(experiment.getRounds().getSummary());
+        // System.out.println(sul.getStatisticalData().getSummary());
+
+        // model statistics
+        System.out.println("States: " + result.size());
+        System.out.println("Sigma: " + inputs.size());
+
+        // show model
+        System.out.println();
+        System.out.println("Model: ");
+        GraphDOT.write(result, inputs, System.out); // may throw IOException!
+
+        // Visualization.visualize(result, inputs, new MealyVisualizationHelper<String,
+        // String>());
+        // Visualization.vis
+
+        System.out.println("-------------------------------------------------------");
+
+        System.out.println("Final observation table:");
+        new ObservationTableASCIIWriter<>().write(lstar.getObservationTable(), System.out);
+
+        OTUtils.displayHTMLInBrowser(lstar.getObservationTable());
+        // OTUtils.displayHTMLInBrowser(lstar.getHypothesisModel());
+        System.exit(1);
+    }
+
+    /**
+     * creates example from Angluin's seminal paper.
+     *
+     * @return example dfa
+     */
+    private static CompactDFA<Character> constructSUL() {
+        // input alphabet contains characters 'a'..'b'
+        Alphabet<Character> sigma = Alphabets.characters('a', 'b');
+
+        // @formatter:off
+        // create automaton
+        return AutomatonBuilders.newDFA(sigma)
+                .withInitial("q0")
+                .from("q0")
+                    .on('a').to("q1")
+                    .on('b').to("q2")
+                .from("q1")
+                    .on('a').to("q0")
+                    .on('b').to("q3")
+                .from("q2")
+                    .on('a').to("q3")
+                    .on('b').to("q0")
+                .from("q3")
+                    .on('a').to("q2")
+                    .on('b').to("q1")
+                .withAccepting("q0")
+                .create();
+        // @formatter:on
     }
 
 }
