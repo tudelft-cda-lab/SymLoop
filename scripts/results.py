@@ -58,7 +58,7 @@ def write_results_to_latex(problem, output: problemOutput, params):
     all_params = ['d', 'l', 'm', 'st']
 
     errors = sorted(list(errors))
-    rows = [['Program', *all_params, *errors]]
+    rows = [['Program', *all_params, '#err', *errors]]
     for program in sorted(data.keys()):
         row = [short_name(program)]
         for p in all_params:
@@ -68,6 +68,7 @@ def write_results_to_latex(problem, output: problemOutput, params):
                     row[-1] = str(int(row[-1]) // 60)+'m'
             else:
                 row.append('')
+        row.append(str(len(data[program])))
         for error in errors:
             if error in data[program]:
                 v = data[program][error]
