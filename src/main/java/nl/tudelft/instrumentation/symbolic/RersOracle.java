@@ -15,7 +15,7 @@ public class RersOracle implements MealyMembershipOracle<String, String> {
         for (Query<String, Word<String>> q : arg0) {
             String[] query = q.getInput().asList().toArray(String[]::new);
             WordBuilder<String> w = new WordBuilder<>();
-            List<String> out = PathTracker.processInput(query);
+            List<String> out = PathTracker.getMembershipOutput(query);
             // Only add output for the suffix
             w.addAll(out.subList(q.getPrefix().size(), out.size()));
             q.answer(w.toWord());

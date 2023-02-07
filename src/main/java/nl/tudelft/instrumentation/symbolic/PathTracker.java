@@ -453,7 +453,7 @@ public class PathTracker {
         return startRun(sequence);
     }
 
-    public static List<String> processInput(String[] sequence) {
+    public static List<String> getMembershipOutput(String[] sequence) {
         lastOutput = "start";
         mode = RunMode.Membership;
         startRun(sequence);

@@ -163,8 +163,8 @@ public class LoopDetection {
         Settings s = Settings.getInstance();
         int depth = Math.min(s.MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
 
-        if (s.VERIFY_LOOP) {
-            lastNSaves = s.LOOP_TRACE.length + 1;
+        if (SymbolicExecutionLab.loopVerification) {
+            lastNSaves = SymbolicExecutionLab.loopSize + 1;
             depth = Math.min(depth, lastNSaves);
         }
 

@@ -21,7 +21,10 @@ import de.learnlib.algorithms.lstar.mealy.ClassicLStarMealy;
 import de.learnlib.algorithms.lstar.mealy.ClassicLStarMealyBuilder;
 import de.learnlib.algorithms.lstar.mealy.ExtensibleLStarMealy;
 import de.learnlib.algorithms.lstar.mealy.ExtensibleLStarMealyBuilder;
+import de.learnlib.algorithms.ttt.mealy.TTTLearnerMealy;
+import de.learnlib.algorithms.ttt.mealy.TTTLearnerMealyBuilder;
 import de.learnlib.api.SUL;
+import de.learnlib.api.algorithm.LearningAlgorithm.MealyLearner;
 import de.learnlib.api.oracle.MembershipOracle;
 import de.learnlib.api.oracle.MembershipOracle.MealyMembershipOracle;
 import de.learnlib.datastructure.observationtable.OTUtils;
@@ -33,8 +36,10 @@ import de.learnlib.util.Experiment.MealyExperiment;
 import de.learnlib.util.statistics.SimpleProfiler;
 import net.automatalib.automata.fsa.impl.compact.CompactDFA;
 import net.automatalib.automata.transducers.MealyMachine;
+import net.automatalib.incremental.mealy.dag.State;
 import net.automatalib.serialization.dot.GraphDOT;
 import net.automatalib.util.automata.builders.AutomatonBuilders;
+import net.automatalib.util.partitionrefinement.StateSignature;
 import net.automatalib.words.Alphabet;
 import net.automatalib.words.impl.Alphabets;
 
@@ -331,6 +336,35 @@ public class SymbolicExecutionLab {
     }
 
     static List<String> lastTrace;
+    private static String[] counterExample = null;
+
+    private static void processLoopResult(LoopVerifyResult r) {
+        if (r.hasCounter()) {
+            printfRed("NOT LOOPING: %s\n", String.join(",", r.getCounter()));
+            System.err.println(String.join(",", r.getCounter()));
+            System.exit(1);
+        }
+        switch (r.getS()) {
+            case COUNTER:
+                assert false;
+                break;
+            case NO_LOOP_FOUND:
+                printfYellow("NO LOOP FOUND\n");
+                System.err.println("NO LOOP FOUND");
+                break;
+            case PROBABLY:
+                printfYellow("PROBABLY LOOPING\n");
+                System.err.println("PROBABLY");
+                break;
+            case SELF:
+                printfGreen("IS SELF LOOPING\n");
+                System.err.println("GUARANTEED");
+                break;
+            default:
+                break;
+        }
+        System.exit(0);
+    }
 
     static void printQs() {
         System.out.println("NextTraces");
@@ -356,10 +390,12 @@ public class SymbolicExecutionLab {
             System.out.printf("SAT: '%s'\n", String.join(",", temp));
             for (Integer c : loopCounts) {
                 if (c > 0) {
-                    printQs();
-                    printfRed("NOT LOOPING: %s\n", String.join(",", temp));
-                    System.err.println(String.join(",", temp));
-                    System.exit(1);
+                    // printQs();
+                    // printfRed("NOT LOOPING: %s\n", String.join(",", temp));
+                    // System.err.println(String.join(",", temp));
+                    // System.exit(1);
+                    skip = true;
+                    counterExample = temp.toArray(String[]::new);
                 }
             }
         }
@@ -419,6 +455,7 @@ public class SymbolicExecutionLab {
     }
 
     static void reset() {
+        counterExample = null;
         indexBefore = -1;
         PathTracker.reset();
         loopDetector.reset();
@@ -538,9 +575,11 @@ public class SymbolicExecutionLab {
     static int indexBefore = -1;
     static Map<String, Integer> from;
     static int saveAtIndex = -1;
+    static boolean loopVerification;
+    static int loopSize;
 
-    static void collectPaths(List<String> base, List<List<String>> distinguishers) {
-        NextTrace trace = new NextTrace(base, currentLineNumber, "<collect solver>", false);
+    static LoopVerifyResult collectPaths(String[] LOOP_TRACE, List<String> base, List<List<String>> distinguishers) {
+        NextTrace trace = new NextTrace(base, 0, "<collect solver>", false);
         runNext(trace);
         OptimizingSolver solver = PathTracker.solver;
         PathTracker.solver = new InferringSolver();
@@ -550,15 +589,13 @@ public class SymbolicExecutionLab {
         PathTracker.loopIterations = new HashMap<>();
 
         String full = String.join("", base);
-        full += String.join("", Settings.getInstance().LOOP_TRACE);
+        full += String.join("", LOOP_TRACE);
         if (loopDetector.isSelfLooping(full)) {
-            printfGreen("IS SELF LOOPING\n");
-            System.err.println("GUARANTEED");
-            System.exit(0);
+            return LoopVerifyResult.self();
         } else if (!loopDetector.containsLoop(full)) {
-            printfYellow("NO LOOP FOUND\n");
-            System.err.println("NO LOOP FOUND");
-            System.exit(0);
+            return LoopVerifyResult.notFound();
+        } else if (counterExample != null) {
+            return LoopVerifyResult.counter(counterExample);
         }
 
         isCreatingPaths = true;
@@ -566,7 +603,7 @@ public class SymbolicExecutionLab {
             List<String> inputs = new ArrayList<>();
             inputs.addAll(base);
             inputs.addAll(d);
-            trace = new NextTrace(inputs, currentLineNumber, "<collect paths>", false);
+            trace = new NextTrace(inputs, 0, "<collect paths>", false);
             saveAtIndex = inputs.size() - d.size();
             runNext(trace);
             assert indexBefore != -1;
@@ -579,8 +616,12 @@ public class SymbolicExecutionLab {
             checkAfterLoop(solver, d, c.getKey(), c.getValue(), toCounts, trackerInputs,
                     loopDetector.history.getVariables());
             PathTracker.loopIterations = new HashMap<>();
+            if (counterExample != null) {
+                return LoopVerifyResult.counter(counterExample);
+            }
         }
         isCreatingPaths = false;
+        return LoopVerifyResult.probably();
     }
 
     static void checkAfterLoop(OptimizingSolver s, List<String> symbols, CustomExpr assign, CustomExpr path,
@@ -627,55 +668,60 @@ public class SymbolicExecutionLab {
         PathTracker.inputs = new LinkedList<>();
     }
 
-    static void verifyLoop(String[] VERIFY_LOOP) {
+    static LoopVerifyResult verifyLoop(String[] ACCESS, String[] LOOP_TRACE, String[][] DISTINGUISHING_TRACES) {
+        printThisRun = false;
         Settings s = Settings.getInstance();
-        printfGreen("Verifying loop: %s\n", String.join("", VERIFY_LOOP));
-        assert VERIFY_LOOP != null;
+        loopVerification = true;
+        loopSize = LOOP_TRACE.length;
+        // printfGreen("Verifying loop: %s\n", String.join("", ACCESS));
+        assert ACCESS != null;
         List<String> input = new ArrayList<>();
-        input.addAll(Arrays.asList(s.INITIAL_TRACE));
-        input.addAll(Arrays.asList(s.LOOP_TRACE));
+        input.addAll(Arrays.asList(ACCESS));
+        input.addAll(Arrays.asList(LOOP_TRACE));
 
         String full = String.join("", input);
-        printfBlue("Full: %s\n", full);
+
+        if (loopDetector.isSelfLooping(full)) {
+            return LoopVerifyResult.self();
+        }
+
+        // printfBlue("Full: %s\n", full);
         if (s.SUFFIX != null && s.SUFFIX.length > 0) {
             input.addAll(Arrays.asList(s.SUFFIX));
         }
 
-        if (s.COLLECT_PATHS) {
+        if (DISTINGUISHING_TRACES.length > 0) {
             List<List<String>> distinguishers = new ArrayList<>();
-            for (String[] ds : s.DISTINGUISHING_TRACES) {
+            for (String[] ds : DISTINGUISHING_TRACES) {
                 List<String> a = Arrays.asList(ds);
                 distinguishers.add(a);
             }
-            collectPaths(input, distinguishers);
+            return collectPaths(LOOP_TRACE, input, distinguishers);
         } else {
-            input.addAll(Arrays.asList(s.LOOP_TRACE));
-            NextTrace trace = new NextTrace(input, currentLineNumber, "<initial>", false);
+            input.addAll(Arrays.asList(LOOP_TRACE));
+            NextTrace trace = new NextTrace(input, 0, "<initial>", false);
             nextTraces.add(trace);
             runNext(trace);
         }
-
-        if (loopDetector.isSelfLooping(full)) {
-            printfGreen("IS SELF LOOPING\n");
-            System.err.println("GUARANTEED");
-            System.exit(0);
-        } else if (loopDetector.containsLoop(full)) {
-            printfYellow("PROBABLY LOOPING\n");
-            System.err.println("PROBABLY");
-            System.exit(0);
-        } else {
-            printfYellow("NO LOOP FOUND\n");
-            System.err.println("NO LOOP FOUND");
-            System.exit(0);
+        if (counterExample != null) {
+            return LoopVerifyResult.counter(counterExample);
         }
-        printQs();
+
+        // printQs();
+        if (loopDetector.isSelfLooping(full)) {
+            return LoopVerifyResult.self();
+        } else if (loopDetector.containsLoop(full)) {
+            return LoopVerifyResult.probably();
+        } else {
+            return LoopVerifyResult.notFound();
+        }
     }
 
     static void run(String[] args) {
         Settings s = Settings.create(args);
         System.out.println(s.parameters());
         if (s.LOOP_TRACE != null) {
-            verifyLoop(s.LOOP_TRACE);
+            processLoopResult(verifyLoop(s.INITIAL_TRACE, s.LOOP_TRACE, s.DISTINGUISHING_TRACES));
         } else {
             initialize(PathTracker.inputSymbols);
             nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
@@ -772,7 +818,7 @@ public class SymbolicExecutionLab {
 
     public static void learn() throws IOException {
 
-        int EXPLORATION_DEPTH = 1;
+        int EXPLORATION_DEPTH = 3;
         Alphabet<String> inputs = Alphabets.fromArray(PathTracker.inputSymbols);
 
         MealyMembershipOracle<String, String> sul = new RersOracle();
@@ -791,14 +837,23 @@ public class SymbolicExecutionLab {
                 .withAlphabet(inputs) // input
                 .withOracle(m)
                 .create();
+        // TTTLearnerMealyBuilder<String, String>
+        TTTLearnerMealy<String, String> ttt = new TTTLearnerMealyBuilder<String, String>()
+                .withAlphabet(inputs)
+                .withOracle(m)
+                .create();
+
+        MealyLearner<String, String> learner = lstar;
         // // alphabet
         // .withOracle(sul) // membership oracle
         // .create();
 
-        // construct a W-method conformance test
-        // exploring the system up to depth 4 from
-        // every state of a hypothesis
-        MealyWMethodEQOracle<String, String> wMethod = new MealyWMethodEQOracle<String, String>(sul, EXPLORATION_DEPTH);
+        // construct a W-method conformance test exploring the system up to depth
+        // EXPLORATION_DEPTH from every state of a hypothesis
+        MealyWMethodEQOracle<String, String> wMethod = new MealyWMethodEQOracle<String, String>(m, EXPLORATION_DEPTH);
+
+        MealyLoopingEQOracle<MealyMachine<?, String, ?, String>, String, String> loopMethod = new MealyLoopingEQOracle<>(
+                m, EXPLORATION_DEPTH, inputs);
 
         // construct a learning experiment from
         // the learning algorithm and the conformance test.
@@ -806,7 +861,15 @@ public class SymbolicExecutionLab {
         // active learning
         // DFAExperiment<Character> experiment = new DFAExperiment<>(lstar, wMethod,
         // inputs);
-        MealyExperiment<String, String> experiment = new MealyExperiment<String, String>(lstar, wMethod, inputs);
+        // de.learnlib.util.Experiment.MealyExperiment.MealyExperiment<String,
+        // String>(LearningAlgorithm<? extends MealyMachine<?, String, ?, String>,
+        // String, Word<String>> learningAlgorithm, EquivalenceOracle<? super
+        // MealyMachine<?, String, ?, String>, String, Word<String>>
+        // equivalenceAlgorithm, Alphabet<String> inputs)
+
+        // MealyExperiment<String, String> experiment = new MealyExperiment<String,
+        // String>(lstar, wMethod, inputs);
+        MealyExperiment<String, String> experiment = new MealyExperiment<String, String>(learner, loopMethod, inputs);
 
         // turn on time profiling
         experiment.setProfile(true);
