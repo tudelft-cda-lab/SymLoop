@@ -89,13 +89,13 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
     }
 
     protected <S> Collection<LoopInput<S>> getLoops(MealyMachine<S, I, ?, O> m) {
-        LinkedList<LoopDetectionHelper<S>> reached = new LinkedList<>();
+        List<LoopDetectionHelper<S>> reached = new LinkedList<>();
         List<S> initial = new ArrayList<>();
         initial.add(m.getInitialState());
         reached.add(new LoopDetectionHelper<>(Word.epsilon(), initial));
         List<LoopInput<S>> loops = new ArrayList<>();
         while (!reached.isEmpty()) {
-            LoopDetectionHelper<S> h = reached.pop();
+            LoopDetectionHelper<S> h = reached.remove(0);
             S last = h.last();
             for (I input : this.a) {
                 LoopDetectionHelper<S> next = h.add(input, m.getSuccessor(last, input));
