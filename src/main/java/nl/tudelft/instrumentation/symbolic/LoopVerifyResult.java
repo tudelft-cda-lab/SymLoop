@@ -41,7 +41,7 @@ public class LoopVerifyResult {
     }
 
     static LoopVerifyResult counter(String[] counter) {
-        return new LoopVerifyResult(State.PROBABLY, counter);
+        return new LoopVerifyResult(State.COUNTER, counter);
     }
 
     boolean hasCounter() {
