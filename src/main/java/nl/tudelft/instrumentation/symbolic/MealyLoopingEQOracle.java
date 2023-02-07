@@ -194,10 +194,11 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
             Word<O> out = hypothesis.computeOutput(Word.fromWords(loop.access, loop.loop));
             if (out.lastSymbol().equals("invalid") || out.lastSymbol().toString().startsWith("error")) {
                 continue;
-            } else {
-                System.out.println(out);
             }
             LoopVerifyResult r = SymbolicExecutionLab.verifyLoop(access, l, ds);
+            if(r.getS() == LoopVerifyResult.State.NO_LOOP_FOUND) {
+                System.out.printf("access: %s, loop: %s\n", loop.access, loop.loop);
+            }
             System.out.println(r.getS());
             if (r.hasCounter()) {
                 // Stream.concat(
