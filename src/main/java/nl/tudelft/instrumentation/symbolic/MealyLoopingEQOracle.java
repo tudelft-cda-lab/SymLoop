@@ -116,7 +116,10 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         List<Word<I>> characterizingSet = new ArrayList<>();
         CharacterizingSets.findCharacterizingSet(hypothesis, this.a, characterizingSet);
         for (I input : a) {
-            characterizingSet.add(Word.fromLetter(input));
+            Word<I> w = Word.fromLetter(input);
+            if (!characterizingSet.contains(w)) {
+                characterizingSet.add(w);
+            }
         }
 
         String[][] ds = new String[characterizingSet.size()][];
@@ -135,7 +138,14 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         for (MealyLoopingEQOracle<A, I, O>.LoopInput<?> loop : getLoops(hypothesis)) {
             String[] access = loop.access.asList().toArray(String[]::new);
             String[] l = loop.loop.asList().toArray(String[]::new);
+            Word<O> out = hypothesis.computeOutput(Word.fromWords(loop.access, loop.loop));
+            if (out.lastSymbol().equals("invalid") || out.lastSymbol().toString().startsWith("error")) {
+                continue;
+            } else {
+                System.out.println(out);
+            }
             LoopVerifyResult r = SymbolicExecutionLab.verifyLoop(access, l, ds);
+            System.out.println(r.getS());
             if (r.hasCounter()) {
                 // Stream.concat(
                 ArrayList<Word<I>> counter = new ArrayList<>();
@@ -148,7 +158,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
             // // assert false: "No loop found";
             // }
         }
-        System.exit(0);
+        // System.exit(0);
         // hypothesis.getTransitios
 
         // for (C s : hypothesis.getStates()) {
