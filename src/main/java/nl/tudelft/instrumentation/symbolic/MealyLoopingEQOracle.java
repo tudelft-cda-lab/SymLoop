@@ -5,10 +5,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
@@ -38,46 +43,59 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
     private class LoopInput<S> {
         public final Word<I> access;
         public final Word<I> loop;
-        public final List<S> states;
 
-        public LoopInput(Word<I> access, Word<I> loop, List<S> states) {
+        public LoopInput(Word<I> access, Word<I> loop) {
             this.access = access;
             this.loop = loop;
-            this.states = states;
         }
     }
 
+    private HashSet<String> checked = new HashSet<>();
+
     private class LoopDetectionHelper<S> {
 
-        public final Word<I> access;
-        public final List<S> history;
+        public final I access;
+        public final S history;
 
-        public LoopDetectionHelper(Word<I> access, List<S> history) {
+        public final LoopDetectionHelper<S> previous;
+
+        public LoopDetectionHelper(I access, S history, LoopDetectionHelper<S> previous) {
             this.access = access;
             this.history = history;
-            assert this.history.size() > 0;
+            this.previous = previous;
+            // assert this.history.size() > 0;
         }
 
         public S last() {
-            return history.get(history.size() - 1);
+            return history;
         }
 
         public LoopDetectionHelper<S> add(I sym, S s) {
-            List<S> newHistory = new ArrayList<>(history);
-            newHistory.add(s);
-            return new LoopDetectionHelper<S>(access.append(sym), newHistory);
+            return new LoopDetectionHelper<S>(sym, s, this);
+        }
+
+        public Word<I> getAccess() {
+            Word<I> a = Word.epsilon();
+            LoopDetectionHelper<S> current = this;
+            while (current.previous != null) {
+                a = a.prepend(current.access);
+                current = current.previous;
+            }
+            return a;
         }
 
         public Optional<LoopInput<S>> isLoop() {
-            Object last = last();
-            for (int i = history.size() - 2; i >= 0; i--) {
-                if (history.get(i).equals(last)) {
-                    Word<I> access = this.access.prefix(i);
-                    Word<I> loop = this.access.suffix(this.access.size() - access.size());
-                    System.out.printf("access: %-30s\tloop: %s\n", access, loop);
-                    List<S> states = history.subList(i, history.size() - 1);
-                    return Optional.of(new LoopInput<>(access, loop, states));
+            S last = last();
+            LoopDetectionHelper<S> current = this.previous;
+            Word<I> loop = Word.fromSymbols(access);
+            while (current.previous != null) {
+                if (current.history.equals(last)) {
+                    Word<I> a = current.getAccess();
+                    // System.out.printf("IS A LOOP: %s, %s", a, loop);
+                    return Optional.of(new LoopInput<>(a, loop));
                 }
+                loop = loop.prepend(current.access);
+                current = current.previous;
             }
             return Optional.empty();
         }
@@ -89,10 +107,9 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
     }
 
     protected <S> Collection<LoopInput<S>> getLoops(MealyMachine<S, I, ?, O> m) {
+        Map<S, Word<I>> access = getAccessSequences(m);
         List<LoopDetectionHelper<S>> reached = new LinkedList<>();
-        List<S> initial = new ArrayList<>();
-        initial.add(m.getInitialState());
-        reached.add(new LoopDetectionHelper<>(Word.epsilon(), initial));
+        reached.add(new LoopDetectionHelper<S>(null, m.getInitialState(), null));
         List<LoopInput<S>> loops = new ArrayList<>();
         while (!reached.isEmpty()) {
             LoopDetectionHelper<S> h = reached.remove(0);
@@ -101,13 +118,39 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
                 LoopDetectionHelper<S> next = h.add(input, m.getSuccessor(last, input));
                 Optional<LoopInput<S>> loop = next.isLoop();
                 if (loop.isPresent()) {
-                    loops.add(loop.get());
+                    LoopInput<S> li = loop.get();
+                    if(access.get(next.history).equals(li.access)) {
+                        loops.add(li);
+                    }
                 } else {
                     reached.add(next);
                 }
             }
         }
         return loops;
+    }
+
+    protected <S> Map<S, Word<I>> getAccessSequences(MealyMachine<S, I, ?, O> hypothesis) {
+        Map<S, Word<I>> access = new HashMap<>();
+        Queue<S> q = new LinkedList<>();
+        Queue<Word<I>> wq = new LinkedList<>();
+        q.add(hypothesis.getInitialState());
+        wq.add(Word.epsilon());
+        while (!q.isEmpty()) {
+            S state = q.poll();
+            Word<I> w = wq.poll();
+            for(I input : a) {
+                S next = hypothesis.getSuccessor(state, input);
+                if (!access.containsKey(next)) {
+                    Word<I> nw = w.append(input);
+                    access.put(next, nw);
+                    q.add(next);
+                    wq.add(nw);
+                }
+            }
+        }
+        assert hypothesis.getStates().size() == access.size();
+        return access;
     }
 
     @Override
@@ -135,8 +178,18 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
             // TODO Auto-generated catch block
             e.printStackTrace();
         } // may throw IOException!
+        Collection<?> loops = getLoops(hypothesis);
+        System.out.printf("Found %d loops\n", loops.size());
         for (MealyLoopingEQOracle<A, I, O>.LoopInput<?> loop : getLoops(hypothesis)) {
+            String key = String.format("%s - %s", loop.access, loop.loop);
+            if (!checked.add(key)) {
+                continue;
+            }
             String[] access = loop.access.asList().toArray(String[]::new);
+
+            Object startingState = hypothesis.getState(loop.access);
+            // CharacterizingSets.
+
             String[] l = loop.loop.asList().toArray(String[]::new);
             Word<O> out = hypothesis.computeOutput(Word.fromWords(loop.access, loop.loop));
             if (out.lastSymbol().equals("invalid") || out.lastSymbol().toString().startsWith("error")) {
@@ -158,6 +211,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
             // // assert false: "No loop found";
             // }
         }
+        System.out.println("NORMAL W METHOD");
         // System.exit(0);
         // hypothesis.getTransitios
 
