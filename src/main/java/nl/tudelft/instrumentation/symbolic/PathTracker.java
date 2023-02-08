@@ -229,7 +229,9 @@ public class PathTracker {
 
     // Making a new input variable
     public static MyVar myInputVar(String value, String name) {
-        outputs.add(lastOutput);
+        if(lastOutput != null) {
+            outputs.add(lastOutput);
+        }
         lastOutput = "?";
         if(mode == RunMode.Membership) {
             return null;
@@ -454,11 +456,10 @@ public class PathTracker {
     }
 
     public static List<String> getMembershipOutput(String[] sequence) {
-        lastOutput = "start";
+        lastOutput = null;
         mode = RunMode.Membership;
         startRun(sequence);
         outputs.add(lastOutput);
-        outputs.remove(0);
         return outputs;
     }
 
