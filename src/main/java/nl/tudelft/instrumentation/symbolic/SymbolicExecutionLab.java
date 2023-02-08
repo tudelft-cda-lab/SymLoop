@@ -51,6 +51,8 @@ import net.automatalib.words.impl.Alphabets;
 public class SymbolicExecutionLab {
 
     static final int PRINT_EVERY = 2000;
+    static final int GC_EVERY = 2000;
+    static int iteration = 0;
     static final int INITIAL_TRACE_LENGTH = 1;
     static Random r = new Random(1);
     static Boolean isFinished = false;
@@ -464,7 +466,6 @@ public class SymbolicExecutionLab {
         loopDetector.reset();
         processedInputList.clear();
         nameCounts.clear();
-        System.gc();
         currentLineNumber = 0;
         inputInIndex = 0;
         processedInput = "";
@@ -472,6 +473,9 @@ public class SymbolicExecutionLab {
         skip = false;
         shouldSolve = true;
         numberOfLoopsInPathConstraint = 0;
+        if (iteration++ % GC_EVERY == 0) {
+            System.gc();
+        }
     }
 
     static boolean isEmpty() {
@@ -867,7 +871,9 @@ public class SymbolicExecutionLab {
                 m, EXPLORATION_DEPTH, inputs);
 
         // Combine the loopMethod with the wMethod
-        EQOracleChain<MealyMachine<?, String, ?, String>, String, Word<String>> chain = new EQOracleChain<>(loopMethod, wMethod);
+        EQOracleChain<MealyMachine<?, String, ?, String>, String, Word<String>> chain = new EQOracleChain<>(
+                loopMethod,
+                wMethod);
 
         // construct a learning experiment from
         // the learning algorithm and the conformance test.
