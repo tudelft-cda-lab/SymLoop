@@ -56,34 +56,6 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         Iterator<LoopInput<I>> i = detector;
         return StreamSupport.stream(
                 Spliterators.spliteratorUnknownSize(i, 0), false);
-        // MealyLoopDetector<MealyMachine<S, I, ?, O>> m = new MealyLoopDetector<>();
-        // Map<S, Word<I>> access = getAccessSequences(m);
-        // List<LoopDetectionHelper<S>> reached = new LinkedList<>();
-        // reached.add(new LoopDetectionHelper<S>(null, m.getInitialState(), null));
-        // List<LoopInput<S>> loops = new ArrayList<>();
-        // // Stream.iterate(loops, l -> {
-        // // List<LoopInput<S>> next = new ArrayList<>();
-        // // return l.forEach(h -> {
-        // // })
-        // // return next;
-        // // });
-        // while (!reached.isEmpty()) {
-        // LoopDetectionHelper<S> h = reached.remove(0);
-        // S last = h.last();
-        // for (I input : this.a) {
-        // LoopDetectionHelper<S> next = h.add(input, m.getSuccessor(last, input));
-        // Optional<LoopInput<S>> loop = next.isLoop();
-        // if (loop.isPresent()) {
-        // LoopInput<S> li = loop.get();
-        // if(access.get(next.history).equals(li.access)) {
-        // loops.add(li);
-        // }
-        // } else {
-        // reached.add(next);
-        // }
-        // }
-        // }
-        // return loops;
     }
 
     @Override
@@ -100,6 +72,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
 
         String[][] ds = new String[characterizingSet.size()][];
         System.out.printf("characterizingSet size: %d\n", ds.length);
+        // characterizingSet.stream().map(x -> x.as
         for (int i = 0; i < characterizingSet.size(); i++) {
             ds[i] = characterizingSet.get(i).asList().toArray(String[]::new);
             System.out.printf("ds[%d]: %s\n", i, characterizingSet.get(i));
@@ -113,12 +86,13 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         } // may throw IOException!
           // return Stream.concat(
           // getLoops().
-        Stream<Word<I>> a = getLoops(hypothesis)
+        Stream<Word<I>> stream = getLoops(hypothesis)
                 .filter(loop -> checked.add(String.format("%s - %s", loop.access, loop.loop)))
                 .filter(loop -> {
                     Word<O> out = hypothesis.computeOutput(Word.fromWords(loop.access, loop.loop));
                     return !out.lastSymbol().equals("invalid") && !out.lastSymbol().toString().startsWith("error");
-                }).map(loop -> {
+                })
+                .map(loop -> {
                     String[] access = loop.access.asList().toArray(String[]::new);
                     String[] l = loop.loop.asList().toArray(String[]::new);
 
@@ -137,32 +111,9 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
                     }
                     Optional<Word<I>> m = Optional.empty();
                     return m;
-                }).filter(Optional::isPresent).map(Optional::get);
-
-
-        // System.out.println("NORMAL W METHOD");
-        // System.exit(0);
-        // hypothesis.getTransitios
-
-        // for (C s : hypothesis.getStates()) {
-        // // s
-        // }
-        return Stream.concat(a, super.generateTestWords(hypothesis, arg1));
+                })
+                .filter(Optional::isPresent).map(Optional::get);
+        return stream;
     }
 
-    // @Override
-    // protected Stream<Word<I>> generateTestWords(A hypothesis, Collection<?
-    // extends I> arg1) {
-    // // TODO Auto-generated method stub
-    // return null;
-    // }
-
 }
-
-// de.learnlib.util.Experiment.MealyExperiment.MealyExperiment<String,String>(
-// LearningAlgorithm<? extends MealyMachine<?, String, ?, String>, String,
-// Word<String>> learningAlgorithm,
-// EquivalenceOracle<?super
-// MealyMachine<?,String,?,String>,String,Word<String>>equivalenceAlgorithm,
-// Alphabet<String> inputs
-// )

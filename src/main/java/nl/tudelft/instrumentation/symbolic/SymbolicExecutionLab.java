@@ -31,6 +31,7 @@ import de.learnlib.datastructure.observationtable.OTUtils;
 import de.learnlib.datastructure.observationtable.writer.ObservationTableASCIIWriter;
 import de.learnlib.filter.cache.mealy.MealyCacheOracle;
 import de.learnlib.filter.statistic.oracle.MealyCounterOracle;
+import de.learnlib.oracle.equivalence.EQOracleChain;
 import de.learnlib.oracle.equivalence.MealyWMethodEQOracle;
 import de.learnlib.util.Experiment.MealyExperiment;
 import de.learnlib.util.statistics.SimpleProfiler;
@@ -41,6 +42,7 @@ import net.automatalib.serialization.dot.GraphDOT;
 import net.automatalib.util.automata.builders.AutomatonBuilders;
 import net.automatalib.util.partitionrefinement.StateSignature;
 import net.automatalib.words.Alphabet;
+import net.automatalib.words.Word;
 import net.automatalib.words.impl.Alphabets;
 
 /**
@@ -851,7 +853,7 @@ public class SymbolicExecutionLab {
                 .withOracle(m)
                 .create();
 
-        MealyLearner<String, String> learner = lstar;
+        MealyLearner<String, String> learner = ttt;
         // // alphabet
         // .withOracle(sul) // membership oracle
         // .create();
@@ -862,6 +864,9 @@ public class SymbolicExecutionLab {
 
         MealyLoopingEQOracle<MealyMachine<?, String, ?, String>, String, String> loopMethod = new MealyLoopingEQOracle<>(
                 m, EXPLORATION_DEPTH, inputs);
+
+        // Combine the loopMethod with the wMethod
+        EQOracleChain<MealyMachine<?, String, ?, String>, String, Word<String>> chain = new EQOracleChain<>(loopMethod, wMethod);
 
         // construct a learning experiment from
         // the learning algorithm and the conformance test.
@@ -877,7 +882,7 @@ public class SymbolicExecutionLab {
 
         // MealyExperiment<String, String> experiment = new MealyExperiment<String,
         // String>(lstar, wMethod, inputs);
-        MealyExperiment<String, String> experiment = new MealyExperiment<String, String>(learner, loopMethod, inputs);
+        MealyExperiment<String, String> experiment = new MealyExperiment<String, String>(learner, chain, inputs);
 
         // turn on time profiling
         experiment.setProfile(true);
