@@ -99,13 +99,14 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
                     LoopVerifyResult r = SymbolicExecutionLab.verifyLoop(access, l, ds);
                     if (r.getS() == LoopVerifyResult.State.NO_LOOP_FOUND) {
                         System.out.printf("access: %s, loop: %s\n", loop.access, loop.loop);
+                        return Optional.of(Word.fromWords(loop.access, loop.loop, loop.loop));
                     }
                     System.out.println(r.getS());
                     if (r.hasCounter()) {
                         ArrayList<Word<I>> counter = new ArrayList<>();
                         Word<I> c = (Word<I>) Word.fromSymbols(r.getCounter());
                         counter.add(c);
-                        SymbolicExecutionLab.printfBlue("COUNTER: %s", c);
+                        SymbolicExecutionLab.printfBlue("COUNTER: %s\n", c);
                         Optional<Word<I>> m = Optional.of(c);
                         return m;
                     }
