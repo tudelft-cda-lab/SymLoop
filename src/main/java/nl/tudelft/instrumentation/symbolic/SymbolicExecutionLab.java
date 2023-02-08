@@ -554,11 +554,6 @@ public class SymbolicExecutionLab {
     }
 
     static void symbolic_execution() {
-        try {
-            learn();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         while (!isFinished && !isEmpty() && !timeLimitReached()) {
             reset();
             NextTrace trace = getNext();
@@ -737,6 +732,12 @@ public class SymbolicExecutionLab {
         System.out.println(s.parameters());
         if (s.LOOP_TRACE != null) {
             processLoopResult(verifyLoop(s.INITIAL_TRACE, s.LOOP_TRACE, s.DISTINGUISHING_TRACES));
+        } else if (s.LEARN) {
+            try {
+                learn();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } else {
             initialize(PathTracker.inputSymbols);
             nextTraces.add(new NextTrace(currentTrace, currentLineNumber, "<initial>", false));
