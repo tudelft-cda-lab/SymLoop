@@ -390,7 +390,7 @@ public class SymbolicExecutionLab {
         lastTrace = temp;
 
         if (VERIFY_LOOP) {
-            System.out.printf("SAT: '%s'\n", String.join(",", temp));
+            // System.out.printf("SAT: '%s'\n", String.join(",", temp));
             for (Integer c : loopCounts) {
                 if (c > 0) {
                     // printQs();
@@ -655,7 +655,7 @@ public class SymbolicExecutionLab {
         for (int i = 0; i < symbols.size(); i++) {
             String sym = symbols.get(i);
             String inputName = getVarName(loopDetector.inputName, toCounts.get(loopDetector.inputName) + i);
-            System.out.printf("sym: %s, inputName: %s\n", sym, inputName);
+            // System.out.printf("sym: %s, inputName: %s\n", sym, inputName);
             NamedCustomExpr input = new NamedCustomExpr(inputName, ExprType.STRING);
             PathTracker.inputs.add(new MyVar(input));
             inputConstraints.add(CustomExprOp.mkEq(ConstantCustomExpr.fromString(sym), input));
@@ -669,8 +669,9 @@ public class SymbolicExecutionLab {
 
         OptimizingSolver old = PathTracker.solver;
         PathTracker.solver = s;
-        System.out.printf("Now doing %s\n", String.join(",", symbols));
-        System.out.printf("possible: %b\n", PathTracker.solve(single, SolvingForType.EQUIVALENCE, false, true));
+        // System.out.printf("Now doing %s\n", String.join(",", symbols));
+        boolean possible = PathTracker.solve(single, SolvingForType.EQUIVALENCE, false, true);
+        // System.out.printf("possible: %b\n", possible);
         PathTracker.solver = old;
         PathTracker.inputs = new LinkedList<>();
     }
@@ -752,8 +753,8 @@ public class SymbolicExecutionLab {
         if (!isCreatingPaths && !VERIFY_LOOP && !isStillUsefull(trace.trace)) {
             return;
         }
-        printfYellow("now doing line: %d, %b, %s, from: %s\n", trace.getLineNr(), trace.getConditionValue(),
-                trace.trace, trace.from.split("\n")[0]);
+        // printfYellow("now doing line: %d, %b, %s, from: %s\n", trace.getLineNr(), trace.getConditionValue(),
+        //         trace.trace, trace.from.split("\n")[0]);
         reset();
         currentTrace = trace.trace;
         boolean completed = PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
