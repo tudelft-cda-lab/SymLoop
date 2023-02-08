@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -582,9 +583,9 @@ public class SymbolicExecutionLab {
     private static String[] ACCESS;
     private static String[] LOOP_TRACE;
 
-    static LoopVerifyResult collectPaths(String[] LOOP_TRACE, List<String> base, List<List<String>> distinguishers) {
-        NextTrace trace = new NextTrace(base, 0, "<collect solver>", false);
-        runNext(trace);
+    static LoopVerifyResult collectPaths(String[] LOOP_TRACE, List<String> base, Stream<List<String>> distinguishers) {
+        NextTrace intialTrace = new NextTrace(base, 0, "<collect solver>", false);
+        runNext(intialTrace);
         OptimizingSolver solver = PathTracker.solver;
         PathTracker.solver = new InferringSolver();
         LinkedList<MyVar> trackerInputs = new LinkedList<>(PathTracker.inputs);
@@ -603,11 +604,11 @@ public class SymbolicExecutionLab {
         }
 
         isCreatingPaths = true;
-        for (List<String> d : distinguishers) {
+        Optional<LoopVerifyResult> res = distinguishers.map(d -> {
             List<String> inputs = new ArrayList<>();
             inputs.addAll(base);
             inputs.addAll(d);
-            trace = new NextTrace(inputs, 0, "<collect paths>", false);
+            NextTrace trace = new NextTrace(inputs, 0, "<collect paths>", false);
             saveAtIndex = inputs.size() - d.size();
             runNext(trace);
             assert indexBefore != -1;
@@ -621,11 +622,13 @@ public class SymbolicExecutionLab {
                     loopDetector.history.getVariables());
             PathTracker.loopIterations = new HashMap<>();
             if (counterExample != null) {
-                return LoopVerifyResult.counter(counterExample);
+                return Optional.of(LoopVerifyResult.counter(counterExample));
             }
-        }
+            Optional<LoopVerifyResult> result = Optional.empty();
+            return result;
+        }).filter(Optional::isPresent).map(Optional::get).findFirst();
         isCreatingPaths = false;
-        return LoopVerifyResult.probably();
+        return res.orElse(LoopVerifyResult.probably());
     }
 
     static void checkAfterLoop(OptimizingSolver s, List<String> symbols, CustomExpr assign, CustomExpr path,
@@ -675,7 +678,7 @@ public class SymbolicExecutionLab {
         PathTracker.inputs = new LinkedList<>();
     }
 
-    static LoopVerifyResult verifyLoop(String[] ACCESS, String[] LOOP_TRACE, String[][] DISTINGUISHING_TRACES) {
+    static LoopVerifyResult verifyLoop(String[] ACCESS, String[] LOOP_TRACE, Stream<List<String>> DISTINGUISHING_TRACES) {
         SymbolicExecutionLab.VERIFY_LOOP = true;
         SymbolicExecutionLab.ACCESS = ACCESS;
         SymbolicExecutionLab.LOOP_TRACE = LOOP_TRACE;
@@ -700,13 +703,8 @@ public class SymbolicExecutionLab {
             input.addAll(Arrays.asList(s.SUFFIX));
         }
 
-        if (DISTINGUISHING_TRACES.length > 0) {
-            List<List<String>> distinguishers = new ArrayList<>();
-            for (String[] ds : DISTINGUISHING_TRACES) {
-                List<String> a = Arrays.asList(ds);
-                distinguishers.add(a);
-            }
-            return collectPaths(LOOP_TRACE, input, distinguishers);
+        if (DISTINGUISHING_TRACES != null) {
+            return collectPaths(LOOP_TRACE, input, DISTINGUISHING_TRACES);
         } else {
             input.addAll(Arrays.asList(LOOP_TRACE));
             NextTrace trace = new NextTrace(input, 0, "<initial>", false);
@@ -731,7 +729,8 @@ public class SymbolicExecutionLab {
         Settings s = Settings.create(args);
         System.out.println(s.parameters());
         if (s.LOOP_TRACE != null) {
-            processLoopResult(verifyLoop(s.INITIAL_TRACE, s.LOOP_TRACE, s.DISTINGUISHING_TRACES));
+            Stream<List<String>> d = Arrays.stream(s.DISTINGUISHING_TRACES).map(x -> Arrays.asList(x));
+            processLoopResult(verifyLoop(s.INITIAL_TRACE, s.LOOP_TRACE, d));
         } else if (s.LEARN) {
             try {
                 learn();
@@ -758,8 +757,9 @@ public class SymbolicExecutionLab {
         if (!isCreatingPaths && !VERIFY_LOOP && !isStillUsefull(trace.trace)) {
             return;
         }
-        // printfYellow("now doing line: %d, %b, %s, from: %s\n", trace.getLineNr(), trace.getConditionValue(),
-        //         trace.trace, trace.from.split("\n")[0]);
+        // printfYellow("now doing line: %d, %b, %s, from: %s\n", trace.getLineNr(),
+        // trace.getConditionValue(),
+        // trace.trace, trace.from.split("\n")[0]);
         reset();
         currentTrace = trace.trace;
         boolean completed = PathTracker.runNextFuzzedSequence(currentTrace.toArray(new String[0]));
@@ -834,7 +834,7 @@ public class SymbolicExecutionLab {
 
     public static void learn() throws IOException {
 
-        int EXPLORATION_DEPTH = 3;
+        int EXPLORATION_DEPTH = 4;
         Alphabet<String> inputs = Alphabets.fromArray(PathTracker.inputSymbols);
 
         MealyMembershipOracle<String, String> sul = new RersOracle();
@@ -868,8 +868,9 @@ public class SymbolicExecutionLab {
         // EXPLORATION_DEPTH from every state of a hypothesis
         MealyWMethodEQOracle<String, String> wMethod = new MealyWMethodEQOracle<String, String>(m, EXPLORATION_DEPTH);
 
+        int MAX_LOOP_DEPTH = Settings.getInstance().MAX_LOOP_DETECTION_DEPTH;
         MealyLoopingEQOracle<MealyMachine<?, String, ?, String>, String, String> loopMethod = new MealyLoopingEQOracle<>(
-                m, EXPLORATION_DEPTH, inputs);
+                m, EXPLORATION_DEPTH, inputs, MAX_LOOP_DEPTH);
 
         // Combine the loopMethod with the wMethod
         EQOracleChain<MealyMachine<?, String, ?, String>, String, Word<String>> chain = new EQOracleChain<>(

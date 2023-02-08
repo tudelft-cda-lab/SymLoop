@@ -14,63 +14,17 @@ import net.automatalib.words.Word;
 
 public class MealyLoopDetector<S, A extends MealyMachine<?, I, ?, O>, I, O> implements Iterator<LoopInput<I>> {
 
-    protected class LoopDetectionHelper {
-
-        public final I access;
-        public final S history;
-
-        public final LoopDetectionHelper previous;
-
-        public LoopDetectionHelper(I access, S history, LoopDetectionHelper previous) {
-            this.access = access;
-            this.history = history;
-            this.previous = previous;
-        }
-
-        public S last() {
-            return history;
-        }
-
-        public LoopDetectionHelper add(I sym, S s) {
-            return new LoopDetectionHelper(sym, s, this);
-        }
-
-        public Word<I> getAccess() {
-            Word<I> a = Word.epsilon();
-            LoopDetectionHelper current = this;
-            while (current.previous != null) {
-                a = a.prepend(current.access);
-                current = current.previous;
-            }
-            return a;
-        }
-
-        public Optional<LoopInput<I>> isLoop() {
-            S last = last();
-            LoopDetectionHelper current = this.previous;
-            Word<I> loop = Word.fromSymbols(access);
-            while (current.previous != null) {
-                if (current.history.equals(last)) {
-                    Word<I> a = current.getAccess();
-                    // System.out.printf("IS A LOOP: %s, %s", a, loop);
-                    return Optional.of(new LoopInput<>(a, loop));
-                }
-                loop = loop.prepend(current.access);
-                current = current.previous;
-            }
-            return Optional.empty();
-        }
-    }
-
     private MealyMachine<S, I, ?, O> m;
     private Alphabet<I> alphabet;
     private Map<S, Word<I>> access;
-    private List<LoopDetectionHelper> reached;
+    private List<LoopDetectionHelper<I, S>> reached;
+    private int maxLoopDepth;
 
-    public MealyLoopDetector(MealyMachine<S, I, ?, O> m, Alphabet<I> alphabet) {
+    public MealyLoopDetector(MealyMachine<S, I, ?, O> m, Alphabet<I> alphabet, int maxLoopDepth) {
         this.m = m;
         this.alphabet = alphabet;
         access = getAccessSequences(m);
+        this.maxLoopDepth = maxLoopDepth;
         init();
     }
 
@@ -99,11 +53,11 @@ public class MealyLoopDetector<S, A extends MealyMachine<?, I, ?, O>, I, O> impl
 
     private void init() {
         reached = new LinkedList<>();
-        reached.add(new LoopDetectionHelper(null, m.getInitialState(), null));
+        reached.add(new LoopDetectionHelper<I, S>(null, m.getInitialState(), null));
     }
 
     private Iterator<I> al;
-    LoopDetectionHelper h = null;
+    LoopDetectionHelper<I, S> h = null;
 
     private LoopInput<I> next = null;
 
@@ -119,10 +73,13 @@ public class MealyLoopDetector<S, A extends MealyMachine<?, I, ?, O>, I, O> impl
             S last = h.last();
             while (al.hasNext()) {
                 I input = this.al.next();
-                LoopDetectionHelper next = h.add(input, m.getSuccessor(last, input));
+                LoopDetectionHelper<I, S> next = h.add(input, m.getSuccessor(last, input));
                 Optional<LoopInput<I>> loop = next.isLoop();
                 if (loop.isPresent()) {
                     LoopInput<I> li = loop.get();
+                    if(li.loop.size() > maxLoopDepth) {
+                        continue;
+                    }
                     if (access.get(next.history).equals(li.access)) {
                         return li;
                     }
