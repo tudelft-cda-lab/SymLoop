@@ -417,6 +417,7 @@ public class PathTracker {
      * @param out the string that has been outputted in the standard out.
      */
     public static void output(String out) {
+        SymbolicExecutionLab.output(out);
         if (out.startsWith("Invalid input")) {
             Integer error = SymbolicExecutionLab.errorTracker.getError(out);
             if (error != null) {
@@ -426,7 +427,6 @@ public class PathTracker {
             }
         }
         lastOutput = out;
-        SymbolicExecutionLab.output(out);
     }
 
     /**
