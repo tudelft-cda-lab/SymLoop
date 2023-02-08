@@ -18,13 +18,11 @@ public class MealyLoopDetector<S, A extends MealyMachine<?, I, ?, O>, I, O> impl
     private Alphabet<I> alphabet;
     private Map<S, Word<I>> access;
     private List<LoopDetectionHelper<I, S>> reached;
-    private int maxLoopDepth;
 
-    public MealyLoopDetector(MealyMachine<S, I, ?, O> m, Alphabet<I> alphabet, int maxLoopDepth) {
+    public MealyLoopDetector(MealyMachine<S, I, ?, O> m, Alphabet<I> alphabet) {
         this.m = m;
         this.alphabet = alphabet;
         access = getAccessSequences(m);
-        this.maxLoopDepth = maxLoopDepth;
         init();
     }
 
@@ -77,9 +75,7 @@ public class MealyLoopDetector<S, A extends MealyMachine<?, I, ?, O>, I, O> impl
                 Optional<LoopInput<I>> loop = next.isLoop();
                 if (loop.isPresent()) {
                     LoopInput<I> li = loop.get();
-                    if(li.loop.size() > maxLoopDepth) {
-                        continue;
-                    }
+                    // If the access is the minimal access to this state
                     if (access.get(next.history).equals(li.access)) {
                         return li;
                     }

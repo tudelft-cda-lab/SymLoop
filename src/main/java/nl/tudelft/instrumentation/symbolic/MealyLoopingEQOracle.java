@@ -41,7 +41,7 @@ import net.automatalib.words.Word;
 
 public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> extends MealyWMethodEQOracle<I, O> {
 
-    private Alphabet<I> a;
+    private Alphabet<I> alphabet;
 
     private HashSet<String> checked = new HashSet<>();
 
@@ -51,21 +51,21 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
 
     public MealyLoopingEQOracle(MealyMembershipOracle<I, O> sulOracle, int lookahead, Alphabet<I> a, int maxLoopDepth) {
         super(sulOracle, lookahead);
-        this.a = a;
+        this.alphabet = a;
         this.lookahead = lookahead;
         this.maxLoopDepth = maxLoopDepth;
     }
 
     protected <S> Stream<LoopInput<I>> getLoops(MealyMachine<S, I, ?, O> m) {
         MealyLoopDetector<S, MealyMachine<S, I, ?, O>, I, O> detector = new MealyLoopDetector<S, MealyMachine<S, I, ?, O>, I, O>(
-                m, a, maxLoopDepth);
+                m, alphabet);
         Iterator<LoopInput<I>> i = detector;
         return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(i, 0), false);
+                Spliterators.spliteratorUnknownSize(i, 0), false).filter(x -> x.loop.size() < maxLoopDepth);
     }
 
     protected <S> Stream<LoopInput<I>> getTransitions(Word<I> access, MealyMachine<S, I, ?, O> m) {
-        MealyBFS<S, MealyMachine<?, I, ?, O>, I, O> bfs = new MealyBFS<>(m, a, lookahead);
+        MealyBFS<S, MealyMachine<?, I, ?, O>, I, O> bfs = new MealyBFS<>(m, alphabet, lookahead);
         Collection<LoopInput<I>> ls = bfs.getTransitions(m.getState(access));
         System.out.printf("FOR ACCESS: %s, DS: %s\n", access, ls.size());
         return ls.stream();
@@ -77,15 +77,16 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         List<Word<I>> characterizingSet = new ArrayList<>();
         // CharacterizingSets.findCharacterizingSet(hypothesis, this.a,
         // characterizingSet);
-        for (I input : a) {
+        for (I input : alphabet) {
             Word<I> w = Word.fromLetter(input);
             if (!characterizingSet.contains(w)) {
                 characterizingSet.add(w);
             }
         }
 
+        List<List<String>> cs = characterizingSet.stream().map(w -> (List<String>) w.asList()).toList();
         // String[][] ds = new String[characterizingSet.size()][];
-        // System.out.printf("characterizingSet size: %d\n", ds.length);
+        System.out.printf("characterizingSet size: %d\n", cs.size());
         // // characterizingSet.stream().map(x -> x.as
         // for (int i = 0; i < characterizingSet.size(); i++) {
         // ds[i] = characterizingSet.get(i).asList().toArray(String[]::new);
@@ -93,7 +94,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         // }
 
         try {
-            GraphDOT.write(hypothesis, this.a, new BufferedWriter(new FileWriter("hyp.dot")));
+            GraphDOT.write(hypothesis, this.alphabet, new BufferedWriter(new FileWriter("hyp.dot")));
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -108,9 +109,9 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
                     String[] access = loop.access.asList().toArray(String[]::new);
                     String[] l = loop.loop.asList().toArray(String[]::new);
 
-                    Stream<List<String>> ds = getTransitions(loop.access, hypothesis)
-                            .map(dt -> (List<String>) Word.fromWords(dt.access, dt.loop).asList());
-                    LoopVerifyResult r = SymbolicExecutionLab.verifyLoop(access, l, ds);
+                    // Stream<List<String>> ds = getTransitions(loop.access, hypothesis)
+                    //         .map(dt -> (List<String>) Word.fromWords(dt.access, dt.loop).asList());
+                    LoopVerifyResult r = SymbolicExecutionLab.verifyLoop(access, l, cs.stream());
                     if (r.getS() == LoopVerifyResult.State.NO_LOOP_FOUND) {
                         // System.out.printf("access: %s, loop: %s\n", loop.access, loop.loop);
                         return Optional.of(Word.fromWords(loop.access, loop.loop, loop.loop));

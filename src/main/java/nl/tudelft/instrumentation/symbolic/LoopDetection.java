@@ -194,15 +194,14 @@ public class LoopDetection {
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, -1);
                 if (selfLoops.add(SymbolicExecutionLab.processedInput)) {
                     selfLoopPatterns.add(currentPattern);
-                    SymbolicExecutionLab.printfGreen("SELF LOOP DETECTED for %s over %d\n",
-                            SymbolicExecutionLab.processedInput, lastNSaves - 1);
+                    // SymbolicExecutionLab.printfGreen("SELF LOOP DETECTED for %s over %d\n",
+                    //         SymbolicExecutionLab.processedInput, lastNSaves - 1);
                 }
 
                 return false;
             }
 
             String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
-
             SymbolicExecutionLab.printfGreen(
                     "loop detected over %d iterations with vars %s: on input '%s'. \n", lastNSaves - 1, output,
                     SymbolicExecutionLab.processedInput);
