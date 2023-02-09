@@ -30,6 +30,7 @@ public class MealyLoopDetector<S, A extends MealyMachine<?, I, ?, O>, I, O> impl
         Map<S, Word<I>> access = new HashMap<>();
         Queue<S> q = new LinkedList<>();
         Queue<Word<I>> wq = new LinkedList<>();
+        access.put(hypothesis.getInitialState(), Word.epsilon());
         q.add(hypothesis.getInitialState());
         wq.add(Word.epsilon());
         while (!q.isEmpty()) {
@@ -45,7 +46,8 @@ public class MealyLoopDetector<S, A extends MealyMachine<?, I, ?, O>, I, O> impl
                 }
             }
         }
-        assert hypothesis.getStates().size() == access.size();
+        
+        assert hypothesis.size() == access.size();
         return access;
     }
 
