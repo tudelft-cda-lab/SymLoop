@@ -617,7 +617,8 @@ public class SymbolicExecutionLab {
 
         }
         if (out.contains("Invalid")) {
-            errorTraces.add(SymbolicExecutionLab.processedInput);
+            // causes a lot of memory overhead
+            // errorTraces.add(SymbolicExecutionLab.processedInput);
             if (!VERIFY_LOOP) {
                 skip = true;
             }
