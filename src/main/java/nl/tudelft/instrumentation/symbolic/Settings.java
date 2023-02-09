@@ -14,6 +14,7 @@ public class Settings {
     private static final int DEFAULT_LOOP_DETECTION_DEPTH = 1;
     private static final int DEFAULT_MAX_TIME_S = -1;
     private static final int DEFAULT_SOLVER_TIMEOUT_S = -1;
+    private static final int DEFAULT_W = 1;
     private static Settings singleton;
 
     public final boolean DO_HALF_LOOPS = true;
@@ -33,6 +34,8 @@ public class Settings {
 
     public final boolean CORRECT_INTEGER_MODEL;
     public final boolean COLLECT_PATHS;
+
+    public final int W;
 
     public final boolean LEARN;
 
@@ -77,8 +80,10 @@ public class Settings {
     private Settings(boolean unfoldAnd, String initial,
             int loopUnrollingAmount,
             int maxLoopDetectionDepth, int maxTimeS, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE,
-            int SOLVER_TIMEOUT_S, String verifyLoop, String suffix, String[] DISTINGUISHING_TRACES, boolean LEARN) {
+            int SOLVER_TIMEOUT_S, String verifyLoop, String suffix, String[] DISTINGUISHING_TRACES, boolean LEARN,
+            int W) {
         this.UNFOLD_AND = unfoldAnd;
+        this.W = W;
         String[] initial_arr = null;
         if (initial != null) {
             if (initial.length() == 0) {
@@ -127,13 +132,15 @@ public class Settings {
             int loopDetectionDepth = Integer
                     .parseInt(cl.getOptionValue("loop-detection-depth",
                             String.valueOf(DEFAULT_LOOP_DETECTION_DEPTH)));
+            int W = Integer.parseInt(cl.getOptionValue("w",
+                    String.valueOf(DEFAULT_W)));
             int maxTime = parseTimeToS(cl.getOptionValue("max-time", String.valueOf(DEFAULT_MAX_TIME_S)));
             String[] DISTINGUISHING_TRACES = cl.getOptionValues("distinguishing-traces");
             int SOLVER_TIMEOUT_S = parseTimeToS(
                     cl.getOptionValue("solver-timeout", String.valueOf(DEFAULT_SOLVER_TIMEOUT_S)));
             Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
                     loopDetectionDepth, maxTime, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S, VERIFY_LOOP, suffix,
-                    DISTINGUISHING_TRACES, LEARN);
+                    DISTINGUISHING_TRACES, LEARN, W);
             singleton = s;
             return s;
         } else {
@@ -179,6 +186,10 @@ public class Settings {
                 "The distinguishing traces to use for verification of the loop. Specify this argument multiple times to input multiple traces and , (comma) to seperate symbols in each trace");
         options.addOption("lm", "learn", false,
                 "Learn a model of the program under test.");
+        options.addOption("w", "w", true,
+                String.format(
+                        "W method exploration depth for model learning (Default: %d)",
+                        DEFAULT_W));
         return options;
     }
 

@@ -77,7 +77,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
 
                     // Stream<List<String>> ds = getTransitions(loop.access, hypothesis)
                     // .map(dt -> (List<String>) Word.fromWords(dt.access, dt.loop).asList());
-                    LoopVerifyResult r = SymbolicLearner.verifyLoop(access, l, cs.stream());
+                    LoopVerifyResult r = LoopVerifier.verifyLoop(access, l, cs.stream());
                     if (r.getS() == LoopVerifyResult.State.NO_LOOP_FOUND) {
                         System.out.printf("No loop found for access: %s, loop: %s\n", loop.access, loop.loop);
                         return Optional.of(Word.fromWords(loop.access, loop.loop, loop.loop));

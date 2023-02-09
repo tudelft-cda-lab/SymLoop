@@ -143,7 +143,7 @@ public class SymbolicExecutionLab {
         processedInput += next;
         processedInputList.add(next);
         inputInIndex++;
-        shouldLoopCheck = SymbolicLearner.isNotVerifyingOrCanSkip();
+        shouldLoopCheck = LoopVerifier.isNotVerifyingOrCanSkip();
         // printfBlue("Solving: '%s' - shouldLoopCheck: %b, solve: %b\n",
         // processedInput, shouldLoopCheck, shouldSolve);
         return input;
@@ -344,7 +344,7 @@ public class SymbolicExecutionLab {
                     printfRed("NOT LOOPING: %s\n", String.join(",", temp));
                     // System.err.println(String.join(",", temp));
                     // System.exit(1);
-                    SymbolicLearner.counterExample = Optional.of(temp.toArray(String[]::new));
+                    LoopVerifier.counterExample = Optional.of(temp.toArray(String[]::new));
                     skip = true;
                 }
             }
@@ -405,8 +405,8 @@ public class SymbolicExecutionLab {
     }
 
     static void reset() {
-        SymbolicLearner.counterExample = Optional.empty();
-        SymbolicLearner.indexBefore = -1;
+        LoopVerifier.counterExample = Optional.empty();
+        LoopVerifier.indexBefore = -1;
         PathTracker.reset();
         loopDetector.reset();
         processedInputList.clear();
@@ -524,7 +524,7 @@ public class SymbolicExecutionLab {
         System.out.println(s.parameters());
         if (s.LOOP_TRACE != null) {
             Stream<List<String>> d = Arrays.stream(s.DISTINGUISHING_TRACES).map(x -> Arrays.asList(x));
-            processLoopResult(SymbolicLearner.verifyLoop(s.INITIAL_TRACE, s.LOOP_TRACE, d));
+            processLoopResult(LoopVerifier.verifyLoop(s.INITIAL_TRACE, s.LOOP_TRACE, d));
         } else if (s.LEARN) {
             try {
                 SymbolicLearner.learn();
