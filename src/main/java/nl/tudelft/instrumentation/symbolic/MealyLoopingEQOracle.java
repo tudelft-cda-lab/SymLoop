@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -21,7 +22,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
 
     private Alphabet<I> alphabet;
 
-    private HashSet<String> checked = new HashSet<>();
+    private Set<String> checked = new HashSet<>();
 
     private int lookahead;
 
@@ -62,20 +63,13 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         }
 
         List<List<String>> cs = characterizingSet.stream().map(w -> (List<String>) w.asList()).toList();
-        // String[][] ds = new String[characterizingSet.size()][];
         System.out.printf("characterizingSet size: %d\n", cs.size());
-        // // characterizingSet.stream().map(x -> x.as
-        // for (int i = 0; i < characterizingSet.size(); i++) {
-        // ds[i] = characterizingSet.get(i).asList().toArray(String[]::new);
-        // System.out.printf("ds[%d]: %s\n", i, characterizingSet.get(i));
-        // }
         Stream<Word<I>> stream = getLoops(hypothesis)
-                .filter(loop -> checked.add(String.format("%s - %s", loop.access, loop.loop)))
+                .filter(loop -> checked.add(String.format("%s-%s", loop.access, loop.loop)))
                 // .filter(loop -> {
-                // Word<O> out = hypothesis.computeOutput(Word.fromWords(loop.access,
-                // loop.loop));
-                // return !out.lastSymbol().equals("invalid") &&
-                // !out.lastSymbol().toString().startsWith("error");
+                // O out = hypothesis.computeOutput(Word.fromWords(loop.access,
+                // loop.loop)).lastSymbol();
+                // return !out.equals("invalid") || !out.toString().startsWith("error");
                 // })
                 .map(loop -> {
                     String[] access = loop.access.asList().toArray(String[]::new);

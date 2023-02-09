@@ -216,7 +216,7 @@ public class SymbolicLearner {
         }
     }
 
-    public static void learn() throws IOException {
+    public static <A extends MealyMachine<?, String, ?, String>> void learn() throws IOException {
 
         int EXPLORATION_DEPTH = 4;
         Alphabet<String> inputs = Alphabets.fromArray(PathTracker.inputSymbols);
@@ -225,14 +225,7 @@ public class SymbolicLearner {
         MealyCounterOracle<String, String> mCounter = new MealyCounterOracle<String, String>(sul, "membership queries");
         MealyCacheOracle<String, String> m = MealyCacheOracle.createDAGCacheOracle(inputs, mCounter.asOracle());
 
-        // oracle for counting queries wraps SUL
-        // MealyCounterOracle<String, String> mqOracle = new MealyCounterOracle<>(sul,
-        // "membership queries");
-
         // construct L* instance
-        // ClassicLStarMealy
-        // ClassicLStarMealy<String, String> lstar = new
-        // ClassicLStarMealyBuilder<String, String>()
         ExtensibleLStarMealy<String, String> lstar = new ExtensibleLStarMealyBuilder<String, String>()
                 .withAlphabet(inputs) // input
                 .withOracle(m)
@@ -244,19 +237,16 @@ public class SymbolicLearner {
                 .create();
 
         MealyLearner<String, String> learner = ttt;
-        // // alphabet
-        // .withOracle(sul) // membership oracle
-        // .create();
 
         // construct a W-method conformance test exploring the system up to depth
         // EXPLORATION_DEPTH from every state of a hypothesis
         MealyWMethodEQOracle<String, String> wMethod = new MealyWMethodEQOracle<String, String>(m, EXPLORATION_DEPTH);
 
         int MAX_LOOP_DEPTH = Settings.getInstance().MAX_LOOP_DETECTION_DEPTH;
-        MealyLoopingEQOracle<MealyMachine<?, String, ?, String>, String, String> loopMethod = new MealyLoopingEQOracle<>(
+        MealyLoopingEQOracle<A, String, String> loopMethod = new MealyLoopingEQOracle<>(
                 m, EXPLORATION_DEPTH, inputs, MAX_LOOP_DEPTH);
 
-        GraphSavingTransparentEQOracle<MealyMachine<?, String, ?, String>, String, String> stats = new GraphSavingTransparentEQOracle<MealyMachine<?, String, ?, String>, String, String>(
+        GraphSavingTransparentEQOracle<A, String, String> stats = new GraphSavingTransparentEQOracle<A, String, String>(
                 mCounter);
 
         // Combine the loopMethod with the wMethod
@@ -266,20 +256,6 @@ public class SymbolicLearner {
                 loopMethod,
                 stats);
 
-        // construct a learning experiment from
-        // the learning algorithm and the conformance test.
-        // The experiment will execute the main loop of
-        // active learning
-        // DFAExperiment<Character> experiment = new DFAExperiment<>(lstar, wMethod,
-        // inputs);
-        // de.learnlib.util.Experiment.MealyExperiment.MealyExperiment<String,
-        // String>(LearningAlgorithm<? extends MealyMachine<?, String, ?, String>,
-        // String, Word<String>> learningAlgorithm, EquivalenceOracle<? super
-        // MealyMachine<?, String, ?, String>, String, Word<String>>
-        // equivalenceAlgorithm, Alphabet<String> inputs)
-
-        // MealyExperiment<String, String> experiment = new MealyExperiment<String,
-        // String>(lstar, wMethod, inputs);
         MealyExperiment<String, String> experiment = new MealyExperiment<String, String>(learner, chain, inputs);
 
         // turn on time profiling
@@ -288,7 +264,6 @@ public class SymbolicLearner {
         // enable logging of models
         experiment.setLogModels(true);
 
-        // run experiment
         experiment.run();
         System.out.println("Done running");
 
@@ -297,31 +272,19 @@ public class SymbolicLearner {
 
         // report results
         System.out.println("-------------------------------------------------------");
-
-        // profiling
         System.out.println(SimpleProfiler.getResults());
-
-        // learning statistics
         System.out.println(experiment.getRounds().getSummary());
         System.out.println(mCounter.getStatisticalData().getSummary());
-
-        // model statistics
         System.out.println("States: " + result.size());
         System.out.println("Sigma: " + inputs.size());
-
-        // show model
         System.out.println();
         System.out.println("Model: ");
         GraphDOT.write(result, inputs, new BufferedWriter(new FileWriter("final.dot"))); // may throw IOException!
-
-        // Visualization.visualize(result, inputs, new MealyVisualizationHelper<String,
-        // String>());
-        // Visualization.vis
-
         System.out.println("-------------------------------------------------------");
-
-        System.out.println("Final observation table:");
-        new ObservationTableASCIIWriter<>().write(lstar.getObservationTable(), System.out);
+        if (learner.equals(lstar)) {
+            System.out.println("Final observation table:");
+            new ObservationTableASCIIWriter<>().write(lstar.getObservationTable(), System.out);
+        }
 
         // OTUtils.displayHTMLInBrowser(lstar.getObservationTable());
         // OTUtils.displayHTMLInBrowser(lstar.getHypothesisModel());
