@@ -15,11 +15,14 @@ public class ProblemSimpleLoop {
         if (cf && input.equals("i") && i < 6) {
             i += 1;
             cf = false;
+            System.out.println("i");
         }
         if (cf && input.equals("p")) {
             cf = false;
             if (i > 4) {
                 Errors.__VERIFIER_error(0);
+            } else {
+                System.out.println("n");
             }
         }
     }
