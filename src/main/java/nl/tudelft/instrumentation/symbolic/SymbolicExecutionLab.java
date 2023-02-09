@@ -613,6 +613,7 @@ public class SymbolicExecutionLab {
             printfGreen("Found new error '%s', current amount is\t%d\t. in \t%d\t seconds\n", out,
                     errorTracker.amount(),
                     seconds);
+            System.out.println(errorTracker.summary());
 
         }
         if (out.contains("Invalid")) {
