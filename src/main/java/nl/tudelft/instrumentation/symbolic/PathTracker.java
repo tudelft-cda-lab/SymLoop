@@ -182,21 +182,21 @@ public class PathTracker {
 
     // Making temporary variables, i.e., within if-conditions
     public static MyVar tempVar(boolean value) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         return new MyVar(ConstantCustomExpr.fromBool(value));
     }
 
     public static MyVar tempVar(int value) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         return new MyVar(ConstantCustomExpr.fromInt(value));
     }
 
     public static MyVar tempVar(String value) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         return new MyVar(ConstantCustomExpr.fromString(value));
@@ -204,28 +204,28 @@ public class PathTracker {
 
     // Making new stored variables
     public static MyVar myVar(boolean value, String name) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         return SymbolicExecutionLab.createVar(name, ConstantCustomExpr.fromBool(value));
     }
 
     public static MyVar myVar(int value, String name) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         return SymbolicExecutionLab.createVar(name, ConstantCustomExpr.fromInt(value));
     }
 
     public static MyVar myVar(String value, String name) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         return SymbolicExecutionLab.createVar(name, ConstantCustomExpr.fromString(value));
     }
 
     public static MyVar myVar(MyVar value, String name) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         return SymbolicExecutionLab.createVar(name, value.expr);
@@ -234,11 +234,11 @@ public class PathTracker {
     // Making a new input variable
     public static MyVar myInputVar(String value, String name) {
         processedInputs.add(value);
-        if(lastOutput != null) {
+        if (lastOutput != null) {
             outputs.add(lastOutput);
         }
         lastOutput = "?";
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             SymbolicExecutionLab.processedInput += value;
             return null;
         }
@@ -247,7 +247,7 @@ public class PathTracker {
 
     // for assigning an array to a variable.
     public static MyVar[] myVar(MyVar[] value, String name) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         MyVar[] vars = new MyVar[value.length];
@@ -262,7 +262,7 @@ public class PathTracker {
      * this assignment creates a reference and does not need new variables
      */
     public static MyVar[] myVar(MyVar[] value) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         MyVar[] vars = new MyVar[value.length];
@@ -277,7 +277,7 @@ public class PathTracker {
      * This part is for handling arithmetic and boolean logic.
      */
     public static MyVar unaryExpr(MyVar i, String operator) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         if (i.expr.type == ExprType.BOOL) {
@@ -294,7 +294,7 @@ public class PathTracker {
     }
 
     public static MyVar binaryExpr(MyVar i, MyVar j, String operator) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         if (i.expr.type == ExprType.BOOL) {
@@ -308,7 +308,7 @@ public class PathTracker {
     }
 
     public static MyVar equals(MyVar i, MyVar j) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         return SymbolicExecutionLab.createStringExpr(i.expr, j.expr, "==");
@@ -316,7 +316,7 @@ public class PathTracker {
 
     // We handle arrays, which needs an iterated if-then-else.
     public static MyVar arrayInd(MyVar[] name, MyVar index) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         CustomExpr ite_expr = name[0].expr;
@@ -330,7 +330,7 @@ public class PathTracker {
 
     // We handle increments, forwarded to assignments.
     public static MyVar increment(MyVar i, String operator, boolean prefix) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         if (prefix) {
@@ -351,7 +351,7 @@ public class PathTracker {
 
     // We handle conditionals, which is an if-then-else.
     public static MyVar conditional(MyVar b, MyVar t, MyVar e) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return null;
         }
         return new MyVar(CustomExprOp.mkITE(b.expr, t.expr, e.expr));
@@ -359,7 +359,7 @@ public class PathTracker {
 
     // Assignment changes the z3var in a MyVar variable.
     public static void myAssign(MyVar target, MyVar value, String operator) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return;
         }
         // first add or subtract if necessary
@@ -375,7 +375,7 @@ public class PathTracker {
     // We handle arrays, again using if-then-else and call standard variable
     // assignment for all indices.
     public static void myAssign(MyVar[] name, MyVar index, MyVar value, String operator) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return;
         }
         for (int i = 0; i < name.length; i++) {
@@ -395,7 +395,7 @@ public class PathTracker {
 
     // Direct assign for array references
     public static void myAssign(MyVar[] name1, MyVar[] name2, String operator) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return;
         }
         for (int i = 0; i < name1.length; i++) {
@@ -413,7 +413,7 @@ public class PathTracker {
      * @param line_nr   the line number of the if-statement.
      */
     public static void myIf(MyVar condition, boolean value, int line_nr) {
-        if(mode == RunMode.Membership) {
+        if (mode == RunMode.Membership) {
             return;
         }
         SymbolicExecutionLab.encounteredNewBranch(condition, value, line_nr);
