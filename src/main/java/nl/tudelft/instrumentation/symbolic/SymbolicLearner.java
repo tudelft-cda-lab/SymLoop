@@ -258,6 +258,7 @@ public class SymbolicLearner {
 
         // Combine the loopMethod with the wMethod
         EQOracleChain<MealyMachine<?, String, ?, String>, String, Word<String>> chain = new EQOracleChain<>(
+                new GraphSavingTransparentEQOracle<MealyMachine<?, String, ?, String>, String, String>(m),
                 loopMethod,
                 wMethod);
 
@@ -307,7 +308,7 @@ public class SymbolicLearner {
         // show model
         System.out.println();
         System.out.println("Model: ");
-        GraphDOT.write(result, inputs, new BufferedWriter(new FileWriter("hyp.dot"))); // may throw IOException!
+        GraphDOT.write(result, inputs, new BufferedWriter(new FileWriter("final.dot"))); // may throw IOException!
 
         // Visualization.visualize(result, inputs, new MealyVisualizationHelper<String,
         // String>());
