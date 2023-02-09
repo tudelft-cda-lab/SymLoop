@@ -93,10 +93,10 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         // }
         Stream<Word<I>> stream = getLoops(hypothesis)
                 .filter(loop -> checked.add(String.format("%s - %s", loop.access, loop.loop)))
-                .filter(loop -> {
-                    Word<O> out = hypothesis.computeOutput(Word.fromWords(loop.access, loop.loop));
-                    return !out.lastSymbol().equals("invalid") && !out.lastSymbol().toString().startsWith("error");
-                })
+                // .filter(loop -> {
+                //     Word<O> out = hypothesis.computeOutput(Word.fromWords(loop.access, loop.loop));
+                //     return !out.lastSymbol().equals("invalid") && !out.lastSymbol().toString().startsWith("error");
+                // })
                 .map(loop -> {
                     String[] access = loop.access.asList().toArray(String[]::new);
                     String[] l = loop.loop.asList().toArray(String[]::new);
