@@ -61,7 +61,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
                 m, alphabet);
         Iterator<LoopInput<I>> i = detector;
         return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(i, 0), false).filter(x -> x.loop.size() < maxLoopDepth);
+                Spliterators.spliteratorUnknownSize(i, 0), false).filter(x -> x.loop.size() <= maxLoopDepth);
     }
 
     protected <S> Stream<LoopInput<I>> getTransitions(Word<I> access, MealyMachine<S, I, ?, O> m) {
