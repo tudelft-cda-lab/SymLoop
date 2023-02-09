@@ -72,11 +72,10 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
     }
 
     @Override
-    protected Stream<Word<I>> generateTestWords(MealyMachine<?, I, ?, O> hypothesis, Collection<? extends I> arg1) {
+    protected Stream<Word<I>> generateTestWords(MealyMachine<?, I, ?, O> hypothesis, Collection<? extends I> _ignored) {
 
         List<Word<I>> characterizingSet = new ArrayList<>();
-        // CharacterizingSets.findCharacterizingSet(hypothesis, this.a,
-        // characterizingSet);
+        CharacterizingSets.findCharacterizingSet(hypothesis, this.alphabet, characterizingSet);
         for (I input : alphabet) {
             Word<I> w = Word.fromLetter(input);
             if (!characterizingSet.contains(w)) {
