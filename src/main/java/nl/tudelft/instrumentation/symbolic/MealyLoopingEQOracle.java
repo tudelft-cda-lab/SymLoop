@@ -1,43 +1,21 @@
 package nl.tudelft.instrumentation.symbolic;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
-import java.util.Set;
-import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.Map.Entry;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import de.learnlib.api.oracle.EquivalenceOracle;
-import de.learnlib.api.oracle.MembershipOracle;
 import de.learnlib.api.oracle.MembershipOracle.MealyMembershipOracle;
-import de.learnlib.oracle.equivalence.AbstractTestWordEQOracle;
 import de.learnlib.oracle.equivalence.MealyWMethodEQOracle;
-import net.automatalib.automata.concepts.Output;
-import net.automatalib.automata.concepts.SuffixOutput;
 import net.automatalib.automata.transducers.MealyMachine;
-import net.automatalib.automata.transducers.impl.compact.CompactMealy;
-import net.automatalib.serialization.dot.GraphDOT;
 import net.automatalib.util.automata.equivalence.CharacterizingSets;
-import net.automatalib.util.tries.SuffixTrieNode;
 import net.automatalib.words.Alphabet;
 import net.automatalib.words.Word;
-
-// public class MealyLoopingEQOracle<A extends Output<I, D>, I, D> implements EquivalenceOracle<A, I, D> {
-
-// AbstractTestWordEQOracle<A extends Output<I, D>, I, D>
 
 public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> extends MealyWMethodEQOracle<I, O> {
 
@@ -94,21 +72,23 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         Stream<Word<I>> stream = getLoops(hypothesis)
                 .filter(loop -> checked.add(String.format("%s - %s", loop.access, loop.loop)))
                 // .filter(loop -> {
-                //     Word<O> out = hypothesis.computeOutput(Word.fromWords(loop.access, loop.loop));
-                //     return !out.lastSymbol().equals("invalid") && !out.lastSymbol().toString().startsWith("error");
+                // Word<O> out = hypothesis.computeOutput(Word.fromWords(loop.access,
+                // loop.loop));
+                // return !out.lastSymbol().equals("invalid") &&
+                // !out.lastSymbol().toString().startsWith("error");
                 // })
                 .map(loop -> {
                     String[] access = loop.access.asList().toArray(String[]::new);
                     String[] l = loop.loop.asList().toArray(String[]::new);
 
                     // Stream<List<String>> ds = getTransitions(loop.access, hypothesis)
-                    //         .map(dt -> (List<String>) Word.fromWords(dt.access, dt.loop).asList());
+                    // .map(dt -> (List<String>) Word.fromWords(dt.access, dt.loop).asList());
                     LoopVerifyResult r = SymbolicLearner.verifyLoop(access, l, cs.stream());
                     if (r.getS() == LoopVerifyResult.State.NO_LOOP_FOUND) {
                         System.out.printf("No loop found for access: %s, loop: %s\n", loop.access, loop.loop);
                         return Optional.of(Word.fromWords(loop.access, loop.loop, loop.loop));
                     }
-                    if(r.getS() == LoopVerifyResult.State.PROBABLY) {
+                    if (r.getS() == LoopVerifyResult.State.PROBABLY) {
                         System.out.printf("For verifying access: %s, loop: %s\n", loop.access, loop.loop);
                         System.out.println(r.getS());
                     }
