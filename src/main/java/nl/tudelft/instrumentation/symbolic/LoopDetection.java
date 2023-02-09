@@ -174,8 +174,8 @@ public class LoopDetection {
             CustomExpr selfLoopExpr = history.getSelfLoopExpr(lastNSaves);
             if (lastNSaves > 1 && PathTracker.solve(selfLoopExpr, SolvingForType.IS_SELF_LOOP, false, false)) {
                 currentPattern = getSelfLoopPattern(SymbolicExecutionLab.processedInput, lastNSaves - 1, 1, -1);
-                System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d, pattern: %s", INPUT,
-                        lastNSaves, currentPattern));
+                // System.out.println(String.format("EXISTING SELF LOOP: %s, saves: %d, pattern: %s", INPUT,
+                //         lastNSaves, currentPattern));
                 selfLoopPatterns.add(currentPattern);
                 return true;
             }
