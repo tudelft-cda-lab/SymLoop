@@ -63,6 +63,7 @@ public class PathTracker {
 
     private static RunMode mode = RunMode.Symbolic;
     private static List<String> outputs = new ArrayList<>();
+    private static List<String> processedInputs = new ArrayList<>();
 
     public static Expr createConst(String name, Sort s) {
         if (mode == RunMode.Membership) {
@@ -229,11 +230,13 @@ public class PathTracker {
 
     // Making a new input variable
     public static MyVar myInputVar(String value, String name) {
+        processedInputs.add(value);
         if(lastOutput != null) {
             outputs.add(lastOutput);
         }
         lastOutput = "?";
         if(mode == RunMode.Membership) {
+            SymbolicExecutionLab.processedInput += value;
             return null;
         }
         return SymbolicExecutionLab.createInput(name, ConstantCustomExpr.fromString(value));
@@ -458,6 +461,7 @@ public class PathTracker {
     public static List<String> getMembershipOutput(String[] sequence) {
         lastOutput = null;
         mode = RunMode.Membership;
+        SymbolicExecutionLab.processedInput = "";
         startRun(sequence);
         outputs.add(lastOutput);
         return outputs;
@@ -466,6 +470,7 @@ public class PathTracker {
     private static boolean startRun(String[] sequence) {
         problem.setSequence(sequence);
         outputs.clear();
+        processedInputs.clear();
         final Future handler = executor.submit(problem);
         executor.schedule(() -> {
             handler.cancel(false);
