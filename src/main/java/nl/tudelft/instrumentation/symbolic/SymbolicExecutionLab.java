@@ -336,8 +336,8 @@ public class SymbolicExecutionLab {
         }
         lastTrace = temp;
 
-        System.out.printf("SAT: '%s'\n", String.join(",", temp));
         if (VERIFY_LOOP) {
+            // System.out.printf("SAT: '%s'\n", String.join(",", temp));
             for (Integer c : loopCounts) {
                 if (c > 0) {
                     // printQs();
@@ -406,7 +406,7 @@ public class SymbolicExecutionLab {
 
     static void reset() {
         SymbolicLearner.counterExample = Optional.empty();
-        indexBefore = -1;
+        SymbolicLearner.indexBefore = -1;
         PathTracker.reset();
         loopDetector.reset();
         processedInputList.clear();
@@ -518,12 +518,6 @@ public class SymbolicExecutionLab {
         // saveGraph(true);
         System.exit(0);
     }
-
-    static int indexBefore = -1;
-    static Map<String, Integer> from;
-    static int saveAtIndex = -1;
-    static boolean loopVerification;
-    static int loopSize;
 
     static void run(String[] args) {
         Settings s = Settings.create(args);

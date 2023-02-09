@@ -130,9 +130,9 @@ public class LoopDetection {
             return false;
         }
 
-        if (SymbolicExecutionLab.isCreatingPaths && SymbolicExecutionLab.processedInputList.size() == SymbolicExecutionLab.saveAtIndex) {
-            SymbolicExecutionLab.indexBefore = history.getNumberOfSaves();
-            SymbolicExecutionLab.from = history.getVariables();
+        if (SymbolicExecutionLab.isCreatingPaths && SymbolicExecutionLab.processedInputList.size() == SymbolicLearner.saveAtIndex) {
+            SymbolicLearner.indexBefore = history.getNumberOfSaves();
+            SymbolicLearner.from = history.getVariables();
         }
 
         if (!SymbolicExecutionLab.shouldLoopCheck || SymbolicExecutionLab.isCreatingPaths) {
@@ -162,8 +162,8 @@ public class LoopDetection {
         Settings s = Settings.getInstance();
         int depth = Math.min(s.MAX_LOOP_DETECTION_DEPTH + 1, history.getNumberOfSaves());
 
-        if (SymbolicExecutionLab.loopVerification) {
-            lastNSaves = SymbolicExecutionLab.loopSize + 1;
+        if (SymbolicLearner.loopVerification) {
+            lastNSaves = SymbolicLearner.loopSize + 1;
             depth = Math.min(depth, lastNSaves);
         }
 
