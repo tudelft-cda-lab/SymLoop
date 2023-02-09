@@ -19,6 +19,7 @@ import com.microsoft.z3.Model;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Status;
 
+import de.learnlib.filter.statistic.Counter;
 import nl.tudelft.instrumentation.runner.CallableTraceRunner;
 import nl.tudelft.instrumentation.symbolic.SolverInterface.SolvingForType;
 import nl.tudelft.instrumentation.symbolic.exprs.ConstantCustomExpr;
@@ -55,6 +56,8 @@ public class PathTracker {
 
     static int lastLength = -1;
     private static String lastOutput;
+
+    static Counter symbolicQueries = new Counter("symbolic queries", "queries");
 
     private static enum RunMode {
         Symbolic,
@@ -454,6 +457,7 @@ public class PathTracker {
      * @param sequence the fuzzed sequence that needs top be run.
      */
     public static boolean runNextFuzzedSequence(String[] sequence) {
+        symbolicQueries.increment();
         mode = RunMode.Symbolic;
         return startRun(sequence);
     }
