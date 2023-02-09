@@ -72,27 +72,31 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
                 // return !out.equals("invalid") || !out.toString().startsWith("error");
                 // })
                 .map(loop -> {
-                    String[] access = loop.access.asList().toArray(String[]::new);
-                    String[] l = loop.loop.asList().toArray(String[]::new);
+                    for(int i = 0; i < loop.loop.length(); i++) {
+                        Word<I> wAccess = loop.access.concat(loop.loop.prefix(i));
+                        Word<I> wLoop = loop.loop.subWord(i).concat(loop.loop.prefix(i));
+                        String[] access = wAccess.asList().toArray(String[]::new);
+                        String[] l = wLoop.asList().toArray(String[]::new);
 
-                    // Stream<List<String>> ds = getTransitions(loop.access, hypothesis)
-                    // .map(dt -> (List<String>) Word.fromWords(dt.access, dt.loop).asList());
-                    LoopVerifyResult r = LoopVerifier.verifyLoop(access, l, cs.stream());
-                    if (r.getS() == LoopVerifyResult.State.NO_LOOP_FOUND) {
-                        System.out.printf("No loop found for access: %s, loop: %s\n", loop.access, loop.loop);
-                        return Optional.of(Word.fromWords(loop.access, loop.loop, loop.loop));
-                    }
-                    if (r.getS() == LoopVerifyResult.State.PROBABLY) {
-                        System.out.printf("For verifying access: %s, loop: %s\n", loop.access, loop.loop);
-                        System.out.println(r.getS());
-                    }
-                    if (r.hasCounter()) {
-                        ArrayList<Word<I>> counter = new ArrayList<>();
-                        Word<I> c = (Word<I>) Word.fromSymbols(r.getCounter());
-                        counter.add(c);
-                        SymbolicExecutionLab.printfBlue("COUNTER: %s\n", c);
-                        Optional<Word<I>> m = Optional.of(c);
-                        return m;
+                        // Stream<List<String>> ds = getTransitions(loop.access, hypothesis)
+                        // .map(dt -> (List<String>) Word.fromWords(dt.access, dt.loop).asList());
+                        LoopVerifyResult r = LoopVerifier.verifyLoop(access, l, cs.stream());
+                        if (r.getS() == LoopVerifyResult.State.NO_LOOP_FOUND) {
+                            System.out.printf("No loop found for access: %s, loop: %s\n", wAccess, wLoop);
+                            return Optional.of(Word.fromWords(wAccess, wLoop, wLoop));
+                        }
+                        if (r.getS() == LoopVerifyResult.State.PROBABLY) {
+                            System.out.printf("For verifying access: %s, loop: %s\n", wAccess, wLoop);
+                            System.out.println(r.getS());
+                        }
+                        if (r.hasCounter()) {
+                            ArrayList<Word<I>> counter = new ArrayList<>();
+                            Word<I> c = (Word<I>) Word.fromSymbols(r.getCounter());
+                            counter.add(c);
+                            SymbolicExecutionLab.printfBlue("COUNTER: %s\n", c);
+                            Optional<Word<I>> m = Optional.of(c);
+                            return m;
+                        }
                     }
                     Optional<Word<I>> m = Optional.empty();
                     return m;
