@@ -91,13 +91,6 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         // ds[i] = characterizingSet.get(i).asList().toArray(String[]::new);
         // System.out.printf("ds[%d]: %s\n", i, characterizingSet.get(i));
         // }
-
-        try {
-            GraphDOT.write(hypothesis, this.alphabet, new BufferedWriter(new FileWriter("hyp.dot")));
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
         Stream<Word<I>> stream = getLoops(hypothesis)
                 .filter(loop -> checked.add(String.format("%s - %s", loop.access, loop.loop)))
                 .filter(loop -> {
