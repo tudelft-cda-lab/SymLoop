@@ -256,11 +256,15 @@ public class SymbolicLearner {
         MealyLoopingEQOracle<MealyMachine<?, String, ?, String>, String, String> loopMethod = new MealyLoopingEQOracle<>(
                 m, EXPLORATION_DEPTH, inputs, MAX_LOOP_DEPTH);
 
+
+        GraphSavingTransparentEQOracle<MealyMachine<?, String, ?, String>, String, String> stats = new GraphSavingTransparentEQOracle<MealyMachine<?, String, ?, String>, String, String>(mCounter);
+
         // Combine the loopMethod with the wMethod
         EQOracleChain<MealyMachine<?, String, ?, String>, String, Word<String>> chain = new EQOracleChain<>(
-                new GraphSavingTransparentEQOracle<MealyMachine<?, String, ?, String>, String, String>(m),
+                stats,
+                wMethod,
                 loopMethod,
-                wMethod);
+                stats);
 
         // construct a learning experiment from
         // the learning algorithm and the conformance test.
