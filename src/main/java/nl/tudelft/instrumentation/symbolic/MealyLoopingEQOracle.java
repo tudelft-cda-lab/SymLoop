@@ -67,7 +67,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
     protected <S> Stream<LoopInput<I>> getTransitions(Word<I> access, MealyMachine<S, I, ?, O> m) {
         MealyBFS<S, MealyMachine<?, I, ?, O>, I, O> bfs = new MealyBFS<>(m, alphabet, lookahead);
         Collection<LoopInput<I>> ls = bfs.getTransitions(m.getState(access));
-        System.out.printf("FOR ACCESS: %s, DS: %s\n", access, ls.size());
+        // System.out.printf("FOR ACCESS: %s, DS: %s\n", access, ls.size());
         return ls.stream();
     }
 
@@ -105,10 +105,13 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
                     //         .map(dt -> (List<String>) Word.fromWords(dt.access, dt.loop).asList());
                     LoopVerifyResult r = SymbolicLearner.verifyLoop(access, l, cs.stream());
                     if (r.getS() == LoopVerifyResult.State.NO_LOOP_FOUND) {
-                        // System.out.printf("access: %s, loop: %s\n", loop.access, loop.loop);
+                        System.out.printf("No loop found for access: %s, loop: %s\n", loop.access, loop.loop);
                         return Optional.of(Word.fromWords(loop.access, loop.loop, loop.loop));
                     }
-                    System.out.println(r.getS());
+                    if(r.getS() == LoopVerifyResult.State.PROBABLY) {
+                        System.out.printf("For verifying access: %s, loop: %s\n", loop.access, loop.loop);
+                        System.out.println(r.getS());
+                    }
                     if (r.hasCounter()) {
                         ArrayList<Word<I>> counter = new ArrayList<>();
                         Word<I> c = (Word<I>) Word.fromSymbols(r.getCounter());
