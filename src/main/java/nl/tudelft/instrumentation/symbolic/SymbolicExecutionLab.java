@@ -19,7 +19,7 @@ import nl.tudelft.instrumentation.symbolic.exprs.NamedCustomExpr;
 public class SymbolicExecutionLab {
 
     static final int PRINT_EVERY = 2000;
-    static final int GC_EVERY = 2000;
+    static final int GC_EVERY = 1000000000;
     static int iteration = 0;
     static final int INITIAL_TRACE_LENGTH = 1;
     static Random r = new Random(1);
@@ -418,7 +418,7 @@ public class SymbolicExecutionLab {
         skip = false;
         shouldSolve = true;
         numberOfLoopsInPathConstraint = 0;
-        if (iteration++ % GC_EVERY == 0) {
+        if (GC_EVERY != 00 && ++iteration % GC_EVERY == 0) {
             System.gc();
         }
     }
