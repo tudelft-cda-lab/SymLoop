@@ -48,7 +48,9 @@ public class GraphSavingTransparentEQOracle<A extends MealyMachine<?, I, ?, O>, 
     }
 
     public void writeCSV() {
-        File csvOutputFile = new File(String.format("%s/data-w%d-d%d.csv", base, Settings.getInstance().W, Settings.getInstance().MAX_LOOP_DETECTION_DEPTH));
+        Settings s = Settings.getInstance();
+        String name = s.MAX_LOOP_DETECTION_DEPTH == 0? "" : s.NAIVE? "-naive" : "-sym";
+        File csvOutputFile = new File(String.format("%s/data-w%d-d%d%s.csv", base, s.W, s.MAX_LOOP_DETECTION_DEPTH, name));
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             csvData.stream().forEach(pw::println);
         } catch (IOException e) {

@@ -34,13 +34,15 @@ public class Settings {
 
     public final boolean CORRECT_INTEGER_MODEL;
     public final boolean COLLECT_PATHS;
+    public final boolean NAIVE;
 
     public final int W;
 
     public final boolean LEARN;
 
     public String parameters() {
-        return String.format("Settings: d=%d,l=%d,m=%d,st=%d,u=%b", MAX_LOOP_DETECTION_DEPTH, LOOP_UNROLLING_AMOUNT,
+        return String.format("Settings: d=%d,l=%d,m=%d,st=%d,u=%b", MAX_LOOP_DETECTION_DEPTH,
+                LOOP_UNROLLING_AMOUNT,
                 MAX_TIME_S, SOLVER_TIMEOUT_S, UNFOLD_AND);
     }
 
@@ -80,10 +82,12 @@ public class Settings {
     private Settings(boolean unfoldAnd, String initial,
             int loopUnrollingAmount,
             int maxLoopDetectionDepth, int maxTimeS, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE,
-            int SOLVER_TIMEOUT_S, String verifyLoop, String suffix, String[] DISTINGUISHING_TRACES, boolean LEARN,
-            int W) {
+            int SOLVER_TIMEOUT_S, String verifyLoop, String suffix, String[] DISTINGUISHING_TRACES,
+            boolean LEARN,
+            int W, boolean NAIVE) {
         this.UNFOLD_AND = unfoldAnd;
         this.W = W;
+        this.NAIVE = NAIVE;
         String[] initial_arr = null;
         if (initial != null) {
             if (initial.length() == 0) {
@@ -123,6 +127,7 @@ public class Settings {
             boolean CORRECT_INTEGER_MODEL = !cl.hasOption("incorrect-integer-model");
             boolean MINIMIZE = !cl.hasOption("no-minimize");
             boolean LEARN = cl.hasOption("learn");
+            boolean NAIVE = cl.hasOption("naive");
             String initialTrace = cl.getOptionValue("initial-trace", null);
             String suffix = cl.getOptionValue("suffix", null);
             String VERIFY_LOOP = cl.getOptionValue("verify-loop", null);
@@ -139,8 +144,9 @@ public class Settings {
             int SOLVER_TIMEOUT_S = parseTimeToS(
                     cl.getOptionValue("solver-timeout", String.valueOf(DEFAULT_SOLVER_TIMEOUT_S)));
             Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
-                    loopDetectionDepth, maxTime, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S, VERIFY_LOOP, suffix,
-                    DISTINGUISHING_TRACES, LEARN, W);
+                    loopDetectionDepth, maxTime, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S,
+                    VERIFY_LOOP, suffix,
+                    DISTINGUISHING_TRACES, LEARN, W, NAIVE);
             singleton = s;
             return s;
         } else {
@@ -190,6 +196,7 @@ public class Settings {
                 String.format(
                         "W method exploration depth for model learning (Default: %d)",
                         DEFAULT_W));
+        options.addOption("naive", "naive", false, "Use naive loop method for loop verification");
         return options;
     }
 

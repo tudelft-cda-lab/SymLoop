@@ -53,7 +53,6 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
 
     @Override
     protected Stream<Word<I>> generateTestWords(MealyMachine<?, I, ?, O> hypothesis, Collection<? extends I> _ignored) {
-        boolean naive = true;
 
         List<Word<I>> characterizingSet = new ArrayList<>();
         CharacterizingSets.findCharacterizingSet(hypothesis, this.alphabet, characterizingSet);
@@ -75,7 +74,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
         // })
         ;
         Stream<Word<I>> stream;
-        if (!naive) {
+        if (!Settings.getInstance().NAIVE) {
             stream = loopStream.map(loop -> {
                 for (int i = 0; i < loop.loop.length(); i++) {
                     Word<I> wAccess = loop.access.concat(loop.loop.prefix(i));
