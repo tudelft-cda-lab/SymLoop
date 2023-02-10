@@ -39,7 +39,7 @@ public class GraphSavingTransparentEQOracle<A extends MealyMachine<?, I, ?, O>, 
         if (!b.exists()) {
             assert b.mkdirs();
         }
-        csvData.add("iteration,time,states,errors,total_queries,mem_queries,sym_queries");
+        csvData.add("iteration,time,states,errors,queries,memqueries,symqueries");
         startTime = System.currentTimeMillis();
     }
 
