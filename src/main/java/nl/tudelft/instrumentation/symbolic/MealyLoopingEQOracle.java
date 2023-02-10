@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterators;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -52,6 +53,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
 
     @Override
     protected Stream<Word<I>> generateTestWords(MealyMachine<?, I, ?, O> hypothesis, Collection<? extends I> _ignored) {
+        boolean naive = true;
 
         List<Word<I>> characterizingSet = new ArrayList<>();
         CharacterizingSets.findCharacterizingSet(hypothesis, this.alphabet, characterizingSet);
@@ -64,44 +66,60 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
 
         List<List<String>> cs = characterizingSet.stream().map(w -> (List<String>) w.asList()).toList();
         System.out.printf("characterizingSet size: %d\n", cs.size());
-        Stream<Word<I>> stream = getLoops(hypothesis)
+        Stream<LoopInput<I>> loopStream = getLoops(hypothesis)
                 .filter(loop -> checked.add(String.format("%s-%s", loop.access, loop.loop)))
-                // .filter(loop -> {
-                // O out = hypothesis.computeOutput(Word.fromWords(loop.access,
-                // loop.loop)).lastSymbol();
-                // return !out.equals("invalid") || !out.toString().startsWith("error");
-                // })
-                .map(loop -> {
-                    for(int i = 0; i < loop.loop.length(); i++) {
-                        Word<I> wAccess = loop.access.concat(loop.loop.prefix(i));
-                        Word<I> wLoop = loop.loop.subWord(i).concat(loop.loop.prefix(i));
-                        String[] access = wAccess.asList().toArray(String[]::new);
-                        String[] l = wLoop.asList().toArray(String[]::new);
+        // .filter(loop -> {
+        // O out = hypothesis.computeOutput(Word.fromWords(loop.access,
+        // loop.loop)).lastSymbol();
+        // return !out.equals("invalid") || !out.toString().startsWith("error");
+        // })
+        ;
+        Stream<Word<I>> stream;
+        if (!naive) {
+            stream = loopStream.map(loop -> {
+                for (int i = 0; i < loop.loop.length(); i++) {
+                    Word<I> wAccess = loop.access.concat(loop.loop.prefix(i));
+                    Word<I> wLoop = loop.loop.subWord(i).concat(loop.loop.prefix(i));
+                    String[] access = wAccess.asList().toArray(String[]::new);
+                    String[] l = wLoop.asList().toArray(String[]::new);
 
-                        // Stream<List<String>> ds = getTransitions(loop.access, hypothesis)
-                        // .map(dt -> (List<String>) Word.fromWords(dt.access, dt.loop).asList());
-                        LoopVerifyResult r = LoopVerifier.verifyLoop(access, l, cs.stream());
-                        if (r.getS() == LoopVerifyResult.State.NO_LOOP_FOUND) {
-                            System.out.printf("No loop found for access: %s, loop: %s\n", wAccess, wLoop);
-                            return Optional.of(Word.fromWords(wAccess, wLoop, wLoop));
-                        }
-                        if (r.getS() == LoopVerifyResult.State.PROBABLY) {
-                            System.out.printf("For verifying access: %s, loop: %s\n", wAccess, wLoop);
-                            System.out.println(r.getS());
-                        }
-                        if (r.hasCounter()) {
-                            ArrayList<Word<I>> counter = new ArrayList<>();
-                            Word<I> c = (Word<I>) Word.fromSymbols(r.getCounter());
-                            counter.add(c);
-                            SymbolicExecutionLab.printfBlue("COUNTER: %s\n", c);
-                            Optional<Word<I>> m = Optional.of(c);
-                            return m;
-                        }
+                    LoopVerifyResult r = LoopVerifier.verifyLoop(access, l, cs.stream());
+                    if (r.getS() == LoopVerifyResult.State.NO_LOOP_FOUND) {
+                        System.out.printf("No loop found for access: %s, loop: %s\n", wAccess, wLoop);
+                        return Optional.of(Word.fromWords(wAccess, wLoop, wLoop));
                     }
-                    Optional<Word<I>> m = Optional.empty();
-                    return m;
-                })
-                .filter(Optional::isPresent).map(Optional::get);
+                    if (r.getS() == LoopVerifyResult.State.PROBABLY) {
+                        System.out.printf("For verifying access: %s, loop: %s\n", wAccess, wLoop);
+                        System.out.println(r.getS());
+                    }
+                    if (r.hasCounter()) {
+                        ArrayList<Word<I>> counter = new ArrayList<>();
+                        Word<I> c = (Word<I>) Word.fromSymbols(r.getCounter());
+                        counter.add(c);
+                        SymbolicExecutionLab.printfBlue("COUNTER: %s\n", c);
+                        Optional<Word<I>> m = Optional.of(c);
+                        return m;
+                    }
+                }
+                Optional<Word<I>> m = Optional.empty();
+                return m;
+            })
+                    .filter(Optional::isPresent).map(Optional::get);
+        } else {
+            stream = loopStream.flatMap(loop -> IntStream.range(0, loop.loop.length()).mapToObj(i -> {
+                Word<I> wAccess = loop.access.concat(loop.loop.prefix(i));
+                Word<I> wLoop = loop.loop.subWord(i).concat(loop.loop.prefix(i));
+                return (Stream<Word<I>>) characterizingSet.stream().flatMap(c -> {
+                    return (Stream<Word<I>>) IntStream.range(1, maxLoopDepth).mapToObj(depth -> {
+                        Word<I> w = wAccess;
+                        for (int j = 0; j < depth; j++) {
+                            w = w.concat(wLoop);
+                        }
+                        return w.concat(c);
+                    });
+                });
+            }).flatMap(s -> s));
+        }
         return stream;
     }
 
