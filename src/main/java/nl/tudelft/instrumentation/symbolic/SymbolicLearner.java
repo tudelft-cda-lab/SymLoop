@@ -66,6 +66,7 @@ public class SymbolicLearner {
         EQOracleChain<MealyMachine<?, String, ?, String>, String, Word<String>> chain = new EQOracleChain<>(
                 stats,
                 wMethod,
+                stats,
                 loopMethod,
                 stats);
 
