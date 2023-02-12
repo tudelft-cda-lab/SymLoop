@@ -50,7 +50,7 @@ public class PathTracker {
     static HashMap<MyVar, Replacement> loopIterations = new HashMap<>();
 
     public static LinkedList<MyVar> inputs = new LinkedList<MyVar>();
-    static ScheduledExecutorService executor = Executors.newScheduledThreadPool(3);
+    static ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
     static CallableTraceRunner<Void> problem;
     static String[] inputSymbols;
 
@@ -58,6 +58,7 @@ public class PathTracker {
     private static String lastOutput;
 
     static Counter symbolicQueries = new Counter("symbolic queries", "queries");
+    static Canceler<Void> canceler = new Canceler<>(null);
 
     private static enum RunMode {
         Symbolic,
@@ -471,24 +472,43 @@ public class PathTracker {
         return outputs;
     }
 
+    private static class Canceler<F> implements Runnable {
+
+        private Future<F> handler;
+
+        Canceler(Future<F> handler) {
+            this.handler = handler;
+        }
+
+        @Override
+        public void run() {
+            handler.cancel(false);
+        }
+
+        public void setHandler(Future<F> handler) {
+            this.handler = handler;
+        }
+    }
+
     private static boolean startRun(String[] sequence) {
         problem.setSequence(sequence);
         outputs.clear();
         processedInputs.clear();
-        final Future handler = executor.submit(problem);
-        executor.schedule(() -> {
-            handler.cancel(false);
-        }, SymbolicExecutionLab.timeLeftMillis() * 2, TimeUnit.MILLISECONDS);
+        // final Future<Void> handler = executor.submit(problem);
+        // canceler.setHandler(handler);
+        // executor.schedule(canceler, SymbolicExecutionLab.timeLeftMillis() * 2, TimeUnit.MILLISECONDS);
 
         // Wait for it to be completed
         try {
-            handler.get();
+            // handler.get();
+            problem.call();
         } catch (CancellationException e) {
             SymbolicExecutionLab.printfYellow("TIMEOUT!\n");
             SymbolicExecutionLab.printFinalStatus();
             System.exit(0);
             return false;
-        } catch (InterruptedException | ExecutionException e) {
+        // } catch (InterruptedException | ExecutionException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             System.exit(-1);
         }
