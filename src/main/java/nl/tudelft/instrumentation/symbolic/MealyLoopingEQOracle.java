@@ -53,6 +53,7 @@ public class MealyLoopingEQOracle<A extends MealyMachine<?, I, ?, O>, I, O> exte
 
     @Override
     protected Stream<Word<I>> generateTestWords(MealyMachine<?, I, ?, O> hypothesis, Collection<? extends I> _ignored) {
+        System.out.println("starting MealyLoopingEQOracle");
 
         List<Word<I>> characterizingSet = new ArrayList<>();
         CharacterizingSets.findCharacterizingSet(hypothesis, this.alphabet, characterizingSet);
