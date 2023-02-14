@@ -21,7 +21,7 @@ def read(filename):
 def get_params(filename):
     lines = read(filename)
     settings = re.findall(r'Settings: (.*)', lines)
-    if len(settings) == 1:
+    if settings:
         params = re.findall(r'\w+=[a-zA-Z0-9]+', settings[0])
         params = [p.split('=') for p in params]
         return dict(params)
@@ -49,6 +49,7 @@ def print_header(header):
 def short_name(program):
     split = [p for p in program.split('-') if p.isalpha() or p.startswith('v')]
     return '-'.join(split)
+
 def write_results_to_latex(problem, output: problemOutput, params):
     data = output
     errors = set()
@@ -148,54 +149,82 @@ if __name__ == '__main__':
     per_problem:dict[str, dict[str, dict[int, float]]] = defaultdict(dict)
     params_per_solution:dict[str, dict[str, str]] = defaultdict(dict)
     rows = []
+
+    errors_per_folder_per_problem = dict()
+    all_problems = set()
     for folder in folders:
         t = '+01:00'
         name = folder[folder.index(t)+len(t)+1:]
         fname = folder
         files = list(get_output_file_names(folder))
         folder = name
+
+        n_per_problem = defaultdict(lambda: "")
+        errors_per_folder_per_problem[folder] = n_per_problem
+
         for problem, f in files:
+            all_problems.add(problem)
             timings = dict(parse(f))
             params = get_params(f)
             if params is not None:
                 params_per_solution[folder] = params
             outputs[folder][problem] = timings
             per_problem[problem][folder] = timings
+            per_problem[problem][folder]
+            # print(f'{problem=} {timings=}')
+            print(f'{problem} {folder} ' + ' '.join(f'({e},{t})' for e, t in timings.items()))
+            n_per_problem[problem] = f"{len(timings.items())}"
             for e, t in timings.items():
+                # print(f'({e},{t})')
                 rows.append((folder, problem, e, t))
-        continue
-        overall = pd.DataFrame()
-        for problem, f in get_output_profile_names(fname):
-            df = pd.DataFrame(pd.read_csv(f, delimiter='\t'))
-            print(df.columns)
-            if 'TYPE' not in df.columns:
-                continue
-            ns = df['NS']
-            assert ns is not None
-            df['S'] = ns / 1000000000
-            overall = pd.concat([overall, df])
-            print_header(problem)
-            print(aggregate_times(df))
-            # print(df)
-            # print(df.groupby('TYPE')['S'].agg(np.sum))
-            print()
-            # for a, b in df.groupby('LOOPS'):
-            #     data = b['MS']
-            #     assert data is not None
-            #     print(problem, a, f'{np.average(data.to_numpy()):10.0f}')
-            # print()
-        if 'TYPE' not in overall.columns:
-            continue
-        print_header('all problems')
-        print(aggregate_times(overall))
-        print()
-        print(aggregate_times(overall, group_by='LOOPS'))
+
+        # continue
+        # overall = pd.DataFrame()
+        # for problem, f in get_output_profile_names(fname):
+        #     df = pd.DataFrame(pd.read_csv(f, delimiter='\t'))
+        #     print(df.columns)
+        #     if 'TYPE' not in df.columns:
+        #         continue
+        #     ns = df['NS']
+        #     assert ns is not None
+        #     df['S'] = ns / 1000000000
+        #     overall = pd.concat([overall, df])
+        #     print_header(problem)
+        #     print(aggregate_times(df))
+        #     # print(df)
+        #     # print(df.groupby('TYPE')['S'].agg(np.sum))
+        #     print()
+        #     # for a, b in df.groupby('LOOPS'):
+        #     #     data = b['MS']
+        #     #     assert data is not None
+        #     #     print(problem, a, f'{np.average(data.to_numpy()):10.0f}')
+        #     # print()
+        # if 'TYPE' not in overall.columns:
+        #     continue
+        # print_header('all problems')
+        # print(aggregate_times(overall))
+        # print()
+        # print(aggregate_times(overall, group_by='LOOPS'))
         # print()
 
 
     for problem, data in sorted(per_problem.items()):
         write_results_to_latex(problem, data, params_per_solution)
         generate_bar_chart(problem, data)
+
+
+    all_problems = sorted(all_problems)
+    rows = [['Program', *[p.replace('problem', '') for p in all_problems]]]
+    for folder, errors in sorted(errors_per_folder_per_problem.items()):
+        row = [folder]
+        for problem in all_problems:
+            row.append(errors[problem])
+        rows.append(row)
+    print(errors_per_folder_per_problem)
+    f = open(f'/home/bram/projects/thesis/chapters/results/summary.tex', 'w')
+    f.write(tabulate(rows, tablefmt='latex', headers='firstrow'))
+    f.close()
+
 
 
     # df = pd.DataFrame(rows, columns=['Program', 'Problem', 'Error', 'Time'])

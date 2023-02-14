@@ -45,3 +45,4 @@ src/main/resources/tests.txt
 .settings/
 *.csv
 *.dat
+dots/

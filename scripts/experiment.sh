@@ -28,6 +28,10 @@ run () {
   cd $OUT
   ARGS="$ARGS"
   echo $ARGS > args.txt
+  # for LIMIT in {1..200};
+  # do
+  #     LIMIT=$LIMIT java -ea -XX:-UseGCOverheadLimit -Xmx4G -cp ../:../aistr.jar:$OLD/lib/com.microsoft.z3.jar:$OLD/instrumented:. Problem$1 $ARGS | tee -a out.txt
+  # done
   java -ea -agentpath:$HOME/projects/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=profile.html,title="Problem$1 $(date '+%T')",minwidth=0.2 -XX:-UseGCOverheadLimit -Xmx4G -cp ../:../aistr.jar:$OLD/lib/com.microsoft.z3.jar:$OLD/instrumented:. Problem$1 $ARGS | tee out.txt
   cd $OLD
 }
