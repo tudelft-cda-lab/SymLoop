@@ -201,10 +201,10 @@ public class LoopDetection {
                 return false;
             }
 
-            String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
-            SymbolicExecutionLab.printfGreen(
-                    "loop detected over %d iterations with vars %s: on input '%s'. \n", lastNSaves - 1, output,
-                    SymbolicExecutionLab.processedInput);
+            // String output = replacements.stream().map(Replacement::getName).collect(Collectors.joining(", "));
+            // SymbolicExecutionLab.printfGreen(
+            //         "loop detected over %d iterations with vars %s: on input '%s'. \n", lastNSaves - 1, output,
+            //         SymbolicExecutionLab.processedInput);
 
             if(Settings.getInstance().LOOP_UNROLLING_AMOUNT <= 1) {
                 return false;
