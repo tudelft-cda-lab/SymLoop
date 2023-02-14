@@ -206,6 +206,10 @@ public class LoopDetection {
                     "loop detected over %d iterations with vars %s: on input '%s'. \n", lastNSaves - 1, output,
                     SymbolicExecutionLab.processedInput);
 
+            if(Settings.getInstance().LOOP_UNROLLING_AMOUNT <= 1) {
+                return false;
+            }
+
             extended = history.getExtendedConstraint(lastNSaves, replacements);
             if (isFiniteLoop(extended, replacements)) {
                 return false;
