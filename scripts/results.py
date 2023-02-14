@@ -220,7 +220,7 @@ if __name__ == '__main__':
         for problem in all_problems:
             row.append(errors[problem])
         rows.append(row)
-    print(errors_per_folder_per_problem)
+    # print(errors_per_folder_per_problem)
     f = open(f'/home/bram/projects/thesis/chapters/results/summary.tex', 'w')
     f.write(tabulate(rows, tablefmt='latex', headers='firstrow'))
     f.close()
