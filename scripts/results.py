@@ -81,9 +81,9 @@ def write_results_to_latex(problem, output: problemOutput, params):
                 row.append('-')
         rows.append(row)
 
-    rows.sort()
+    rows.sort(key=lambda x: x[0])
     f = open(f'/home/bram/projects/thesis/chapters/results/{problem}.tex', 'w')
-    f.write(tabulate(rows, tablefmt='latex', headers='firstrow'))
+    f.write(tabulate(rows, tablefmt='latex', headers='firstrow').replace(f'{{{"l"*(len(all_params)+1)}r', f'{{{"l"*(len(all_params)+1)}|r|'))
     f.close()
 
 def get_output_file_names(folder, filenames=['errors.txt', 'out.txt']):
@@ -152,31 +152,33 @@ if __name__ == '__main__':
 
     errors_per_folder_per_problem = dict()
     all_problems = set()
-    for folder in folders:
+    for program in folders:
         t = '+01:00'
-        name = folder[folder.index(t)+len(t)+1:]
-        fname = folder
-        files = list(get_output_file_names(folder))
-        folder = name
+        name = program[program.index(t)+len(t)+1:]
+        fname = program
+        files = list(get_output_file_names(program))
+        program = name
 
         n_per_problem = defaultdict(lambda: "")
-        errors_per_folder_per_problem[folder] = n_per_problem
+        errors_per_folder_per_problem[program] = n_per_problem
 
         for problem, f in files:
             all_problems.add(problem)
             timings = dict(parse(f))
             params = get_params(f)
             if params is not None:
-                params_per_solution[folder] = params
-            outputs[folder][problem] = timings
-            per_problem[problem][folder] = timings
-            per_problem[problem][folder]
+                params_per_solution[program] = params
+            outputs[program][problem] = timings
+            per_problem[problem][program] = timings
+            per_problem[problem][program]
             # print(f'{problem=} {timings=}')
-            print(f'{problem} {folder} ' + ' '.join(f'({e},{t})' for e, t in timings.items()))
+            print(f'{problem} {program} ' + ' '.join(f'({e},{t})' for e, t in timings.items()))
             n_per_problem[problem] = f"{len(timings.items())}"
+            # if len(timings.items()) > 0:
+            #     n_per_problem[problem] = f"{len(timings.items())} / {sum(timings.values()) / len(timings.items()):.2f}"
             for e, t in timings.items():
                 # print(f'({e},{t})')
-                rows.append((folder, problem, e, t))
+                rows.append((program, problem, e, t))
 
         # continue
         # overall = pd.DataFrame()
@@ -214,15 +216,28 @@ if __name__ == '__main__':
 
 
     all_problems = sorted(all_problems)
-    rows = [['Program', *[p.replace('problem', '') for p in all_problems]]]
-    for folder, errors in sorted(errors_per_folder_per_problem.items()):
-        row = [folder]
+    all_params = ['d', 'l', 'm', 'st']
+    rows = [['Program', *all_params, *[p.replace('problem', 'P') for p in all_problems]]]
+    for program, errors in sorted(errors_per_folder_per_problem.items()):
+        params = params_per_solution[program]
+        row = [short_name(program)]
+        # row = [folder]
+        for p in all_params:
+            if p in params:
+                row.append(params[p])
+                if p == 'm':
+                    row[-1] = str(int(row[-1]) // 60)+'m'
+            else:
+                row.append('')
         for problem in all_problems:
             row.append(errors[problem])
         rows.append(row)
+
+
     # print(errors_per_folder_per_problem)
+    rows.sort(key=lambda x: x[0])
     f = open(f'/home/bram/projects/thesis/chapters/results/summary.tex', 'w')
-    f.write(tabulate(rows, tablefmt='latex', headers='firstrow'))
+    f.write(tabulate(rows, tablefmt='latex', headers='firstrow').replace(f'{{{"l"*(len(all_params)+1)}', f'{{{"l"*(len(all_params)+1)}|'))
     f.close()
 
 
