@@ -61,7 +61,6 @@ public class SymbolicExecutionLab {
 
     public static boolean shouldLoopCheck = true;
     public static boolean isCreatingPaths = false;
-    public static boolean VERIFY_LOOP = false;
 
     static void initialize(String[] inputSymbols) {
         // Initialise a random trace from the input symbols of the problem.
@@ -143,7 +142,7 @@ public class SymbolicExecutionLab {
         processedInput += next;
         processedInputList.add(next);
         inputInIndex++;
-        shouldLoopCheck = LoopVerifier.isNotVerifyingOrCanSkip();
+        shouldLoopCheck = LoopVerifier.shouldLoopCheck();
         // printfBlue("Solving: '%s' - shouldLoopCheck: %b, solve: %b\n",
         // processedInput, shouldLoopCheck, shouldSolve);
         return input;
@@ -336,7 +335,7 @@ public class SymbolicExecutionLab {
         }
         lastTrace = temp;
 
-        if (VERIFY_LOOP) {
+        if (LoopVerifier.VERIFY_LOOP) {
             // System.out.printf("SAT: '%s'\n", String.join(",", temp));
             for (Integer c : loopCounts) {
                 if (c > 0) {
@@ -354,7 +353,7 @@ public class SymbolicExecutionLab {
         String alreadyFound = String.join("", temp);
         // System.out.printf("New satisfiable input: %s\n", temp);
         if (!skip && alreadyFoundTraces.add(alreadyFound) && isStillUsefull(temp)) {
-            if (!VERIFY_LOOP) {
+            if (!LoopVerifier.VERIFY_LOOP) {
                 temp.add(newRandomInputChar());
             }
             // temp.add("A");
@@ -466,7 +465,7 @@ public class SymbolicExecutionLab {
 
     static void checkIfSolverIsRight(NextTrace trace) {
         // Checking if the solver is actually right
-        if (isCreatingPaths || VERIFY_LOOP) {
+        if (isCreatingPaths || LoopVerifier.VERIFY_LOOP) {
             return;
         }
         if ((!currentBranchTracker.hasVisited(trace.getLineNr(), trace.getConditionValue()))
@@ -548,7 +547,7 @@ public class SymbolicExecutionLab {
     }
 
     public static void runNext(NextTrace trace) {
-        if (!isCreatingPaths && !VERIFY_LOOP && !isStillUsefull(trace.trace)) {
+        if (!isCreatingPaths && !LoopVerifier.VERIFY_LOOP && !isStillUsefull(trace.trace)) {
             return;
         }
         // printfYellow("now doing line: %d, %b, %s, from: %s\n", trace.getLineNr(),
@@ -619,7 +618,7 @@ public class SymbolicExecutionLab {
         if (out.contains("Invalid")) {
             // causes a lot of memory overhead
             // errorTraces.add(SymbolicExecutionLab.processedInput);
-            if (!VERIFY_LOOP) {
+            if (!LoopVerifier.VERIFY_LOOP) {
                 skip = true;
             }
             if (!errorTracker.isError(out) && !out.contains("Current state has no transition for this input!")) {

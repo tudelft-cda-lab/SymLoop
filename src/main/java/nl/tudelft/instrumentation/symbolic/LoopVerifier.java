@@ -20,7 +20,7 @@ import nl.tudelft.instrumentation.symbolic.exprs.NamedCustomExpr;
 public class LoopVerifier {
     static boolean VERIFY_LOOP = false;
 
-    static boolean isNotVerifyingOrCanSkip() {
+    static boolean shouldLoopCheck() {
         Settings s = Settings.getInstance();
         if (!VERIFY_LOOP) {
             return true;
@@ -150,7 +150,7 @@ public class LoopVerifier {
 
     static LoopVerifyResult verifyLoop(String[] ACCESS, String[] LOOP_TRACE,
             Stream<List<String>> DISTINGUISHING_TRACES) {
-        SymbolicExecutionLab.VERIFY_LOOP = true;
+        VERIFY_LOOP = true;
         LoopVerifier.ACCESS = ACCESS;
         LoopVerifier.LOOP_TRACE = LOOP_TRACE;
         SymbolicExecutionLab.printThisRun = false;
