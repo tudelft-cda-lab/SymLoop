@@ -46,3 +46,6 @@ src/main/resources/tests.txt
 *.csv
 *.dat
 dots/
+afl/
+RERS_2015/
+compiled
