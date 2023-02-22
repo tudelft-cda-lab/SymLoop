@@ -35,6 +35,7 @@ public class Settings {
     public final boolean CORRECT_INTEGER_MODEL;
     public final boolean COLLECT_PATHS;
     public final boolean NAIVE;
+    public final boolean CACHE;
 
     public final int W;
 
@@ -84,10 +85,11 @@ public class Settings {
             int maxLoopDetectionDepth, int maxTimeS, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE,
             int SOLVER_TIMEOUT_S, String verifyLoop, String suffix, String[] DISTINGUISHING_TRACES,
             boolean LEARN,
-            int W, boolean NAIVE) {
+            int W, boolean NAIVE, boolean CACHE) {
         this.UNFOLD_AND = unfoldAnd;
         this.W = W;
         this.NAIVE = NAIVE;
+        this.CACHE = CACHE;
         String[] initial_arr = null;
         if (initial != null) {
             if (initial.length() == 0) {
@@ -128,6 +130,7 @@ public class Settings {
             boolean MINIMIZE = !cl.hasOption("no-minimize");
             boolean LEARN = cl.hasOption("learn");
             boolean NAIVE = cl.hasOption("naive");
+            boolean CACHE = cl.hasOption("cache");
             String initialTrace = cl.getOptionValue("initial-trace", null);
             String suffix = cl.getOptionValue("suffix", null);
             String VERIFY_LOOP = cl.getOptionValue("verify-loop", null);
@@ -146,7 +149,7 @@ public class Settings {
             Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
                     loopDetectionDepth, maxTime, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S,
                     VERIFY_LOOP, suffix,
-                    DISTINGUISHING_TRACES, LEARN, W, NAIVE);
+                    DISTINGUISHING_TRACES, LEARN, W, NAIVE, CACHE);
             singleton = s;
             return s;
         } else {
@@ -197,6 +200,7 @@ public class Settings {
                         "W method exploration depth for model learning (Default: %d)",
                         DEFAULT_W));
         options.addOption("naive", "naive", false, "Use naive loop method for loop verification");
+        options.addOption("cache", "cache", false, "Use a cache for the system to skip running the same trace twice");
         return options;
     }
 

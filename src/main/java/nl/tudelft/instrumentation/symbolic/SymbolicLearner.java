@@ -36,8 +36,11 @@ public class SymbolicLearner {
 
         MealyMembershipOracle<String, String> sul = new RersOracle();
         MealyCounterOracle<String, String> mCounter = new MealyCounterOracle<String, String>(sul, "membership queries");
-        // MealyCacheOracle<String, String> m = MealyCacheOracle.createDAGCacheOracle(inputs, mCounter.asOracle());
-        MealyMembershipOracle<String, String> m = mCounter; //MealyCacheOracle.createDynamicTreeCacheOracle(mCounter.asOracle());
+        MealyMembershipOracle<String, String> m = mCounter;
+        if (s.CACHE) {
+            m = MealyCacheOracle.createDAGCacheOracle(inputs, mCounter.asOracle());
+            // m = MealyCacheOracle.createDynamicTreeCacheOracle(mCounter.asOracle());
+        }
 
         // construct L* instance
         ExtensibleLStarMealy<String, String> lstar = new ExtensibleLStarMealyBuilder<String, String>()
