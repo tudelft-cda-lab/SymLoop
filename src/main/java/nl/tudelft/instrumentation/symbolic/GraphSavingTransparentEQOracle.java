@@ -69,6 +69,8 @@ public class GraphSavingTransparentEQOracle<A extends MealyMachine<?, I, ?, O>, 
         long sym_queries = PathTracker.symbolicQueries.getCount();
         long total_queries = mem_queries + sym_queries;
         System.out.println("States: " + states);
+        System.out.println(sul.getCounter().getSummary());
+        System.out.println(PathTracker.symbolicQueries.getSummary());
         SimpleProfiler.logResults();
         System.out.println(SimpleProfiler.getResults());
         long[] line = { iteration, elapsed, states, errors, total_queries, mem_queries, sym_queries };
