@@ -14,11 +14,13 @@ public class ProblemThesis {
     public void calculateOutput(String input) {
         cf = true;
         if (cf && input.equals("i")) {
+            System.out.println("I");
             i+=1;
             cf = false;
         }
         if (cf && input.equals("p")) {
             cf = false;
+            System.out.println("P");
             if (i == LIMIT) {
                 Errors.__VERIFIER_error(LIMIT);
             }
