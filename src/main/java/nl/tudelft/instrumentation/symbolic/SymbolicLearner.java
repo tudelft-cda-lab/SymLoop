@@ -89,6 +89,7 @@ public class SymbolicLearner {
         System.out.println(SimpleProfiler.getResults());
         System.out.println(experiment.getRounds().getSummary());
         System.out.println(mCounter.getStatisticalData().getSummary());
+        System.out.println(PathTracker.symbolicQueries.getSummary());
         System.out.println("States: " + result.size());
         System.out.println("Sigma: " + inputs.size());
         System.out.println();
