@@ -11,7 +11,7 @@ import org.apache.commons.cli.ParseException;
 
 public class Settings {
     private static final int DEFAULT_LOOP_UNROLLING = 10;
-    private static final int DEFAULT_LOOP_DETECTION_DEPTH = 1;
+    private static final int DEFAULT_LOOP_DETECTION_DEPTH = 0;
     private static final int DEFAULT_MAX_TIME_S = -1;
     private static final int DEFAULT_SOLVER_TIMEOUT_S = -1;
     private static final int DEFAULT_W = 1;
