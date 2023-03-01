@@ -141,6 +141,41 @@ def aggregate_times(df, group_by='TYPE'):
         mean=('S', np.mean),
         count=('S', len))
 
+
+def errors_over_time(problem, data):
+    print(problem, data)
+    solution_times = []
+    solutions = list(sorted(data.keys()))
+    for solution, errors in data.items():
+        sorted_by_time = sorted(errors.items(),key=lambda x: x[1])
+        for i, (err, time) in enumerate(sorted_by_time):
+            solution_times.append((time, solution))
+            # print(i+1, time)
+    amount_per_solution = defaultdict(lambda: 0)
+
+
+    csv_rows = [["t", *solutions]]
+    for time, solution in sorted(solution_times):
+        assert solution in solutions
+        csv_rows.append([time, *[amount_per_solution[s] for s in solutions]])
+        amount_per_solution[solution] += 1
+        csv_rows.append([time, *[amount_per_solution[s] for s in solutions]])
+        # print(time, solution)
+    csv_rows.append([120*60, *[amount_per_solution[s] for s in solutions]])
+    print(csv_rows)
+
+
+    import csv
+    filename = f'/home/bram/projects/thesis/chapters/results/{problem}.csv'
+    with open(filename, 'w', newline='') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=',',
+                                quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for row in csv_rows:
+            spamwriter.writerow(row)
+
+
+
+
 if __name__ == '__main__':
     folders = sys.argv[1:]
     # program / problem / error -> time
@@ -213,8 +248,10 @@ if __name__ == '__main__':
     for problem, data in sorted(per_problem.items()):
         write_results_to_latex(problem, data, params_per_solution)
         generate_bar_chart(problem, data)
+        errors_over_time(problem, data)
 
 
+    ## SUMMARY
     all_problems = sorted(all_problems)
     all_params = ['d', 'l', 'm', 'st']
     rows = [['Program', *all_params, *[p.replace('problem', 'P') for p in all_problems]]]
