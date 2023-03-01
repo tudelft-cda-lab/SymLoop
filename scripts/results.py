@@ -151,7 +151,7 @@ def errors_over_time(problem, data):
         for i, (err, time) in enumerate(sorted_by_time):
             solution_times.append((time, solution))
             # print(i+1, time)
-    amount_per_solution = defaultdict(lambda: 0)
+    amount_per_solution = defaultdict(int)
 
 
     csv_rows = [["t", *solutions]]
