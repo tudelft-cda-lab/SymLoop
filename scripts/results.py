@@ -93,7 +93,7 @@ def get_output_file_names(folder, filenames=['errors.txt', 'out.txt']):
         if os.path.exists(klee) and os.path.isdir(klee):
             dirname = klee
         for problem in os.listdir(dirname):
-            if 'problem' not in problem:
+            if 'problem1' not in problem:
                 continue
             problemdir = os.path.join(dirname, problem)
             for f in filenames:
