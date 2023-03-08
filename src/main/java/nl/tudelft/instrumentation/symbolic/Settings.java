@@ -36,6 +36,7 @@ public class Settings {
     public final boolean COLLECT_PATHS;
     public final boolean NAIVE;
     public final boolean CACHE;
+    public final boolean OPTIMIZE;
 
     public final int W;
 
@@ -85,11 +86,13 @@ public class Settings {
             int maxLoopDetectionDepth, int maxTimeS, boolean CORRECT_INTEGER_MODEL, boolean MINIMIZE,
             int SOLVER_TIMEOUT_S, String verifyLoop, String suffix, String[] DISTINGUISHING_TRACES,
             boolean LEARN,
-            int W, boolean NAIVE, boolean CACHE) {
+            int W, boolean NAIVE, boolean CACHE, boolean OPTIMIZE) {
+            super();
         this.UNFOLD_AND = unfoldAnd;
         this.W = W;
         this.NAIVE = NAIVE;
         this.CACHE = CACHE;
+        this.OPTIMIZE = OPTIMIZE;
         String[] initial_arr = null;
         if (initial != null) {
             if (initial.length() == 0) {
@@ -128,6 +131,7 @@ public class Settings {
             boolean unfoldAnd = cl.hasOption("unfold-and");
             boolean CORRECT_INTEGER_MODEL = !cl.hasOption("incorrect-integer-model");
             boolean MINIMIZE = !cl.hasOption("no-minimize");
+            boolean OPTIMIZE = !cl.hasOption("no-optimize");
             boolean LEARN = cl.hasOption("learn");
             boolean NAIVE = cl.hasOption("naive");
             boolean CACHE = cl.hasOption("cache");
@@ -149,7 +153,7 @@ public class Settings {
             Settings s = new Settings(unfoldAnd, initialTrace, loopUnrollingAmount,
                     loopDetectionDepth, maxTime, CORRECT_INTEGER_MODEL, MINIMIZE, SOLVER_TIMEOUT_S,
                     VERIFY_LOOP, suffix,
-                    DISTINGUISHING_TRACES, LEARN, W, NAIVE, CACHE);
+                    DISTINGUISHING_TRACES, LEARN, W, NAIVE, CACHE, OPTIMIZE);
             singleton = s;
             return s;
         } else {
@@ -163,8 +167,10 @@ public class Settings {
 
     private static Options getOptions() {
         Options options = new Options();
-        options.addOption("n", "no-minimize", false,
+        options.addOption("nm", "no-minimize", false,
                 "Disable minimization strategy to the solver for loop constraints. Minimization makes the generated inputs shorter.");
+        options.addOption("no", "no-optimize", false,
+                "Disable solver optimizations.");
         options.addOption("u", "unfold-and", false,
                 "Unfold 'AND' expressions to possibly make the loop constraints shorter.");
         options.addOption("icim", "incorrect-integer-model", false,

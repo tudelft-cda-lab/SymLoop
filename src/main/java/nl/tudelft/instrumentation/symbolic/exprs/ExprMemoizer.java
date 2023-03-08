@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import nl.tudelft.instrumentation.symbolic.InferringSolver;
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp.Operation;
+import nl.tudelft.instrumentation.symbolic.Settings;
 
 /**
  * 
@@ -38,10 +39,13 @@ public class ExprMemoizer {
     }
 
     private boolean addToMemory(String name, CustomExpr value) {
+        if (!shouldOptimize()) {
+            return false;
+        }
         if (!(value instanceof ConstantCustomExpr)) {
             return false;
         }
-        if(memory.containsKey(name)) {
+        if (memory.containsKey(name)) {
             CustomExpr e = memory.get(name);
             return !e.equals(value);
         }
@@ -51,11 +55,23 @@ public class ExprMemoizer {
         return false;
     }
 
+    public boolean shouldOptimize() {
+        Settings s = Settings.getInstance();
+        return s != null && s.OPTIMIZE;
+    }
+
     public CustomExpr optimize(CustomExpr e) {
-        return optimize(e, false);
+        if (shouldOptimize()) {
+            return optimize(e, false);
+        } else {
+            return e;
+        }
     }
 
     public CustomExpr optimize(CustomExpr e, boolean remember) {
+        if(!shouldOptimize()) {
+            return e;
+        }
         if (e instanceof ConstantCustomExpr) {
             return e;
         } else if (e instanceof NamedCustomExpr) {
@@ -64,7 +80,7 @@ public class ExprMemoizer {
         } else if (e instanceof CustomExprOp) {
             if (remember) {
                 CustomExpr scanned = scanForEq(e);
-                if(!scanned.equals(e)) {
+                if (!scanned.equals(e)) {
                     return scanned;
                 }
             }
