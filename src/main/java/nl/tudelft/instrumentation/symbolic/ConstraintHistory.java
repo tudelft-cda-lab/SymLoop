@@ -17,7 +17,6 @@ public class ConstraintHistory {
 
     private HashMap<String, List<CustomExpr>> variables = new HashMap<>();
     private HashMap<String, List<Integer>> lastVariables = new HashMap<>();
-    private final Context ctx = PathTracker.ctx;
 
     private List<List<CustomExpr>> loopModelList = new ArrayList<>();
     private List<List<Boolean>> isAssignment = new ArrayList<>();
