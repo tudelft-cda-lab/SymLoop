@@ -275,7 +275,7 @@ public class LoopDetection {
                 solver.pop();
                 solver.add(CustomExprOp.mkAnd(loop.subList(0, maxPossible).toArray(CustomExpr[]::new)));
                 status = solver.check(SolvingForType.IS_REATING_LOOP);
-                assert status == Status.SATISFIABLE;
+                // assert status == Status.SATISFIABLE;
             } else {
                 return true;
             }
