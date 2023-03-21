@@ -1,6 +1,5 @@
 package nl.tudelft.instrumentation.symbolic;
 
-import com.microsoft.z3.Model;
 import com.microsoft.z3.Status;
 
 import nl.tudelft.instrumentation.symbolic.exprs.ConstantCustomExpr;
@@ -71,6 +70,12 @@ public class InferringSolver extends OptimizingSolver {
             return lastStatus;
         }
         return super.check(type);
+    }
+
+    public void assign(String name, CustomExpr value) {
+        if(!memory.addToMemory(name, value)) {
+            super.assign(name, value);
+        }
     }
 
 }

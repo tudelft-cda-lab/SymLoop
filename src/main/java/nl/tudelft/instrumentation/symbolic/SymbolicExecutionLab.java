@@ -99,7 +99,7 @@ public class SymbolicExecutionLab {
         String newName = createVarName(name);
         CustomExpr var = new NamedCustomExpr(newName, expr.type);
 
-        PathTracker.addToModel(CustomExprOp.mkEq(var, expr));
+        PathTracker.assign(newName, expr);
         MyVar myVar = new MyVar(name, var);
         vars.put(name, myVar);
         return myVar;
@@ -235,9 +235,8 @@ public class SymbolicExecutionLab {
         CustomExpr customVar = new NamedCustomExpr(newName, expr.type);
         loopDetector.assignToVariable(name, expr);
         var.assign(customVar);
-        CustomExpr eq = CustomExprOp.mkEq(customVar, expr);
-        PathTracker.addToModel(eq);
-        loopDetector.addToLoopModel(eq, true);
+        // CustomExpr eq = CustomExprOp.mkEq(customVar, expr);
+        PathTracker.assign(newName, expr);
     }
 
     static void encounteredNewBranch(MyVar condition, boolean value, int line_nr) {

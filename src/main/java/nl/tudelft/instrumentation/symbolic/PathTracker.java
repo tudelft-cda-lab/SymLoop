@@ -6,12 +6,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -43,7 +40,7 @@ public class PathTracker {
     public static Context ctx = new Context(cfg);
 
     public static BoolExpr z3model = ctx.mkTrue();
-    // private static BoolExpr z3branches = ctx.mkTrue();
+    private static BoolExpr z3branches = ctx.mkTrue();
     public static OptimizingSolver solver = new InferringSolver();
     // public static OptimizingSolver solver = new OptimizingSolver();
 
@@ -91,7 +88,7 @@ public class PathTracker {
      */
     public static void reset() {
         z3model = ctx.mkTrue();
-        // z3branches = ctx.mkTrue();
+        z3branches = ctx.mkTrue();
         inputs.clear();
         solver.reset();
     }
@@ -100,7 +97,7 @@ public class PathTracker {
         if (mode == RunMode.Membership) {
             return;
         }
-        // z3branches = ctx.mkAnd(expr, z3branches);
+        // z3branches = ctx.mkAnd(expr.toBoolExpr(), z3branches);
         solver.add(expr);
     }
 
@@ -108,8 +105,16 @@ public class PathTracker {
         if (mode == RunMode.Membership) {
             return;
         }
-        z3model = ctx.mkAnd(expr.toBoolExpr(), z3model);
+        // z3model = ctx.mkAnd(expr.toBoolExpr(), z3model);
         solver.add(expr);
+    }
+
+    public static void assign(String name, CustomExpr value) {
+        // z3model = ctx.mkAnd(expr.toBoolExpr(), z3model);
+        if (mode == RunMode.Membership) {
+            return;
+        }
+        solver.assign(name, value);
     }
 
     /**
@@ -137,12 +142,14 @@ public class PathTracker {
         s.add(new_branch);
 
         if (printModel) {
-            System.out.print("Model: ");
-            System.out.println(PathTracker.z3model);
-            System.out.print("Branches: ");
+            // System.out.print("Model: ");
+            // System.out.println(PathTracker.z3model);
+            // System.out.print("Branches: ");
             // System.out.println(PathTracker.z3branches);
-            System.out.print("New branch: ");
-            System.out.println(new_branch);
+            // System.out.print("New branch: ");
+            // System.out.println(new_branch);
+            System.out.print("Solver");
+            System.out.println(solver);
         }
 
         Status status = s.check(type);
@@ -472,7 +479,7 @@ public class PathTracker {
         return outputs;
     }
 
-    private static class Canceler<F> implements Runnable {
+    public static class Canceler<F> implements Runnable {
 
         private Future<F> handler;
 
@@ -496,7 +503,8 @@ public class PathTracker {
         processedInputs.clear();
         // final Future<Void> handler = executor.submit(problem);
         // canceler.setHandler(handler);
-        // executor.schedule(canceler, SymbolicExecutionLab.timeLeftMillis() * 2, TimeUnit.MILLISECONDS);
+        // executor.schedule(canceler, SymbolicExecutionLab.timeLeftMillis() * 2,
+        // TimeUnit.MILLISECONDS);
 
         // Wait for it to be completed
         try {
@@ -507,7 +515,7 @@ public class PathTracker {
             SymbolicExecutionLab.printFinalStatus();
             System.exit(0);
             return false;
-        // } catch (InterruptedException | ExecutionException e) {
+            // } catch (InterruptedException | ExecutionException e) {
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(-1);

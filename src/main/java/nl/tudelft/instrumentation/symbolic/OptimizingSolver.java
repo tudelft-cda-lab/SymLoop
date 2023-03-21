@@ -11,6 +11,8 @@ import com.microsoft.z3.Status;
 import com.microsoft.z3.Optimize.Handle;
 
 import nl.tudelft.instrumentation.symbolic.exprs.CustomExpr;
+import nl.tudelft.instrumentation.symbolic.exprs.CustomExprOp;
+import nl.tudelft.instrumentation.symbolic.exprs.NamedCustomExpr;
 
 class OptimizingSolver implements SolverInterface {
 
@@ -71,7 +73,7 @@ class OptimizingSolver implements SolverInterface {
         solver = PathTracker.ctx.mkOptimize();
 
         Params p = PathTracker.ctx.mkParams();
-        int timeout = Settings.getInstance().SOLVER_TIMEOUT_S;;
+        int timeout = Settings.getInstance().SOLVER_TIMEOUT_S;
         if (timeout > 0) {
             p.add("timeout", timeout * 1000);
         }
@@ -80,5 +82,14 @@ class OptimizingSolver implements SolverInterface {
 
     public Handle minimize(Expr e) {
         return solver.MkMinimize(e);
+    }
+
+    public void assign(String name, CustomExpr value) {
+        CustomExpr var = new NamedCustomExpr(name, value.type);
+        add(CustomExprOp.mkEq(var, value));
+    }
+
+    public String toString() {
+        return solver.toString();
     }
 }

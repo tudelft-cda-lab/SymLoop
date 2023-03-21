@@ -38,7 +38,7 @@ public class ExprMemoizer {
         current = history.remove(history.size() - 1);
     }
 
-    private boolean addToMemory(String name, CustomExpr value) {
+    public boolean addToMemory(String name, CustomExpr value) {
         if (!shouldOptimize()) {
             return false;
         }
