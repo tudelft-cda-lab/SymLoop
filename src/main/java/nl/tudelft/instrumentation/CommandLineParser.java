@@ -1,11 +1,7 @@
 package nl.tudelft.instrumentation;
 
 import com.github.javaparser.ast.visitor.GenericVisitor;
-import nl.tudelft.instrumentation.branch.BranchCoverageVisitor;
-import nl.tudelft.instrumentation.line.LineCoverageVisitor;
-import nl.tudelft.instrumentation.patching.OperatorVisitor;
 import nl.tudelft.instrumentation.symbolic.PathVisitor;
-import nl.tudelft.instrumentation.fuzzing.DistanceVisitor;
 import org.apache.commons.cli.*;
 
 import java.io.File;
@@ -76,23 +72,11 @@ public class CommandLineParser {
 
         // Parses which type of instrumentation we should be doing.
         switch(type){
-            case "line":
-                visitor = new LineCoverageVisitor(file.getAbsolutePath());
-                break;
-            case "branch":
-                visitor = new BranchCoverageVisitor(file.getAbsolutePath());
-                break;
-            case "fuzzing":
-                visitor = new DistanceVisitor(file.getAbsolutePath());
-                break;
             case "symbolic":
                 visitor = new PathVisitor(file.getAbsolutePath());
                 break;
-            case "patching":
-                visitor = new OperatorVisitor(file.getAbsolutePath());
-                break;
             default:
-                throw new IllegalArgumentException("Only five available types: \"branch\" , \"line\" , \"fuzzing\" , \"symbolic\", \"patching\"");
+                throw new IllegalArgumentException("Only one available types: \"symbolic\"");
         }
     }
 
