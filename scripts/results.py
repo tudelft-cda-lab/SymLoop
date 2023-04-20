@@ -31,7 +31,11 @@ def get_params(filename):
 def parse(filename):
     lines = read(filename)
     for err, seconds in re.findall(r'Error\s+(\d+):\s+(\S*)', lines):
-        yield (int(err), float(seconds))
+        if float(seconds) < 120*60:
+            yield (int(err), float(seconds))
+    for err, seconds in re.findall(r'error_(\d+) found in (\S*)s', lines):
+        if float(seconds) < 120*60:
+            yield (int(err), float(seconds))
     # print(lines)
 
 problemOutput = dict[str, dict[int, float]]
@@ -56,7 +60,8 @@ def write_results_to_latex(problem, output: problemOutput, params):
     for program in sorted(data.keys()):
         errors.update(data[program].keys())
 
-    all_params = ['d', 'l', 'm', 'st']
+    # all_params = ['d', 'l', 'm', 'st']
+    all_params = ['d', 'l', 'm']
 
     errors = sorted(list(errors))
     rows = [['Program', *all_params, '#err', *errors]]
@@ -66,24 +71,31 @@ def write_results_to_latex(problem, output: problemOutput, params):
             if p in params[program]:
                 row.append(params[program][p])
                 if p == 'm':
-                    row[-1] = str(int(row[-1]) // 60)+'m'
+                    # row[-1] = str(int(row[-1]) // 60)+'m'
+                    row[-1] = str(int(row[-1]) // 60)
             else:
                 row.append('')
         row.append(str(len(data[program])))
         for error in errors:
             if error in data[program]:
                 v = data[program][error]
-                if v >= 10:
-                    row.append(f'{v:.0f}')
-                else:
-                    row.append(f'{v:.1f}')
+                row.append(f'{v:.0f}')
+                # if v >= 10:
+                #     row.append(f'{v:.0f}')
+                # else:
+                #     row.append(f'{v:.1f}')
             else:
                 row.append('-')
         rows.append(row)
 
     rows.sort(key=lambda x: x[0])
     f = open(f'/home/bram/projects/thesis/chapters/results/{problem}.tex', 'w')
-    f.write(tabulate(rows, tablefmt='latex', headers='firstrow').replace(f'{{{"l"*(len(all_params)+1)}r', f'{{{"l"*(len(all_params)+1)}|r|'))
+    latex = tabulate(rows, tablefmt='latex', headers='firstrow')
+    header = 'l' + len(all_params) * 'r' + '|' + 'r' + '|' + (len(rows[0])-len(all_params) - 2) * 'r'
+    latex = re.sub(r'(\\begin\{tabular\})\{.*\}', rf'\1{{{header}}}', latex)
+    # latex = latex.replace(f'{{{"l"*(len(all_params)+1)}r', f'{{l{"r"*(len(all_params))}|r|')
+    f.write(latex)
+    # f.write(tabulate(rows, tablefmt='latex', headers='firstrow').replace(f'{{{"l"*(len(all_params)+1)}r', f'{{l{"r"*(len(all_params))}|r|'))
     f.close()
 
 def get_output_file_names(folder, filenames=['errors.txt', 'out.txt']):
@@ -253,7 +265,7 @@ if __name__ == '__main__':
 
     ## SUMMARY
     all_problems = sorted(all_problems)
-    all_params = ['d', 'l', 'm', 'st']
+    all_params = ['d', 'l', 'm']
     rows = [['Program', *all_params, *[p.replace('problem', 'P') for p in all_problems]]]
     for program, errors in sorted(errors_per_folder_per_problem.items()):
         params = params_per_solution[program]
